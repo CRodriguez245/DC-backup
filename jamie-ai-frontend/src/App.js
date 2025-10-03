@@ -803,13 +803,15 @@ const JamieAI = () => {
           <p className="text-[16px] text-[#363636]">Mechanical Engineering</p>
         </div>
         
-        {/* Context Section */}
-        <div className="mb-6">
-          <p className="text-[12px] text-[#535862] leading-relaxed">
-            Jamie is a sophomore mechanical engineering student considering switching to art/design. 
-            He's worried about disappointing his immigrant parents. How would you coach him?
-          </p>
-        </div>
+        {/* Context Section - Show immediately in Game mode, after first message in Assessment mode */}
+        {(gameMode === 'game' || (gameMode === 'assessment' && messages.length > 0)) && (
+          <div className="mb-6">
+            <p className="text-[12px] text-[#535862] leading-relaxed">
+              Jamie is a sophomore mechanical engineering student considering switching to art/design. 
+              He's worried about disappointing his immigrant parents. How would you coach him?
+            </p>
+          </div>
+        )}
         
         {/* Progress Bar - Only show in Game mode */}
         {gameMode === 'game' && (
@@ -827,10 +829,12 @@ const JamieAI = () => {
           </div>
         )}
         
-        {/* Jamie's State */}
-        <p className="text-[16px] font-medium text-[#797979] text-left mb-4">
-          {getJamieState()}
-        </p>
+        {/* Jamie's State - Only show in Game mode */}
+        {gameMode === 'game' && (
+          <p className="text-[16px] font-medium text-[#797979] text-left mb-4">
+            {getJamieState()}
+          </p>
+        )}
         
         
         {/* Spacer to push navigation to bottom */}

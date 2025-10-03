@@ -767,44 +767,35 @@ const JamieAI = () => {
           <p className="text-[16px] text-[#363636]">Mechanical Engineering</p>
         </div>
         
-        {/* Progress Circle */}
-        <div className="flex items-center justify-center mb-6 mt-2">
-            <div className={`relative w-[160px] h-[160px] progress-circle ${isProgressAnimating ? 'progress-animate' : ''}`}>
-              {/* Background Circle */}
-              <div className="w-full h-full rounded-full border-[12px] border-gray-200"></div>
-              
-              {/* Progress Arc - Functional SVG */}
-              <svg className="absolute top-0 left-0 w-full h-full transform -rotate-90" viewBox="0 0 160 160">
-                <circle
-                  cx="80"
-                  cy="80"
-                  r="74"
-                  fill="none"
-                  stroke="#ff6b35"
-                  strokeWidth="12"
-                  strokeDasharray={`${2 * Math.PI * 74}`}
-                  strokeDashoffset={`${2 * Math.PI * 74 * (1 - animatedProgress / 100)}`}
-                  strokeLinecap="round"
-                  className="progress-arc"
-                />
-              </svg>
-              
-              {/* Progress Text */}
-              <div className="absolute inset-0 flex flex-col items-center justify-center progress-text">
-                <p className="text-[12px] font-medium text-[#535862] leading-[18px] text-center">
-                  Jamie's Progress
-                </p>
-                <p className="text-[30px] font-semibold text-[#181d27] leading-[38px]">
-                  {animatedProgress}%
-                </p>
-              </div>
-            </div>
+        {/* Progress Bar */}
+        <div className="mb-2 mt-2">
+          <div className="flex items-center justify-between mb-1">
+            <span className="text-[12px] font-medium text-[#535862]">Jamie's Progress</span>
+            <span className="text-[12px] font-semibold text-[#181d27]">{animatedProgress}%</span>
           </div>
+          <div className="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
+            <div 
+              className={`h-full bg-gradient-to-r from-orange-400 to-orange-500 rounded-full transition-all duration-1000 ease-out ${isProgressAnimating ? 'progress-animate' : ''}`}
+              style={{ width: `${animatedProgress}%` }}
+            ></div>
+          </div>
+        </div>
         
         {/* Jamie's State */}
-        <p className="text-[20px] font-medium text-[#797979] text-center">
+        <p className="text-[20px] font-medium text-[#797979] text-left mb-4">
           {getJamieState()}
         </p>
+        
+        {/* Context Section - Only show after first message */}
+        {messages.length > 0 && (
+          <div className="mb-6">
+            <h3 className="text-[14px] font-semibold text-[#363636] mb-2">Context</h3>
+            <p className="text-[12px] text-[#535862] leading-relaxed">
+              Jamie is a sophomore mechanical engineering student considering switching to art/design. 
+              He's worried about disappointing his immigrant parents. How would you coach him?
+            </p>
+          </div>
+        )}
         
         {/* Spacer to push navigation to bottom */}
         <div className="flex-1"></div>
@@ -846,7 +837,7 @@ const JamieAI = () => {
                 </h2>
                 <p className="text-gray-600 max-w-lg mx-auto mb-8 text-lg leading-relaxed">
                   Jamie is a sophomore mechanical engineering student considering switching to art/design. 
-                  She's worried about disappointing her immigrant parents. How would you coach her?
+                  He's worried about disappointing his immigrant parents. How would you coach him?
                 </p>
                 
                 {!demoMode && connectionStatus === 'failed' && (

@@ -486,7 +486,7 @@ const JamieAI = () => {
             </h2>
             <p className="text-gray-600 max-w-md mx-auto mb-4">
               Jamie is a sophomore mechanical engineering student considering switching to art/design. 
-              She's worried about disappointing her immigrant parents. How would you coach her?
+              He's worried about disappointing his immigrant parents. How would you coach him?
             </p>
             
             {!demoMode && connectionStatus === 'failed' && (

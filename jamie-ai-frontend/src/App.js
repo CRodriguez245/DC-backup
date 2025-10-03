@@ -144,7 +144,7 @@ const JamieAI = () => {
   const testConnection = async () => {
     setConnectionStatus('testing');
     try {
-      const response = await fetch('http://localhost:3001/chat', {
+      const response = await fetch('https://jamie-backend.onrender.com/chat', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -593,7 +593,7 @@ const JamieAI = () => {
     try {
       console.log('Sending message to API:', messageText);
       
-      const response = await fetch('http://localhost:3001/chat', {
+      const response = await fetch('https://jamie-backend.onrender.com/chat', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

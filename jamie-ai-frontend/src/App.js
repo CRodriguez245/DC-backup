@@ -52,6 +52,7 @@ const JamieAI = () => {
   // User information state
   const [userInfo, setUserInfo] = useState(null);
   const [showUserInfoModal, setShowUserInfoModal] = useState(true);
+  const [gameMode, setGameMode] = useState('game'); // 'game' or 'assessment'
   
   // Chat state
   const [messages, setMessages] = useState([]);
@@ -249,6 +250,37 @@ const JamieAI = () => {
             </p>
           </div>
           
+          {/* Mode Selection */}
+          <div className="mb-6">
+            <label className="block text-sm font-semibold text-gray-800 mb-3">
+              Select Mode *
+            </label>
+            <div className="grid grid-cols-2 gap-3">
+              <button
+                onClick={() => setGameMode('game')}
+                className={`p-3 rounded-lg border-2 transition-all duration-200 ${
+                  gameMode === 'game' 
+                    ? 'border-[#2C73EB] bg-blue-50 text-[#2C73EB]' 
+                    : 'border-gray-200 bg-gray-50 text-gray-600 hover:border-gray-300'
+                }`}
+              >
+                <div className="text-sm font-semibold">Game</div>
+                <div className="text-xs text-gray-500 mt-1">With progress tracking</div>
+              </button>
+              <button
+                onClick={() => setGameMode('assessment')}
+                className={`p-3 rounded-lg border-2 transition-all duration-200 ${
+                  gameMode === 'assessment' 
+                    ? 'border-[#2C73EB] bg-blue-50 text-[#2C73EB]' 
+                    : 'border-gray-200 bg-gray-50 text-gray-600 hover:border-gray-300'
+                }`}
+              >
+                <div className="text-sm font-semibold">Assessment</div>
+                <div className="text-xs text-gray-500 mt-1">Clean evaluation mode</div>
+              </button>
+            </div>
+          </div>
+          
           <div className="space-y-4">
             <div>
               <label className="block text-sm font-semibold text-gray-800 mb-1">
@@ -423,8 +455,8 @@ const JamieAI = () => {
                   <span>Confident</span>
                 </div>
                 
-                {/* Coaching Effectiveness - show when clicked */}
-                {dqScore && showDqScore && (
+                {/* Coaching Effectiveness - show when clicked and in game mode */}
+                {dqScore && showDqScore && gameMode === 'game' && (
                   <div className="mt-4 pt-4 border-t border-gray-200">
                     <div className="flex items-center gap-2 mb-3">
                       <div className="w-6 h-6 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center">
@@ -759,47 +791,47 @@ const JamieAI = () => {
       {/* Left Sidebar */}
       <div className="w-[320px] flex flex-col p-[35px]">
         {/* Page Title */}
-        <div className="mb-[175px]">
+        <div className="mb-[100px]">
           <h1 className="text-[25px] font-bold text-black leading-[28px]">
             Decision<br />Coach
           </h1>
         </div>
         
         {/* Jamie Info */}
-        <div className="mb-4">
+        <div className="mb-2">
           <h2 className="text-[20px] font-semibold text-[#363636] mb-0">Jamie</h2>
           <p className="text-[16px] text-[#363636]">Mechanical Engineering</p>
         </div>
         
-        {/* Progress Bar */}
-        <div className="mb-2 mt-2">
-          <div className="flex items-center justify-between mb-1">
-            <span className="text-[12px] font-medium text-[#535862]">Jamie's Progress</span>
-            <span className="text-[12px] font-semibold text-[#181d27]">{animatedProgress}%</span>
-          </div>
-          <div className="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
-            <div 
-              className={`h-full bg-gradient-to-r from-orange-400 to-orange-500 rounded-full transition-all duration-1000 ease-out ${isProgressAnimating ? 'progress-animate' : ''}`}
-              style={{ width: `${animatedProgress}%` }}
-            ></div>
-          </div>
+        {/* Context Section */}
+        <div className="mb-6">
+          <p className="text-[12px] text-[#535862] leading-relaxed">
+            Jamie is a sophomore mechanical engineering student considering switching to art/design. 
+            He's worried about disappointing his immigrant parents. How would you coach him?
+          </p>
         </div>
         
+        {/* Progress Bar - Only show in Game mode */}
+        {gameMode === 'game' && (
+          <div className="mb-2 mt-2">
+            <div className="flex items-center justify-between mb-1">
+              <span className="text-[12px] font-medium text-[#535862]">Jamie's Progress</span>
+              <span className="text-[12px] font-semibold text-[#181d27]">{animatedProgress}%</span>
+            </div>
+            <div className="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
+              <div 
+                className={`h-full bg-gradient-to-r from-orange-400 to-orange-500 rounded-full transition-all duration-1000 ease-out ${isProgressAnimating ? 'progress-animate' : ''}`}
+                style={{ width: `${animatedProgress}%` }}
+              ></div>
+            </div>
+          </div>
+        )}
+        
         {/* Jamie's State */}
-        <p className="text-[20px] font-medium text-[#797979] text-left mb-4">
+        <p className="text-[16px] font-medium text-[#797979] text-left mb-4">
           {getJamieState()}
         </p>
         
-        {/* Context Section - Only show after first message */}
-        {messages.length > 0 && (
-          <div className="mb-6">
-            <h3 className="text-[14px] font-semibold text-[#363636] mb-2">Context</h3>
-            <p className="text-[12px] text-[#535862] leading-relaxed">
-              Jamie is a sophomore mechanical engineering student considering switching to art/design. 
-              He's worried about disappointing his immigrant parents. How would you coach him?
-            </p>
-          </div>
-        )}
         
         {/* Spacer to push navigation to bottom */}
         <div className="flex-1"></div>
@@ -938,12 +970,12 @@ const JamieAI = () => {
                         </div>
                         
                         {/* Gray Hairline Divider */}
-                        {msg.dqScore && (
+                        {msg.dqScore && gameMode === 'game' && (
                           <div className="w-full h-px bg-gray-300"></div>
                         )}
                         
                         {/* DQ Score Panel */}
-                        {msg.dqScore && (
+                        {msg.dqScore && gameMode === 'game' && (
                           <div className="flex flex-col gap-[25px]">
                             {/* DQ Header */}
                             <div className="flex flex-col">

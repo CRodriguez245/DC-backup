@@ -803,8 +803,8 @@ const JamieAI = () => {
           <p className="text-[16px] text-[#363636]">Mechanical Engineering</p>
         </div>
         
-        {/* Context Section - Show immediately in Game mode, after first message in Assessment mode */}
-        {(gameMode === 'game' || (gameMode === 'assessment' && messages.length > 0)) && (
+        {/* Context Section - Show only after first message in both modes */}
+        {messages.length > 0 && (
           <div className="mb-6">
             <p className="text-[12px] text-[#535862] leading-relaxed">
               Jamie is a sophomore mechanical engineering student considering switching to art/design. 

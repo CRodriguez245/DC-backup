@@ -242,7 +242,7 @@ const JamieAI = () => {
                 className="w-16 h-16 object-cover object-bottom"
               />
             </div>
-            <h2 className="text-xl font-bold text-gray-800 mb-2">Welcome to JamieAI</h2>
+            <h2 className="text-xl font-bold text-gray-800 mb-2">Welcome to Decision Coach</h2>
             <p className="text-gray-600 text-sm leading-relaxed">
               You'll be coaching Jamie, a sophomore mechanical engineering student considering switching to art/design. 
               Please provide some basic information to get started.

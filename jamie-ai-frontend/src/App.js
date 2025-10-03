@@ -222,8 +222,7 @@ const JamieAI = () => {
     const [formData, setFormData] = useState({
       name: '',
       email: '',
-      affiliation: '',
-      notes: ''
+      affiliation: ''
     });
 
     const handleSubmit = () => {
@@ -321,18 +320,6 @@ const JamieAI = () => {
               />
             </div>
             
-            <div>
-              <label className="block text-sm font-semibold text-gray-800 mb-1">
-                Notes (Optional)
-              </label>
-              <textarea
-                value={formData.notes}
-                onChange={(e) => setFormData({...formData, notes: e.target.value})}
-                className="w-full p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#2C73EB] focus:border-transparent bg-gray-50 focus:bg-white transition-all duration-200 text-gray-800 placeholder-gray-500 resize-none"
-                rows="2"
-                placeholder="Any additional context or notes..."
-              />
-            </div>
             
             <button
               onClick={handleSubmit}

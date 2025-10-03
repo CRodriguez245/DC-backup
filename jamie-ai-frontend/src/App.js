@@ -233,71 +233,71 @@ const JamieAI = () => {
 
     return (
       <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-        <div className="bg-white rounded-3xl shadow-2xl max-w-lg w-full p-8 border border-gray-100">
-          <div className="text-center mb-8">
-            <div className="w-20 h-20 rounded-full bg-[#2C73EB] flex items-end justify-center mx-auto mb-6 shadow-lg overflow-hidden">
+        <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 border border-gray-100">
+          <div className="text-center mb-6">
+            <div className="w-16 h-16 rounded-full bg-[#2C73EB] flex items-end justify-center mx-auto mb-4 shadow-lg overflow-hidden">
               <img 
                 src="/images/cu-JAMIE.png" 
                 alt="Jamie" 
-                className="w-20 h-20 object-cover object-bottom"
+                className="w-16 h-16 object-cover object-bottom"
               />
             </div>
-            <h2 className="text-2xl font-bold text-gray-800 mb-3">Welcome to JamieAI</h2>
-            <p className="text-gray-600 max-w-lg mx-auto mb-6 text-lg leading-relaxed">
+            <h2 className="text-xl font-bold text-gray-800 mb-2">Welcome to JamieAI</h2>
+            <p className="text-gray-600 text-sm leading-relaxed">
               You'll be coaching Jamie, a sophomore mechanical engineering student considering switching to art/design. 
               Please provide some basic information to get started.
             </p>
           </div>
           
-          <div className="space-y-6">
+          <div className="space-y-4">
             <div>
-              <label className="block text-sm font-semibold text-gray-800 mb-2">
+              <label className="block text-sm font-semibold text-gray-800 mb-1">
                 Name *
               </label>
               <input
                 type="text"
                 value={formData.name}
                 onChange={(e) => setFormData({...formData, name: e.target.value})}
-                className="w-full p-4 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#2C73EB] focus:border-transparent bg-gray-50 focus:bg-white transition-all duration-200 text-gray-800 placeholder-gray-500"
+                className="w-full p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#2C73EB] focus:border-transparent bg-gray-50 focus:bg-white transition-all duration-200 text-gray-800 placeholder-gray-500"
                 placeholder="Your name"
               />
             </div>
             
             <div>
-              <label className="block text-sm font-semibold text-gray-800 mb-2">
+              <label className="block text-sm font-semibold text-gray-800 mb-1">
                 Email *
               </label>
               <input
                 type="email"
                 value={formData.email}
                 onChange={(e) => setFormData({...formData, email: e.target.value})}
-                className="w-full p-4 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#2C73EB] focus:border-transparent bg-gray-50 focus:bg-white transition-all duration-200 text-gray-800 placeholder-gray-500"
+                className="w-full p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#2C73EB] focus:border-transparent bg-gray-50 focus:bg-white transition-all duration-200 text-gray-800 placeholder-gray-500"
                 placeholder="your.email@example.com"
               />
             </div>
             
             <div>
-              <label className="block text-sm font-semibold text-gray-800 mb-2">
+              <label className="block text-sm font-semibold text-gray-800 mb-1">
                 Affiliation
               </label>
               <input
                 type="text"
                 value={formData.affiliation}
                 onChange={(e) => setFormData({...formData, affiliation: e.target.value})}
-                className="w-full p-4 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#2C73EB] focus:border-transparent bg-gray-50 focus:bg-white transition-all duration-200 text-gray-800 placeholder-gray-500"
+                className="w-full p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#2C73EB] focus:border-transparent bg-gray-50 focus:bg-white transition-all duration-200 text-gray-800 placeholder-gray-500"
                 placeholder="University, Company, etc."
               />
             </div>
             
             <div>
-              <label className="block text-sm font-semibold text-gray-800 mb-2">
+              <label className="block text-sm font-semibold text-gray-800 mb-1">
                 Notes (Optional)
               </label>
               <textarea
                 value={formData.notes}
                 onChange={(e) => setFormData({...formData, notes: e.target.value})}
-                className="w-full p-4 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#2C73EB] focus:border-transparent bg-gray-50 focus:bg-white transition-all duration-200 text-gray-800 placeholder-gray-500 resize-none"
-                rows="3"
+                className="w-full p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#2C73EB] focus:border-transparent bg-gray-50 focus:bg-white transition-all duration-200 text-gray-800 placeholder-gray-500 resize-none"
+                rows="2"
                 placeholder="Any additional context or notes..."
               />
             </div>
@@ -305,7 +305,7 @@ const JamieAI = () => {
             <button
               onClick={handleSubmit}
               disabled={!formData.name || !formData.email}
-              className="w-full bg-[#2C73EB] text-white py-4 px-6 rounded-lg hover:bg-[#1e5bb8] disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 font-semibold shadow-lg hover:shadow-xl transform hover:scale-[1.02] active:scale-[0.98]"
+              className="w-full bg-[#2C73EB] text-white py-3 px-6 rounded-lg hover:bg-[#1e5bb8] disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 font-semibold shadow-lg hover:shadow-xl transform hover:scale-[1.02] active:scale-[0.98]"
             >
               Start Coaching Session
             </button>

@@ -1,7 +1,9 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Home, Settings, LogOut } from 'lucide-react';
 
 const HomePage = ({ userInfo, gameMode, onStartCoaching, onLogout, onSettings }) => {
+  const [hoveredCharacter, setHoveredCharacter] = useState(null);
+
   const coachingLevels = [
     {
       id: 'jamie',
@@ -10,7 +12,7 @@ const HomePage = ({ userInfo, gameMode, onStartCoaching, onLogout, onSettings })
       dqScore: 0.8,
       avatar: '👨‍🎓',
       description: 'Sophomore Mechanical Engineering student considering switching to Art/Design',
-      position: { x: 150, y: 100 },
+      position: { x: 200, y: 120 },
       completed: true
     },
     {
@@ -20,7 +22,7 @@ const HomePage = ({ userInfo, gameMode, onStartCoaching, onLogout, onSettings })
       dqScore: 0.6,
       avatar: '👨‍💻',
       description: 'Software engineer considering a career pivot',
-      position: { x: 450, y: 200 },
+      position: { x: 600, y: 220 },
       completed: true
     },
     {
@@ -30,7 +32,7 @@ const HomePage = ({ userInfo, gameMode, onStartCoaching, onLogout, onSettings })
       dqScore: 0.8,
       avatar: '👩‍💼',
       description: 'Recent graduate exploring career options',
-      position: { x: 150, y: 350 },
+      position: { x: 200, y: 420 },
       completed: true
     },
     {
@@ -40,7 +42,7 @@ const HomePage = ({ userInfo, gameMode, onStartCoaching, onLogout, onSettings })
       dqScore: null,
       avatar: '👨‍🎨',
       description: 'Sophomore Mechanical Engineering student considering switching to Art/Design',
-      position: { x: 450, y: 500 },
+      position: { x: 600, y: 520 },
       completed: false
     },
     {
@@ -50,7 +52,7 @@ const HomePage = ({ userInfo, gameMode, onStartCoaching, onLogout, onSettings })
       dqScore: null,
       avatar: '👩‍🎓',
       description: 'Coming soon...',
-      position: { x: 150, y: 600 },
+      position: { x: 200, y: 720 },
       completed: false
     }
   ];
@@ -67,12 +69,12 @@ const HomePage = ({ userInfo, gameMode, onStartCoaching, onLogout, onSettings })
 
       {/* Main Network Visualization */}
       <div className="flex items-center justify-center min-h-screen p-8">
-        <div className="relative w-full max-w-5xl h-[700px]">
+        <div className="relative w-full max-w-6xl h-[800px]">
           {/* Network connections - Zig-zag pattern */}
           <svg className="absolute inset-0 w-full h-full" style={{ zIndex: 1 }}>
             {/* Zig-zag path: Jamie -> Andres -> Kavya */}
             <path
-              d="M 200 150 Q 300 175 450 200 Q 300 275 200 350"
+              d="M 250 170 Q 400 195 600 270 Q 400 345 250 420"
               stroke="#3B82F6"
               strokeWidth="2"
               strokeDasharray="5,5"
@@ -94,14 +96,18 @@ const HomePage = ({ userInfo, gameMode, onStartCoaching, onLogout, onSettings })
             >
               <div className="flex items-center space-x-4">
                 {/* Character Avatar */}
-                <div className="relative">
-                  <div className={`w-16 h-16 rounded-full flex items-center justify-center text-2xl ${
+                <div 
+                  className="relative"
+                  onMouseEnter={() => setHoveredCharacter(level.id)}
+                  onMouseLeave={() => setHoveredCharacter(null)}
+                >
+                  <div className={`w-16 h-16 rounded-full flex items-center justify-center text-2xl cursor-pointer ${
                     level.completed 
-                      ? 'bg-blue-100 border-2 border-blue-300' 
+                      ? 'bg-blue-100 border-2 border-blue-300 hover:bg-blue-200' 
                       : level.status === 'Available'
-                      ? 'bg-gray-200 border-2 border-gray-300 cursor-pointer hover:bg-gray-300 transition-colors'
+                      ? 'bg-gray-200 border-2 border-gray-300 hover:bg-gray-300'
                       : 'bg-gray-100 border-2 border-gray-200'
-                  }`}>
+                  } transition-colors`}>
                     {level.status === 'Locked' ? '🔒' : level.avatar}
                   </div>
                   
@@ -113,44 +119,46 @@ const HomePage = ({ userInfo, gameMode, onStartCoaching, onLogout, onSettings })
                   )}
                 </div>
 
-                {/* Character Info Card - positioned based on character */}
-                <div className={`bg-white rounded-lg shadow-lg p-4 min-w-[200px] border ${
-                  level.id === 'jamie' || level.id === 'kavya' || level.id === 'sarah' 
-                    ? 'ml-4' 
-                    : 'mr-4'
-                }`}>
-                  <h3 className="font-semibold text-gray-900 mb-1">{level.name}</h3>
-                  <p className="text-sm text-gray-600 mb-2">{level.status}</p>
-                  {level.dqScore && (
-                    <p className="text-sm font-medium text-blue-600">
-                      DQ Score: {level.dqScore}
-                    </p>
-                  )}
-                  {level.description && level.status !== 'Locked' && (
-                    <p className="text-xs text-gray-500 mt-2 max-w-[180px]">
-                      {level.description}
-                    </p>
-                  )}
-                  
-                  {/* Action button */}
-                  {level.status === 'Available' && (
-                    <button
-                      onClick={() => onStartCoaching(level)}
-                      className="mt-3 w-full bg-blue-600 text-white py-2 px-3 rounded text-sm font-medium hover:bg-blue-700 transition-colors"
-                    >
-                      Start Coaching
-                    </button>
-                  )}
-                  
-                  {level.status === 'Completed' && (
-                    <button
-                      onClick={() => onStartCoaching(level)}
-                      className="mt-3 w-full bg-green-600 text-white py-2 px-3 rounded text-sm font-medium hover:bg-green-700 transition-colors"
-                    >
-                      Review Session
-                    </button>
-                  )}
-                </div>
+                {/* Character Info Card - only show on hover */}
+                {hoveredCharacter === level.id && (
+                  <div className={`bg-white rounded-lg shadow-lg p-4 min-w-[200px] border absolute z-10 ${
+                    level.id === 'jamie' || level.id === 'kavya' || level.id === 'sarah' 
+                      ? 'ml-4' 
+                      : 'mr-4'
+                  }`}>
+                    <h3 className="font-semibold text-gray-900 mb-1">{level.name}</h3>
+                    <p className="text-sm text-gray-600 mb-2">{level.status}</p>
+                    {level.dqScore && (
+                      <p className="text-sm font-medium text-blue-600">
+                        DQ Score: {level.dqScore}
+                      </p>
+                    )}
+                    {level.description && level.status !== 'Locked' && (
+                      <p className="text-xs text-gray-500 mt-2 max-w-[180px]">
+                        {level.description}
+                      </p>
+                    )}
+                    
+                    {/* Action button */}
+                    {level.status === 'Available' && (
+                      <button
+                        onClick={() => onStartCoaching(level)}
+                        className="mt-3 w-full bg-blue-600 text-white py-2 px-3 rounded text-sm font-medium hover:bg-blue-700 transition-colors"
+                      >
+                        Start Coaching
+                      </button>
+                    )}
+                    
+                    {level.status === 'Completed' && (
+                      <button
+                        onClick={() => onStartCoaching(level)}
+                        className="mt-3 w-full bg-green-600 text-white py-2 px-3 rounded text-sm font-medium hover:bg-green-700 transition-colors"
+                      >
+                        Review Session
+                      </button>
+                    )}
+                  </div>
+                )}
               </div>
             </div>
           ))}

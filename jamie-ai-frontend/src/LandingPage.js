@@ -84,7 +84,7 @@ const LandingPage = ({ onLogin }) => {
               Welcome back!
             </h1>
             <p className="text-gray-600 text-sm">
-              Coach Jamie through his decision-making journey and help him navigate career choices with confidence.
+              Practice coaching skills and help others navigate important life decisions with confidence.
             </p>
           </div>
 

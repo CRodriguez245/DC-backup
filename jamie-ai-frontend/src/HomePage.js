@@ -131,13 +131,14 @@ const HomePage = ({ userInfo, gameMode, onStartCoaching, onLogout, onSettings })
 
                 {/* Character Info Card - only show on hover */}
                 {hoveredCharacter === level.id && (
-                  <div className={`bg-white rounded-lg shadow-lg p-4 min-w-[200px] border absolute z-10 ${
+                  <div className={`bg-white rounded-lg shadow-lg p-4 border absolute z-10 ${
                     level.id === 'jamie' || level.id === 'kavya' || level.id === 'sarah' 
                       ? 'mr-4' 
                       : 'ml-4'
                   }`} style={{
-                    left: level.id === 'jamie' || level.id === 'kavya' || level.id === 'sarah' ? '-220px' : '80px',
-                    top: '-20px'
+                    left: level.id === 'jamie' || level.id === 'kavya' || level.id === 'sarah' ? '-280px' : '80px',
+                    top: '-20px',
+                    width: '250px'
                   }}>
                     {/* Speech bubble tail - centered to the left of the circle */}
                     <div className={`absolute top-1/2 transform -translate-y-1/2 w-0 h-0 ${
@@ -149,13 +150,15 @@ const HomePage = ({ userInfo, gameMode, onStartCoaching, onLogout, onSettings })
                       transform: 'translateY(-50%)'
                     }}></div>
                     
-                    <h3 className="font-semibold text-gray-900 mb-1">{level.name}</h3>
-                    <p className="text-sm text-gray-600 mb-2">{level.status}</p>
-                    {level.dqScore && (
-                      <p className="text-sm font-medium text-blue-600">
-                        DQ Score: {level.dqScore}
-                      </p>
-                    )}
+                    <h3 className="font-semibold text-gray-900 mb-2">{level.name}</h3>
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm text-gray-600">{level.status}</span>
+                      {level.dqScore && (
+                        <span className="text-sm font-medium text-blue-600">
+                          DQ Score: {level.dqScore}
+                        </span>
+                      )}
+                    </div>
                   </div>
                 )}
               </div>

@@ -133,9 +133,19 @@ const HomePage = ({ userInfo, gameMode, onStartCoaching, onLogout, onSettings })
                 {hoveredCharacter === level.id && (
                   <div className={`bg-white rounded-lg shadow-lg p-4 min-w-[200px] border absolute z-10 ${
                     level.id === 'jamie' || level.id === 'kavya' || level.id === 'sarah' 
-                      ? 'ml-4' 
-                      : 'mr-4'
-                  }`}>
+                      ? 'mr-4' 
+                      : 'ml-4'
+                  }`} style={{
+                    left: level.id === 'jamie' || level.id === 'kavya' || level.id === 'sarah' ? '-220px' : '80px',
+                    top: '-20px'
+                  }}>
+                    {/* Speech bubble tail */}
+                    <div className={`absolute top-1/2 transform -translate-y-1/2 w-0 h-0 ${
+                      level.id === 'jamie' || level.id === 'kavya' || level.id === 'sarah' 
+                        ? 'right-[-8px] border-l-[8px] border-l-white border-t-[8px] border-t-transparent border-b-[8px] border-b-transparent' 
+                        : 'left-[-8px] border-r-[8px] border-r-white border-t-[8px] border-t-transparent border-b-[8px] border-b-transparent'
+                    }`}></div>
+                    
                     <h3 className="font-semibold text-gray-900 mb-1">{level.name}</h3>
                     <p className="text-sm text-gray-600 mb-2">{level.status}</p>
                     {level.dqScore && (

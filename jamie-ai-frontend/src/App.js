@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Send, User, Bot, Star, Home, Settings, LogOut } from 'lucide-react';
 import LandingPage from './LandingPage';
+import HomePage from './HomePage';
 
 // Jamie's Animated Face Component
 const JamieFace = ({ dqScore, avgDqScore, size = 'small' }) => {
@@ -53,6 +54,7 @@ const JamieAI = () => {
   // User information state
   const [userInfo, setUserInfo] = useState(null);
   const [gameMode, setGameMode] = useState('game'); // 'game' or 'assessment'
+  const [currentView, setCurrentView] = useState('homepage'); // 'homepage' or 'chat'
   
   // Chat state
   const [messages, setMessages] = useState([]);
@@ -83,6 +85,35 @@ const JamieAI = () => {
       email: loginData.email,
       affiliation: 'Demo User'
     });
+    
+    // Start on homepage after login
+    setCurrentView('homepage');
+  };
+
+  // Handle starting a coaching session
+  const handleStartCoaching = (session) => {
+    setCurrentView('chat');
+    // Reset chat state for new session
+    setMessages([]);
+    setCurrentMessage('');
+    setIsLoading(false);
+    setIsTyping(false);
+    setAnimatedProgress(0);
+    setIsProgressAnimating(false);
+  };
+
+  // Handle logout
+  const handleLogout = () => {
+    setUserInfo(null);
+    setCurrentView('homepage');
+    setMessages([]);
+    setCurrentMessage('');
+  };
+
+  // Handle settings (placeholder for now)
+  const handleSettings = () => {
+    // TODO: Implement settings modal or page
+    console.log('Settings clicked');
   };
 
   // Reset session function
@@ -749,6 +780,19 @@ const JamieAI = () => {
     return <LandingPage onLogin={handleLogin} />;
   }
 
+  // Show homepage if user is logged in and on homepage
+  if (currentView === 'homepage') {
+    return (
+      <HomePage 
+        userInfo={userInfo}
+        gameMode={gameMode}
+        onStartCoaching={handleStartCoaching}
+        onLogout={handleLogout}
+        onSettings={handleSettings}
+      />
+    );
+  }
+
   return (
     <div className="bg-white h-screen w-full flex">
       <style jsx>{`
@@ -848,15 +892,24 @@ const JamieAI = () => {
         {/* Navigation Bar */}
         <div className="w-[229px] h-[80px] flex items-center justify-center">
           <div className="bg-white rounded-lg shadow-lg px-6 py-4 flex items-center justify-between w-full">
-            <button className="w-[30px] h-[30px] flex items-center justify-center">
+            <button 
+              onClick={() => setCurrentView('homepage')}
+              className="w-[30px] h-[30px] flex items-center justify-center hover:bg-gray-100 rounded transition-colors"
+            >
               <Home className="w-6 h-6 text-gray-600" />
             </button>
             <div className="w-px h-6 bg-gray-300"></div>
-            <button className="w-[30px] h-[30px] flex items-center justify-center">
+            <button 
+              onClick={handleSettings}
+              className="w-[30px] h-[30px] flex items-center justify-center hover:bg-gray-100 rounded transition-colors"
+            >
               <Settings className="w-6 h-6 text-gray-600" />
             </button>
             <div className="w-px h-6 bg-gray-300"></div>
-            <button className="w-[30px] h-[30px] flex items-center justify-center">
+            <button 
+              onClick={handleLogout}
+              className="w-[30px] h-[30px] flex items-center justify-center hover:bg-gray-100 rounded transition-colors"
+            >
               <LogOut className="w-6 h-6 text-gray-600" />
             </button>
           </div>

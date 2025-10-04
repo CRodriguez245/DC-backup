@@ -243,7 +243,6 @@ const JamieAI = () => {
     const handleSubmit = () => {
       if (!formData.name || !formData.email) return;
       setUserInfo(formData);
-      setShowUserInfoModal(false);
     };
 
     return (

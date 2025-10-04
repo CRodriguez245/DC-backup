@@ -1,20 +1,30 @@
 import React, { useState } from 'react';
-import { Eye, EyeOff } from 'lucide-react';
-import SignUpPage from './SignUpPage';
+import { Eye, EyeOff, ArrowLeft } from 'lucide-react';
 
-const LandingPage = ({ onLogin }) => {
-  const [showSignUp, setShowSignUp] = useState(false);
+const SignUpPage = ({ onSignUp, onBackToLogin }) => {
   const [formData, setFormData] = useState({
+    firstName: '',
+    lastName: '',
     email: '',
-    password: ''
+    password: '',
+    confirmPassword: ''
   });
   const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [errors, setErrors] = useState({});
   const [gameMode, setGameMode] = useState('game'); // 'game' or 'assessment'
 
   const handleSubmit = (e) => {
     e.preventDefault();
     const newErrors = {};
+
+    if (!formData.firstName) {
+      newErrors.firstName = 'First name is required';
+    }
+
+    if (!formData.lastName) {
+      newErrors.lastName = 'Last name is required';
+    }
 
     if (!formData.email) {
       newErrors.email = 'Email is required';
@@ -24,6 +34,14 @@ const LandingPage = ({ onLogin }) => {
 
     if (!formData.password) {
       newErrors.password = 'Password is required';
+    } else if (formData.password.length < 6) {
+      newErrors.password = 'Password must be at least 6 characters';
+    }
+
+    if (!formData.confirmPassword) {
+      newErrors.confirmPassword = 'Please confirm your password';
+    } else if (formData.password !== formData.confirmPassword) {
+      newErrors.confirmPassword = 'Passwords do not match';
     }
 
     if (Object.keys(newErrors).length > 0) {
@@ -31,9 +49,8 @@ const LandingPage = ({ onLogin }) => {
       return;
     }
 
-    // For now, we'll just call onLogin with the form data
-    // In a real app, this would authenticate with a backend
-    onLogin({ ...formData, gameMode });
+    // Call onSignUp with the form data
+    onSignUp({ ...formData, gameMode });
   };
 
   const handleInputChange = (e) => {
@@ -51,28 +68,21 @@ const LandingPage = ({ onLogin }) => {
     }
   };
 
-  const handleSignUp = (signUpData) => {
-    // For demo purposes, we'll just call onLogin with the sign up data
-    onLogin(signUpData);
-  };
-
-  const handleBackToLogin = () => {
-    setShowSignUp(false);
-  };
-
-  // Show sign up page if user clicked sign up
-  if (showSignUp) {
-    return <SignUpPage onSignUp={handleSignUp} onBackToLogin={handleBackToLogin} />;
-  }
-
   return (
     <div className="min-h-screen bg-white flex flex-col">
-      {/* Header with Logo */}
-      <div className="p-[35px]">
+      {/* Header with Logo and Back Button */}
+      <div className="p-[35px] flex items-center justify-between">
         <div className="text-black font-bold text-[25px] leading-[28px]">
           <div>Decision</div>
           <div>Coach</div>
         </div>
+        <button
+          onClick={onBackToLogin}
+          className="flex items-center gap-2 text-gray-600 hover:text-gray-800 transition-colors"
+        >
+          <ArrowLeft size={20} />
+          <span className="text-sm">Back to Login</span>
+        </button>
       </div>
 
       {/* Main Content */}
@@ -81,10 +91,10 @@ const LandingPage = ({ onLogin }) => {
           {/* Welcome Heading */}
           <div className="text-center mb-8">
             <h1 className="text-4xl font-bold text-black mb-4">
-              Welcome back!
+              Create Account
             </h1>
             <p className="text-gray-600 text-base">
-              Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor
+              Join Decision Coach to start your coaching journey
             </p>
           </div>
 
@@ -121,8 +131,51 @@ const LandingPage = ({ onLogin }) => {
             </div>
           </div>
 
-          {/* Login Form */}
+          {/* Sign Up Form */}
           <form onSubmit={handleSubmit} className="space-y-6">
+            {/* Name Fields */}
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label htmlFor="firstName" className="block text-sm font-medium text-gray-700 mb-2">
+                  First Name
+                </label>
+                <input
+                  type="text"
+                  id="firstName"
+                  name="firstName"
+                  value={formData.firstName}
+                  onChange={handleInputChange}
+                  className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors ${
+                    errors.firstName ? 'border-red-500' : 'border-gray-300'
+                  }`}
+                  placeholder="First name"
+                />
+                {errors.firstName && (
+                  <p className="mt-1 text-sm text-red-600">{errors.firstName}</p>
+                )}
+              </div>
+              
+              <div>
+                <label htmlFor="lastName" className="block text-sm font-medium text-gray-700 mb-2">
+                  Last Name
+                </label>
+                <input
+                  type="text"
+                  id="lastName"
+                  name="lastName"
+                  value={formData.lastName}
+                  onChange={handleInputChange}
+                  className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors ${
+                    errors.lastName ? 'border-red-500' : 'border-gray-300'
+                  }`}
+                  placeholder="Last name"
+                />
+                {errors.lastName && (
+                  <p className="mt-1 text-sm text-red-600">{errors.lastName}</p>
+                )}
+              </div>
+            </div>
+
             {/* Email Field */}
             <div>
               <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
@@ -137,7 +190,7 @@ const LandingPage = ({ onLogin }) => {
                 className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors ${
                   errors.email ? 'border-red-500' : 'border-gray-300'
                 }`}
-                placeholder="Your name"
+                placeholder="your.email@example.com"
               />
               {errors.email && (
                 <p className="mt-1 text-sm text-red-600">{errors.email}</p>
@@ -159,7 +212,7 @@ const LandingPage = ({ onLogin }) => {
                   className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors pr-10 ${
                     errors.password ? 'border-red-500' : 'border-gray-300'
                   }`}
-                  placeholder="email@example.com"
+                  placeholder="Create a password"
                 />
                 <button
                   type="button"
@@ -174,24 +227,54 @@ const LandingPage = ({ onLogin }) => {
               )}
             </div>
 
-            {/* Login Button */}
+            {/* Confirm Password Field */}
+            <div>
+              <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-2">
+                Confirm Password
+              </label>
+              <div className="relative">
+                <input
+                  type={showConfirmPassword ? 'text' : 'password'}
+                  id="confirmPassword"
+                  name="confirmPassword"
+                  value={formData.confirmPassword}
+                  onChange={handleInputChange}
+                  className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors pr-10 ${
+                    errors.confirmPassword ? 'border-red-500' : 'border-gray-300'
+                  }`}
+                  placeholder="Confirm your password"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                >
+                  {showConfirmPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                </button>
+              </div>
+              {errors.confirmPassword && (
+                <p className="mt-1 text-sm text-red-600">{errors.confirmPassword}</p>
+              )}
+            </div>
+
+            {/* Sign Up Button */}
             <button
               type="submit"
               className="w-full bg-blue-600 text-white py-3 px-6 rounded-lg hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors font-medium"
             >
-              Log in
+              Create Account
             </button>
 
-            {/* Sign Up Link */}
+            {/* Login Link */}
             <div className="text-center">
               <p className="text-gray-600">
-                Don't have an account?{' '}
+                Already have an account?{' '}
                 <button
                   type="button"
                   className="text-blue-600 hover:text-blue-700 font-medium"
-                  onClick={() => setShowSignUp(true)}
+                  onClick={onBackToLogin}
                 >
-                  Sign up
+                  Sign in
                 </button>
               </p>
             </div>
@@ -202,4 +285,4 @@ const LandingPage = ({ onLogin }) => {
   );
 };
 
-export default LandingPage;
+export default SignUpPage;

@@ -12,7 +12,7 @@ const HomePage = ({ userInfo, gameMode, onStartCoaching, onLogout, onSettings })
       dqScore: 0.8,
       avatar: '👨‍🎓',
       description: 'Sophomore Mechanical Engineering student considering switching to Art/Design',
-      position: { x: 200, y: 120 },
+      position: { x: 400, y: 120 },
       completed: true
     },
     {
@@ -22,7 +22,7 @@ const HomePage = ({ userInfo, gameMode, onStartCoaching, onLogout, onSettings })
       dqScore: 0.6,
       avatar: '👨‍💻',
       description: 'Software engineer considering a career pivot',
-      position: { x: 600, y: 220 },
+      position: { x: 800, y: 220 },
       completed: true
     },
     {
@@ -32,7 +32,7 @@ const HomePage = ({ userInfo, gameMode, onStartCoaching, onLogout, onSettings })
       dqScore: 0.8,
       avatar: '👩‍💼',
       description: 'Recent graduate exploring career options',
-      position: { x: 200, y: 420 },
+      position: { x: 400, y: 420 },
       completed: true
     },
     {
@@ -42,7 +42,7 @@ const HomePage = ({ userInfo, gameMode, onStartCoaching, onLogout, onSettings })
       dqScore: null,
       avatar: '👨‍🎨',
       description: 'Sophomore Mechanical Engineering student considering switching to Art/Design',
-      position: { x: 600, y: 520 },
+      position: { x: 800, y: 520 },
       completed: false
     },
     {
@@ -52,7 +52,7 @@ const HomePage = ({ userInfo, gameMode, onStartCoaching, onLogout, onSettings })
       dqScore: null,
       avatar: '👩‍🎓',
       description: 'Coming soon...',
-      position: { x: 200, y: 720 },
+      position: { x: 400, y: 720 },
       completed: false
     }
   ];
@@ -68,13 +68,13 @@ const HomePage = ({ userInfo, gameMode, onStartCoaching, onLogout, onSettings })
       </div>
 
       {/* Main Network Visualization */}
-      <div className="flex items-center justify-center min-h-screen p-8">
-        <div className="relative w-full max-w-6xl h-[800px]">
+      <div className="flex items-start justify-start min-h-screen p-8">
+        <div className="relative w-full max-w-7xl h-[800px]">
           {/* Network connections - Zig-zag pattern */}
           <svg className="absolute inset-0 w-full h-full" style={{ zIndex: 1 }}>
             {/* Zig-zag path: Jamie -> Andres -> Kavya */}
             <path
-              d="M 250 170 Q 400 195 600 270 Q 400 345 250 420"
+              d="M 450 170 Q 600 195 800 270 Q 600 345 450 420"
               stroke="#3B82F6"
               strokeWidth="2"
               strokeDasharray="5,5"

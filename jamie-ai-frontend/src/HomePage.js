@@ -58,7 +58,7 @@ const HomePage = ({ userInfo, gameMode, onStartCoaching, onLogout, onSettings })
   ];
 
   return (
-    <div className="min-h-screen relative" style={{ backgroundColor: '#2C73EB' }}>
+    <div className="min-h-screen bg-white relative">
       {/* Header */}
       <div className="absolute top-6 left-6 z-10">
         <div className="text-black font-bold text-[25px] leading-[28px]">
@@ -101,13 +101,16 @@ const HomePage = ({ userInfo, gameMode, onStartCoaching, onLogout, onSettings })
                   onMouseEnter={() => setHoveredCharacter(level.id)}
                   onMouseLeave={() => setHoveredCharacter(null)}
                 >
-                  <div className={`w-16 h-16 rounded-full flex items-center justify-center text-2xl cursor-pointer overflow-hidden ${
-                    level.completed 
-                      ? 'bg-blue-100 border-2 border-blue-300 hover:bg-blue-200' 
-                      : level.status === 'Available'
-                      ? 'bg-gray-200 border-2 border-gray-300 hover:bg-gray-300'
-                      : 'bg-gray-100 border-2 border-gray-200'
-                  } transition-colors`}>
+                  <div 
+                    className={`w-16 h-16 rounded-full flex items-center justify-center text-2xl cursor-pointer overflow-hidden ${
+                      level.completed 
+                        ? 'border-2 border-blue-300 hover:opacity-90' 
+                        : level.status === 'Available'
+                        ? 'bg-gray-200 border-2 border-gray-300 hover:bg-gray-300'
+                        : 'bg-gray-100 border-2 border-gray-200'
+                    } transition-colors`}
+                    style={level.id === 'jamie' && level.completed ? { backgroundColor: '#2C73EB' } : {}}
+                  >
                     {level.status === 'Locked' ? (
                       '🔒'
                     ) : level.avatar.startsWith('/') ? (

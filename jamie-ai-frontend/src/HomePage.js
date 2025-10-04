@@ -104,12 +104,12 @@ const HomePage = ({ userInfo, gameMode, onStartCoaching, onLogout, onSettings })
                   <div 
                     className={`w-16 h-16 rounded-full flex items-center justify-center text-2xl cursor-pointer overflow-hidden ${
                       level.completed 
-                        ? level.id === 'jamie' ? 'hover:opacity-90' : 'border-2 border-blue-300 hover:opacity-90'
+                        ? (level.id === 'jamie' || level.id === 'andres') ? 'hover:opacity-90' : 'border-2 border-blue-300 hover:opacity-90'
                         : level.status === 'Available'
                         ? 'bg-gray-200 border-2 border-gray-300 hover:bg-gray-300'
                         : 'bg-gray-100 border-2 border-gray-200'
                     } transition-colors`}
-                    style={level.id === 'jamie' && level.completed ? { backgroundColor: '#2C73EB' } : {}}
+                    style={(level.id === 'jamie' || level.id === 'andres') && level.completed ? { backgroundColor: '#2C73EB' } : {}}
                   >
                     {level.status === 'Locked' ? (
                       '🔒'

@@ -12,7 +12,7 @@ const HomePage = ({ userInfo, gameMode, onStartCoaching, onLogout, onSettings })
       dqScore: 0.8,
       avatar: '/images/cu-JAMIE.png',
       description: 'Sophomore Mechanical Engineering student considering switching to Art/Design',
-      position: { x: 400, y: 160 },
+      position: { x: 500, y: 160 },
       completed: true
     },
     {
@@ -22,7 +22,7 @@ const HomePage = ({ userInfo, gameMode, onStartCoaching, onLogout, onSettings })
       dqScore: 0.6,
       avatar: '/images/cu-Andres.png',
       description: 'Software engineer considering a career pivot',
-      position: { x: 800, y: 310 },
+      position: { x: 900, y: 310 },
       completed: true
     },
     {
@@ -32,7 +32,7 @@ const HomePage = ({ userInfo, gameMode, onStartCoaching, onLogout, onSettings })
       dqScore: 0.8,
       avatar: '/images/cu-GIRL-2.png',
       description: 'Recent graduate exploring career options',
-      position: { x: 400, y: 460 },
+      position: { x: 500, y: 460 },
       completed: true
     },
     {
@@ -42,7 +42,7 @@ const HomePage = ({ userInfo, gameMode, onStartCoaching, onLogout, onSettings })
       dqScore: null,
       avatar: '👨‍🎨',
       description: 'Sophomore Mechanical Engineering student considering switching to Art/Design',
-      position: { x: 800, y: 610 },
+      position: { x: 900, y: 610 },
       completed: false
     },
     {
@@ -52,7 +52,7 @@ const HomePage = ({ userInfo, gameMode, onStartCoaching, onLogout, onSettings })
       dqScore: null,
       avatar: '👩‍🎓',
       description: 'Coming soon...',
-      position: { x: 400, y: 720 },
+      position: { x: 500, y: 720 },
       completed: false
     }
   ];
@@ -74,7 +74,7 @@ const HomePage = ({ userInfo, gameMode, onStartCoaching, onLogout, onSettings })
           <svg className="absolute inset-0 w-full h-full" style={{ zIndex: 0 }}>
             {/* Zig-zag path: Jamie -> Andres -> Kavya */}
             <path
-              d="M 400 200 Q 600 255 800 310 Q 600 385 400 460"
+              d="M 500 200 Q 700 255 900 310 Q 700 385 500 460"
               stroke="#3B82F6"
               strokeWidth="2"
               strokeDasharray="5,5"

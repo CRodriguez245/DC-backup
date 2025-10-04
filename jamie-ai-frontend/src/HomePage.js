@@ -117,7 +117,7 @@ const HomePage = ({ userInfo, gameMode, onStartCoaching, onLogout, onSettings })
                       <img 
                         src={level.avatar} 
                         alt={level.name}
-                        className={`w-full h-full object-cover rounded-full ${level.id === 'andres' ? 'scale-y-[-1]' : ''}`}
+                        className={`w-full h-full object-cover rounded-full ${level.id === 'andres' ? 'scale-x-[-1]' : ''}`}
                       />
                     ) : (
                       level.avatar

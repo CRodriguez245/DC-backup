@@ -102,17 +102,19 @@ const HomePage = ({ userInfo, gameMode, onStartCoaching, onLogout, onSettings })
                   onMouseLeave={() => setHoveredCharacter(null)}
                 >
                   <div 
-                    className={`${(level.id === 'jamie' || level.id === 'andres' || level.id === 'kavya') && level.completed ? 'w-20 h-20' : 'w-16 h-16'} rounded-full flex items-center justify-center text-2xl cursor-pointer overflow-hidden ${
+                    className={`w-20 h-20 rounded-full flex items-center justify-center text-2xl cursor-pointer overflow-hidden ${
                       level.completed 
                         ? (level.id === 'jamie' || level.id === 'andres' || level.id === 'kavya') ? 'hover:opacity-90' : 'border-2 border-blue-300 hover:opacity-90'
                         : level.status === 'Available'
-                        ? 'bg-gray-200 border-2 border-gray-300 hover:bg-gray-300'
-                        : 'bg-gray-100 border-2 border-gray-200'
+                        ? 'bg-gray-300 hover:bg-gray-400'
+                        : 'bg-gray-300'
                     } transition-colors`}
                     style={(level.id === 'jamie' || level.id === 'andres' || level.id === 'kavya') && level.completed ? { backgroundColor: '#2C73EB' } : {}}
                   >
                     {level.status === 'Locked' ? (
-                      '🔒'
+                      ''
+                    ) : level.status === 'Available' ? (
+                      ''
                     ) : level.avatar.startsWith('/') ? (
                       <img 
                         src={level.avatar} 

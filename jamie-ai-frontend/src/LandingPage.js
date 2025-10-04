@@ -76,20 +76,20 @@ const LandingPage = ({ onLogin }) => {
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 flex items-center justify-center px-6">
-        <div className="w-full max-w-md">
+      <div className="flex-1 flex items-center justify-center px-6 py-4">
+        <div className="w-full max-w-sm">
           {/* Welcome Heading */}
-          <div className="text-center mb-8">
-            <h1 className="text-4xl font-bold text-black mb-4">
+          <div className="text-center mb-6">
+            <h1 className="text-3xl font-bold text-black mb-3">
               Welcome back!
             </h1>
-            <p className="text-gray-600 text-base">
+            <p className="text-gray-600 text-sm">
               Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor
             </p>
           </div>
 
           {/* Mode Selection */}
-          <div className="mb-8">
+          <div className="mb-6">
             <label className="block text-sm font-medium text-gray-700 mb-3">
               Select Mode
             </label>
@@ -122,7 +122,7 @@ const LandingPage = ({ onLogin }) => {
           </div>
 
           {/* Login Form */}
-          <form onSubmit={handleSubmit} className="space-y-6">
+          <form onSubmit={handleSubmit} className="space-y-4">
             {/* Email Field */}
             <div>
               <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
@@ -134,7 +134,7 @@ const LandingPage = ({ onLogin }) => {
                 name="email"
                 value={formData.email}
                 onChange={handleInputChange}
-                className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors ${
+                className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors ${
                   errors.email ? 'border-red-500' : 'border-gray-300'
                 }`}
                 placeholder="Your name"
@@ -156,7 +156,7 @@ const LandingPage = ({ onLogin }) => {
                   name="password"
                   value={formData.password}
                   onChange={handleInputChange}
-                  className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors pr-10 ${
+                  className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors pr-10 ${
                     errors.password ? 'border-red-500' : 'border-gray-300'
                   }`}
                   placeholder="email@example.com"
@@ -177,7 +177,7 @@ const LandingPage = ({ onLogin }) => {
             {/* Login Button */}
             <button
               type="submit"
-              className="w-full bg-blue-600 text-white py-3 px-6 rounded-lg hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors font-medium"
+              className="w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors font-medium"
             >
               Log in
             </button>

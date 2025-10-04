@@ -86,20 +86,20 @@ const SignUpPage = ({ onSignUp, onBackToLogin }) => {
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 flex items-center justify-center px-6">
-        <div className="w-full max-w-md">
+      <div className="flex-1 flex items-center justify-center px-6 py-4">
+        <div className="w-full max-w-sm">
           {/* Welcome Heading */}
-          <div className="text-center mb-8">
-            <h1 className="text-4xl font-bold text-black mb-4">
+          <div className="text-center mb-6">
+            <h1 className="text-3xl font-bold text-black mb-3">
               Create Account
             </h1>
-            <p className="text-gray-600 text-base">
+            <p className="text-gray-600 text-sm">
               Join Decision Coach to start your coaching journey
             </p>
           </div>
 
           {/* Mode Selection */}
-          <div className="mb-8">
+          <div className="mb-6">
             <label className="block text-sm font-medium text-gray-700 mb-3">
               Select Mode
             </label>
@@ -132,7 +132,7 @@ const SignUpPage = ({ onSignUp, onBackToLogin }) => {
           </div>
 
           {/* Sign Up Form */}
-          <form onSubmit={handleSubmit} className="space-y-6">
+          <form onSubmit={handleSubmit} className="space-y-4">
             {/* Name Fields */}
             <div className="grid grid-cols-2 gap-4">
               <div>
@@ -145,7 +145,7 @@ const SignUpPage = ({ onSignUp, onBackToLogin }) => {
                   name="firstName"
                   value={formData.firstName}
                   onChange={handleInputChange}
-                  className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors ${
+                  className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors ${
                     errors.firstName ? 'border-red-500' : 'border-gray-300'
                   }`}
                   placeholder="First name"
@@ -165,7 +165,7 @@ const SignUpPage = ({ onSignUp, onBackToLogin }) => {
                   name="lastName"
                   value={formData.lastName}
                   onChange={handleInputChange}
-                  className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors ${
+                  className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors ${
                     errors.lastName ? 'border-red-500' : 'border-gray-300'
                   }`}
                   placeholder="Last name"
@@ -187,7 +187,7 @@ const SignUpPage = ({ onSignUp, onBackToLogin }) => {
                 name="email"
                 value={formData.email}
                 onChange={handleInputChange}
-                className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors ${
+                className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors ${
                   errors.email ? 'border-red-500' : 'border-gray-300'
                 }`}
                 placeholder="your.email@example.com"
@@ -209,7 +209,7 @@ const SignUpPage = ({ onSignUp, onBackToLogin }) => {
                   name="password"
                   value={formData.password}
                   onChange={handleInputChange}
-                  className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors pr-10 ${
+                  className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors pr-10 ${
                     errors.password ? 'border-red-500' : 'border-gray-300'
                   }`}
                   placeholder="Create a password"
@@ -239,7 +239,7 @@ const SignUpPage = ({ onSignUp, onBackToLogin }) => {
                   name="confirmPassword"
                   value={formData.confirmPassword}
                   onChange={handleInputChange}
-                  className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors pr-10 ${
+                  className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors pr-10 ${
                     errors.confirmPassword ? 'border-red-500' : 'border-gray-300'
                   }`}
                   placeholder="Confirm your password"
@@ -260,7 +260,7 @@ const SignUpPage = ({ onSignUp, onBackToLogin }) => {
             {/* Sign Up Button */}
             <button
               type="submit"
-              className="w-full bg-blue-600 text-white py-3 px-6 rounded-lg hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors font-medium"
+              className="w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors font-medium"
             >
               Create Account
             </button>

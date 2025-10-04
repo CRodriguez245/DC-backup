@@ -30,7 +30,7 @@ const HomePage = ({ userInfo, gameMode, onStartCoaching, onLogout, onSettings })
       name: 'Kavya',
       status: 'Completed',
       dqScore: 0.8,
-      avatar: '👩‍💼',
+      avatar: '/images/cu-GIRL-2.png',
       description: 'Recent graduate exploring career options',
       position: { x: 400, y: 420 },
       completed: true

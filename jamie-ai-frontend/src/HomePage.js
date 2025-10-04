@@ -139,12 +139,15 @@ const HomePage = ({ userInfo, gameMode, onStartCoaching, onLogout, onSettings })
                     left: level.id === 'jamie' || level.id === 'kavya' || level.id === 'sarah' ? '-220px' : '80px',
                     top: '-20px'
                   }}>
-                    {/* Speech bubble tail */}
+                    {/* Speech bubble tail - centered to the left of the circle */}
                     <div className={`absolute top-1/2 transform -translate-y-1/2 w-0 h-0 ${
                       level.id === 'jamie' || level.id === 'kavya' || level.id === 'sarah' 
                         ? 'right-[-8px] border-l-[8px] border-l-white border-t-[8px] border-t-transparent border-b-[8px] border-b-transparent' 
                         : 'left-[-8px] border-r-[8px] border-r-white border-t-[8px] border-t-transparent border-b-[8px] border-b-transparent'
-                    }`}></div>
+                    }`} style={{
+                      top: '50%',
+                      transform: 'translateY(-50%)'
+                    }}></div>
                     
                     <h3 className="font-semibold text-gray-900 mb-1">{level.name}</h3>
                     <p className="text-sm text-gray-600 mb-2">{level.status}</p>
@@ -152,30 +155,6 @@ const HomePage = ({ userInfo, gameMode, onStartCoaching, onLogout, onSettings })
                       <p className="text-sm font-medium text-blue-600">
                         DQ Score: {level.dqScore}
                       </p>
-                    )}
-                    {level.description && level.status !== 'Locked' && (
-                      <p className="text-xs text-gray-500 mt-2 max-w-[180px]">
-                        {level.description}
-                      </p>
-                    )}
-                    
-                    {/* Action button */}
-                    {level.status === 'Available' && (
-                      <button
-                        onClick={() => onStartCoaching(level)}
-                        className="mt-3 w-full bg-blue-600 text-white py-2 px-3 rounded text-sm font-medium hover:bg-blue-700 transition-colors"
-                      >
-                        Start Coaching
-                      </button>
-                    )}
-                    
-                    {level.status === 'Completed' && (
-                      <button
-                        onClick={() => onStartCoaching(level)}
-                        className="mt-3 w-full bg-green-600 text-white py-2 px-3 rounded text-sm font-medium hover:bg-green-700 transition-colors"
-                      >
-                        Review Session
-                      </button>
                     )}
                   </div>
                 )}

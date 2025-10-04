@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Eye, EyeOff, ArrowLeft } from 'lucide-react';
+import { Eye, EyeOff } from 'lucide-react';
 
 const SignUpPage = ({ onSignUp, onBackToLogin }) => {
   const [formData, setFormData] = useState({
@@ -70,19 +70,12 @@ const SignUpPage = ({ onSignUp, onBackToLogin }) => {
 
   return (
     <div className="min-h-screen bg-white flex flex-col">
-      {/* Header with Logo and Back Button */}
-      <div className="p-[35px] flex items-center justify-between">
+      {/* Header with Logo */}
+      <div className="p-[35px]">
         <div className="text-black font-bold text-[25px] leading-[28px]">
           <div>Decision</div>
           <div>Coach</div>
         </div>
-        <button
-          onClick={onBackToLogin}
-          className="flex items-center gap-2 text-gray-600 hover:text-gray-800 transition-colors"
-        >
-          <ArrowLeft size={20} />
-          <span className="text-sm">Back to Login</span>
-        </button>
       </div>
 
       {/* Main Content */}

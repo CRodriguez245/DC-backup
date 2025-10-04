@@ -20,7 +20,7 @@ const HomePage = ({ userInfo, gameMode, onStartCoaching, onLogout, onSettings })
       name: 'Andres',
       status: 'Completed',
       dqScore: 0.6,
-      avatar: '👨‍💻',
+      avatar: '/images/cu-Andres.png',
       description: 'Software engineer considering a career pivot',
       position: { x: 800, y: 220 },
       completed: true

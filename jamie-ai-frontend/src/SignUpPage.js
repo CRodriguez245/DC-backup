@@ -87,7 +87,7 @@ const SignUpPage = ({ onSignUp, onBackToLogin }) => {
               Create Account
             </h1>
             <p className="text-gray-600 text-sm">
-              Join Decision Coach to start your coaching journey
+              Join Decision Coach to help Jamie make informed decisions about his future career path.
             </p>
           </div>
 

@@ -84,7 +84,7 @@ const LandingPage = ({ onLogin }) => {
               Welcome back!
             </h1>
             <p className="text-gray-600 text-sm">
-              Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor
+              Coach Jamie through his decision-making journey and help him navigate career choices with confidence.
             </p>
           </div>
 

@@ -12,7 +12,7 @@ const HomePage = ({ userInfo, gameMode, onStartCoaching, onLogout, onSettings })
       dqScore: 0.8,
       avatar: '/images/cu-JAMIE.png',
       description: 'Sophomore Mechanical Engineering student considering switching to Art/Design',
-      position: { x: 400, y: 120 },
+      position: { x: 400, y: 160 },
       completed: true
     },
     {
@@ -22,7 +22,7 @@ const HomePage = ({ userInfo, gameMode, onStartCoaching, onLogout, onSettings })
       dqScore: 0.6,
       avatar: '/images/cu-Andres.png',
       description: 'Software engineer considering a career pivot',
-      position: { x: 800, y: 220 },
+      position: { x: 800, y: 200 },
       completed: true
     },
     {
@@ -32,7 +32,7 @@ const HomePage = ({ userInfo, gameMode, onStartCoaching, onLogout, onSettings })
       dqScore: 0.8,
       avatar: '/images/cu-GIRL-2.png',
       description: 'Recent graduate exploring career options',
-      position: { x: 400, y: 420 },
+      position: { x: 400, y: 460 },
       completed: true
     },
     {
@@ -42,7 +42,7 @@ const HomePage = ({ userInfo, gameMode, onStartCoaching, onLogout, onSettings })
       dqScore: null,
       avatar: '👨‍🎨',
       description: 'Sophomore Mechanical Engineering student considering switching to Art/Design',
-      position: { x: 800, y: 520 },
+      position: { x: 800, y: 500 },
       completed: false
     },
     {
@@ -71,10 +71,10 @@ const HomePage = ({ userInfo, gameMode, onStartCoaching, onLogout, onSettings })
       <div className="flex items-start justify-start min-h-screen p-8">
         <div className="relative w-full max-w-7xl h-[800px]">
           {/* Network connections - Zig-zag pattern */}
-          <svg className="absolute inset-0 w-full h-full" style={{ zIndex: 1 }}>
+          <svg className="absolute inset-0 w-full h-full" style={{ zIndex: 0 }}>
             {/* Zig-zag path: Jamie -> Andres -> Kavya */}
             <path
-              d="M 450 170 Q 600 195 800 270 Q 600 345 450 420"
+              d="M 400 200 Q 600 210 800 240 Q 600 460 400 500"
               stroke="#3B82F6"
               strokeWidth="2"
               strokeDasharray="5,5"
@@ -91,7 +91,7 @@ const HomePage = ({ userInfo, gameMode, onStartCoaching, onLogout, onSettings })
                 left: `${level.position.x}px`,
                 top: `${level.position.y}px`,
                 transform: 'translate(-50%, -50%)',
-                zIndex: 2
+                zIndex: 10
               }}
             >
               <div className="flex items-center space-x-4">

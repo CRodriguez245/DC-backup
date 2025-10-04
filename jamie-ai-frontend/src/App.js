@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Send, User, Bot, Star, Home, Settings, LogOut } from 'lucide-react';
+import LandingPage from './LandingPage';
 
 // Jamie's Animated Face Component
 const JamieFace = ({ dqScore, avgDqScore, size = 'small' }) => {
@@ -51,7 +52,6 @@ const JamieFace = ({ dqScore, avgDqScore, size = 'small' }) => {
 const JamieAI = () => {
   // User information state
   const [userInfo, setUserInfo] = useState(null);
-  const [showUserInfoModal, setShowUserInfoModal] = useState(true);
   const [gameMode, setGameMode] = useState('game'); // 'game' or 'assessment'
   
   // Chat state
@@ -69,6 +69,21 @@ const JamieAI = () => {
   // Refs
   const messagesEndRef = useRef(null);
   const chatContainerRef = useRef(null);
+
+  // Handle login from landing page
+  const handleLogin = (loginData) => {
+    // Set the game mode from landing page
+    if (loginData.gameMode) {
+      setGameMode(loginData.gameMode);
+    }
+    
+    // For demo purposes, we'll create user info from login data
+    setUserInfo({
+      name: loginData.email.split('@')[0], // Use email prefix as name
+      email: loginData.email,
+      affiliation: 'Demo User'
+    });
+  };
 
   // Reset session function
   const resetSession = () => {
@@ -217,8 +232,8 @@ const JamieAI = () => {
     }
   }, [demoMode]);
 
-  // User info form component
-  const UserInfoModal = () => {
+  // User info form component - REMOVED (using LandingPage instead)
+  const UserInfoModal_OLD = () => {
     const [formData, setFormData] = useState({
       name: '',
       email: '',
@@ -730,6 +745,11 @@ const JamieAI = () => {
     // Allow Shift+Enter for new lines
   };
 
+  // Show landing page if user is not logged in
+  if (!userInfo) {
+    return <LandingPage onLogin={handleLogin} />;
+  }
+
   return (
     <div className="bg-white h-screen w-full flex">
       <style jsx>{`
@@ -773,7 +793,6 @@ const JamieAI = () => {
           animation: progressPulse 0.8s ease-out;
         }
       `}</style>
-      {showUserInfoModal && <UserInfoModal />}
       
       {/* Left Sidebar */}
       <div className="w-[320px] flex flex-col p-[35px]">

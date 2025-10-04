@@ -10,17 +10,7 @@ const HomePage = ({ userInfo, gameMode, onStartCoaching, onLogout, onSettings })
       dqScore: 0.8,
       avatar: '👨‍🎓',
       description: 'Sophomore Mechanical Engineering student considering switching to Art/Design',
-      position: { x: 200, y: 150 },
-      completed: true
-    },
-    {
-      id: 'kavya',
-      name: 'Kavya',
-      status: 'Completed',
-      dqScore: 0.8,
-      avatar: '👩‍💼',
-      description: 'Recent graduate exploring career options',
-      position: { x: 200, y: 350 },
+      position: { x: 150, y: 100 },
       completed: true
     },
     {
@@ -30,7 +20,17 @@ const HomePage = ({ userInfo, gameMode, onStartCoaching, onLogout, onSettings })
       dqScore: 0.6,
       avatar: '👨‍💻',
       description: 'Software engineer considering a career pivot',
-      position: { x: 400, y: 250 },
+      position: { x: 450, y: 200 },
+      completed: true
+    },
+    {
+      id: 'kavya',
+      name: 'Kavya',
+      status: 'Completed',
+      dqScore: 0.8,
+      avatar: '👩‍💼',
+      description: 'Recent graduate exploring career options',
+      position: { x: 150, y: 350 },
       completed: true
     },
     {
@@ -40,7 +40,7 @@ const HomePage = ({ userInfo, gameMode, onStartCoaching, onLogout, onSettings })
       dqScore: null,
       avatar: '👨‍🎨',
       description: 'Sophomore Mechanical Engineering student considering switching to Art/Design',
-      position: { x: 600, y: 400 },
+      position: { x: 450, y: 500 },
       completed: false
     },
     {
@@ -50,7 +50,7 @@ const HomePage = ({ userInfo, gameMode, onStartCoaching, onLogout, onSettings })
       dqScore: null,
       avatar: '👩‍🎓',
       description: 'Coming soon...',
-      position: { x: 600, y: 550 },
+      position: { x: 150, y: 600 },
       completed: false
     }
   ];
@@ -67,28 +67,16 @@ const HomePage = ({ userInfo, gameMode, onStartCoaching, onLogout, onSettings })
 
       {/* Main Network Visualization */}
       <div className="flex items-center justify-center min-h-screen p-8">
-        <div className="relative w-full max-w-4xl h-[600px]">
-          {/* Network connections */}
+        <div className="relative w-full max-w-5xl h-[700px]">
+          {/* Network connections - Zig-zag pattern */}
           <svg className="absolute inset-0 w-full h-full" style={{ zIndex: 1 }}>
-            {/* Connection from Jamie to Andres */}
-            <line
-              x1="250"
-              y1="200"
-              x2="450"
-              y2="300"
+            {/* Zig-zag path: Jamie -> Andres -> Kavya */}
+            <path
+              d="M 200 150 Q 300 175 450 200 Q 300 275 200 350"
               stroke="#3B82F6"
               strokeWidth="2"
               strokeDasharray="5,5"
-            />
-            {/* Connection from Kavya to Andres */}
-            <line
-              x1="250"
-              y1="400"
-              x2="450"
-              y2="300"
-              stroke="#3B82F6"
-              strokeWidth="2"
-              strokeDasharray="5,5"
+              fill="none"
             />
           </svg>
 
@@ -125,8 +113,12 @@ const HomePage = ({ userInfo, gameMode, onStartCoaching, onLogout, onSettings })
                   )}
                 </div>
 
-                {/* Character Info Card */}
-                <div className="bg-white rounded-lg shadow-lg p-4 min-w-[200px] border">
+                {/* Character Info Card - positioned based on character */}
+                <div className={`bg-white rounded-lg shadow-lg p-4 min-w-[200px] border ${
+                  level.id === 'jamie' || level.id === 'kavya' || level.id === 'sarah' 
+                    ? 'ml-4' 
+                    : 'mr-4'
+                }`}>
                   <h3 className="font-semibold text-gray-900 mb-1">{level.name}</h3>
                   <p className="text-sm text-gray-600 mb-2">{level.status}</p>
                   {level.dqScore && (

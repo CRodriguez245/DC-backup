@@ -10,7 +10,7 @@ const HomePage = ({ userInfo, gameMode, onStartCoaching, onLogout, onSettings })
       name: 'Jamie',
       status: 'Completed',
       dqScore: 0.8,
-      avatar: '👨‍🎓',
+      avatar: '/images/cu-JAMIE.png',
       description: 'Sophomore Mechanical Engineering student considering switching to Art/Design',
       position: { x: 400, y: 120 },
       completed: true
@@ -101,14 +101,24 @@ const HomePage = ({ userInfo, gameMode, onStartCoaching, onLogout, onSettings })
                   onMouseEnter={() => setHoveredCharacter(level.id)}
                   onMouseLeave={() => setHoveredCharacter(null)}
                 >
-                  <div className={`w-16 h-16 rounded-full flex items-center justify-center text-2xl cursor-pointer ${
+                  <div className={`w-16 h-16 rounded-full flex items-center justify-center text-2xl cursor-pointer overflow-hidden ${
                     level.completed 
                       ? 'bg-blue-100 border-2 border-blue-300 hover:bg-blue-200' 
                       : level.status === 'Available'
                       ? 'bg-gray-200 border-2 border-gray-300 hover:bg-gray-300'
                       : 'bg-gray-100 border-2 border-gray-200'
                   } transition-colors`}>
-                    {level.status === 'Locked' ? '🔒' : level.avatar}
+                    {level.status === 'Locked' ? (
+                      '🔒'
+                    ) : level.avatar.startsWith('/') ? (
+                      <img 
+                        src={level.avatar} 
+                        alt={level.name}
+                        className="w-full h-full object-cover rounded-full"
+                      />
+                    ) : (
+                      level.avatar
+                    )}
                   </div>
                   
                   {/* Status indicator */}

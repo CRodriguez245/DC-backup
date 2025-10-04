@@ -58,7 +58,7 @@ const HomePage = ({ userInfo, gameMode, onStartCoaching, onLogout, onSettings })
   ];
 
   return (
-    <div className="min-h-screen bg-white relative">
+    <div className="min-h-screen relative" style={{ backgroundColor: '#2C73EB' }}>
       {/* Header */}
       <div className="absolute top-6 left-6 z-10">
         <div className="text-black font-bold text-[25px] leading-[28px]">

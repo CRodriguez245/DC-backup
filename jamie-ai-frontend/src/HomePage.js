@@ -124,12 +124,7 @@ const HomePage = ({ userInfo, gameMode, onStartCoaching, onLogout, onSettings })
                     )}
                   </div>
                   
-                  {/* Status indicator */}
-                  {level.completed && (
-                    <div className="absolute -top-1 -right-1 w-4 h-4 bg-green-500 rounded-full flex items-center justify-center">
-                      <span className="text-white text-xs">✓</span>
-                    </div>
-                  )}
+                  {/* Status indicator - removed green checkmarks */}
                 </div>
 
                 {/* Character Info Card - only show on hover */}

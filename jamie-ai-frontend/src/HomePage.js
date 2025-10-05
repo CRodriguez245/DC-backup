@@ -124,7 +124,7 @@ const HomePage = ({ userInfo, gameMode, onStartCoaching, onLogout, onSettings })
           <svg className="absolute inset-0 w-full h-full" style={{ zIndex: 0 }}>
             {/* Jamie to Andres - more pronounced curve */}
             <path
-              d="M 700 120 Q 900 160 1100 320"
+              d="M 1100 320 Q 900 160 700 120"
               stroke="#3B82F6"
               strokeWidth="2"
               strokeDasharray="5,5"

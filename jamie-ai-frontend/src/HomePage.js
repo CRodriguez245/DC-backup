@@ -88,14 +88,6 @@ const HomePage = ({ userInfo, gameMode, onStartCoaching, onLogout, onSettings })
               strokeDasharray="5,5"
               fill="none"
             />
-            {/* Kavya to Daniel - noticeable upward arching curve */}
-            <path
-              d="M 700 520 Q 900 620 1100 720"
-              stroke="#3B82F6"
-              strokeWidth="2"
-              strokeDasharray="5,5"
-              fill="none"
-            />
           </svg>
 
           {/* Character nodes */}

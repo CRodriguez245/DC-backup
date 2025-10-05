@@ -206,7 +206,7 @@ const HomePage = ({ userInfo, gameMode, onStartCoaching, onLogout, onSettings })
                       ? 'mr-4' 
                       : 'ml-4'
                   }`} style={{
-                    left: level.id === 'jamie' || level.id === 'kavya' || level.id === 'sarah' ? '-280px' : '100px',
+                    left: level.id === 'jamie' || level.id === 'kavya' || level.id === 'sarah' ? '-280px' : '280px',
                     top: '-20px',
                     width: '250px',
                     animation: 'tooltipFadeIn 0.3s ease-out'

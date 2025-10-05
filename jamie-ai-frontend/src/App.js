@@ -830,6 +830,7 @@ const JamieAI = () => {
         onLogout={handleLogout}
         onSettings={handleSettings}
         onCharacterClick={handleCharacterClick}
+        onAdminClick={() => setCurrentView('admin')}
       />
     );
   }

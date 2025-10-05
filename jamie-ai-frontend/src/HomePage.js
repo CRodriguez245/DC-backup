@@ -94,10 +94,10 @@ const HomePage = ({ userInfo, gameMode, onStartCoaching, onLogout, onSettings })
         }
         @keyframes drawLine {
           from {
-            stroke-dashoffset: 1000;
+            stroke-dasharray: 0, 1000;
           }
           to {
-            stroke-dashoffset: 0;
+            stroke-dasharray: 5, 5;
           }
         }
       `}</style>
@@ -119,20 +119,16 @@ const HomePage = ({ userInfo, gameMode, onStartCoaching, onLogout, onSettings })
               d="M 700 120 Q 900 160 1100 320"
               stroke="#3B82F6"
               strokeWidth="2"
-              strokeDasharray="5,5"
-              strokeDashoffset="1000"
               fill="none"
-              style={{ animation: 'drawLine 1.2s ease-out 0.6s both' }}
+              style={{ animation: 'drawLine 1.5s ease-out 0.6s both' }}
             />
             {/* Kavya to Andres - downward curve */}
             <path
               d="M 700 520 Q 900 480 1100 320"
               stroke="#3B82F6"
               strokeWidth="2"
-              strokeDasharray="5,5"
-              strokeDashoffset="1000"
               fill="none"
-              style={{ animation: 'drawLine 1.2s ease-out 1.0s both' }}
+              style={{ animation: 'drawLine 1.5s ease-out 1.0s both' }}
             />
           </svg>
 

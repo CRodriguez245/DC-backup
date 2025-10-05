@@ -137,7 +137,7 @@ const HomePage = ({ userInfo, gameMode, onStartCoaching, onLogout, onSettings })
               strokeWidth="2"
               strokeDasharray="5,5"
               fill="none"
-              style={{ animation: 'drawLineSmooth 2.0s cubic-bezier(0.4, 0, 0.2, 1) 0.6s both' }}
+              style={{ animation: 'drawLineSmooth 2.0s cubic-bezier(0.4, 0, 0.2, 1) 0.8s both' }}
             />
             {/* Kavya to Andres - downward curve */}
             <path
@@ -146,7 +146,7 @@ const HomePage = ({ userInfo, gameMode, onStartCoaching, onLogout, onSettings })
               strokeWidth="2"
               strokeDasharray="5,5"
               fill="none"
-              style={{ animation: 'drawLineSmooth 2.0s cubic-bezier(0.4, 0, 0.2, 1) 1.2s both' }}
+              style={{ animation: 'drawLineSmooth 2.0s cubic-bezier(0.4, 0, 0.2, 1) 1.6s both' }}
             />
           </svg>
 
@@ -160,7 +160,7 @@ const HomePage = ({ userInfo, gameMode, onStartCoaching, onLogout, onSettings })
                 top: `${level.position.y}px`,
                 transform: 'translate(-50%, -50%)',
                 zIndex: 10,
-                animation: `elementFadeIn 0.5s ease-out ${index * 0.1 + 0.4}s both`
+                animation: `elementFadeIn 0.5s ease-out ${level.id === 'jamie' ? '0.4' : level.id === 'andres' ? '1.2' : level.id === 'kavya' ? '2.0' : level.id === 'daniel' ? '2.4' : '2.8'}s both`
               }}
             >
               <div className="flex items-center space-x-4">

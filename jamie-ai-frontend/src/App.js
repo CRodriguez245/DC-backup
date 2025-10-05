@@ -52,8 +52,15 @@ const JamieFace = ({ dqScore, avgDqScore, size = 'small' }) => {
 
 const JamieAI = () => {
   // User information state
-  const [userInfo, setUserInfo] = useState(null);
-  const [gameMode, setGameMode] = useState('game'); // 'game' or 'assessment'
+  const [userInfo, setUserInfo] = useState(() => {
+    // Load user info from localStorage on component mount
+    const savedUserInfo = localStorage.getItem('userInfo');
+    return savedUserInfo ? JSON.parse(savedUserInfo) : null;
+  });
+  const [gameMode, setGameMode] = useState(() => {
+    // Load game mode from localStorage on component mount
+    return localStorage.getItem('gameMode') || 'game';
+  });
   const [currentView, setCurrentView] = useState('homepage'); // 'homepage' or 'chat'
   
   // Chat state
@@ -77,14 +84,17 @@ const JamieAI = () => {
     // Set the game mode from landing page
     if (loginData.gameMode) {
       setGameMode(loginData.gameMode);
+      localStorage.setItem('gameMode', loginData.gameMode);
     }
     
     // For demo purposes, we'll create user info from login data
-    setUserInfo({
+    const userData = {
       name: loginData.email.split('@')[0], // Use email prefix as name
       email: loginData.email,
       affiliation: 'Demo User'
-    });
+    };
+    setUserInfo(userData);
+    localStorage.setItem('userInfo', JSON.stringify(userData));
     
     // Start on homepage after login
     setCurrentView('homepage');
@@ -108,6 +118,9 @@ const JamieAI = () => {
     setCurrentView(null);
     setMessages([]);
     setCurrentMessage('');
+    // Clear localStorage on logout
+    localStorage.removeItem('userInfo');
+    localStorage.removeItem('gameMode');
   };
 
   // Handle settings (placeholder for now)

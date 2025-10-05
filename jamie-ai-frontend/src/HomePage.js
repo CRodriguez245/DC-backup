@@ -64,7 +64,7 @@ const HomePage = ({ userInfo, gameMode, onStartCoaching, onLogout, onSettings })
   ];
 
   return (
-    <div className="h-screen bg-white relative flex flex-col">
+    <div className="h-screen bg-white relative flex flex-col animate-in fade-in-0 slide-in-from-bottom-4 duration-500">
       <style jsx>{`
         @keyframes tooltipFadeIn {
           from {
@@ -74,6 +74,16 @@ const HomePage = ({ userInfo, gameMode, onStartCoaching, onLogout, onSettings })
           to {
             opacity: 1;
             transform: scale(1) translateY(0);
+          }
+        }
+        @keyframes homepageSlideIn {
+          from {
+            opacity: 0;
+            transform: translateY(30px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
           }
         }
       `}</style>
@@ -86,7 +96,7 @@ const HomePage = ({ userInfo, gameMode, onStartCoaching, onLogout, onSettings })
       </div>
 
       {/* Main Network Visualization */}
-      <div className="flex-1 overflow-y-auto p-8">
+      <div className="flex-1 overflow-y-auto p-8 animate-in fade-in-0 slide-in-from-bottom-4 duration-700 delay-200">
         <div className="relative w-full max-w-7xl h-[900px]">
           {/* Network connections - Curved pattern */}
           <svg className="absolute inset-0 w-full h-full" style={{ zIndex: 0 }}>
@@ -112,12 +122,13 @@ const HomePage = ({ userInfo, gameMode, onStartCoaching, onLogout, onSettings })
           {coachingLevels.map((level, index) => (
             <div
               key={level.id}
-              className="absolute"
+              className="absolute animate-in fade-in-0 zoom-in-95 duration-500"
               style={{
                 left: `${level.position.x}px`,
                 top: `${level.position.y}px`,
                 transform: 'translate(-50%, -50%)',
-                zIndex: 10
+                zIndex: 10,
+                animationDelay: `${index * 100 + 400}ms`
               }}
             >
               <div className="flex items-center space-x-4">

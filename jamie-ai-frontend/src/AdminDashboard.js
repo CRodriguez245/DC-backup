@@ -69,7 +69,7 @@ const AdminDashboard = ({ onBackToHome, onLogout }) => {
       {/* Left Sidebar */}
       <div className="w-80 bg-gray-50 flex flex-col">
         {/* Decision Coach Title */}
-        <div className="p-6">
+        <div style={{ padding: '29px' }}>
           <div className="text-black font-bold text-[25px] leading-[28px]">
             <div>Decision</div>
             <div>Coach</div>

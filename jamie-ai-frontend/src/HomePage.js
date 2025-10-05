@@ -70,11 +70,19 @@ const HomePage = ({ userInfo, gameMode, onStartCoaching, onLogout, onSettings })
       {/* Main Network Visualization */}
       <div className="flex-1 overflow-y-auto p-8">
         <div className="relative w-full max-w-7xl h-[900px]">
-          {/* Network connections - Zig-zag pattern */}
+          {/* Network connections - Curved pattern */}
           <svg className="absolute inset-0 w-full h-full" style={{ zIndex: 0 }}>
-            {/* Zig-zag path: Jamie -> Andres -> Kavya */}
+            {/* Jamie to Andres - upward arching curve */}
             <path
-              d="M 700 160 Q 900 220 1100 280 Q 900 400 700 520"
+              d="M 700 160 Q 900 100 1100 280"
+              stroke="#3B82F6"
+              strokeWidth="2"
+              strokeDasharray="5,5"
+              fill="none"
+            />
+            {/* Kavya to Andres - upward arching curve */}
+            <path
+              d="M 700 520 Q 900 400 1100 280"
               stroke="#3B82F6"
               strokeWidth="2"
               strokeDasharray="5,5"

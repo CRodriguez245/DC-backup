@@ -4,6 +4,12 @@ import { Home, Settings, LogOut } from 'lucide-react';
 const HomePage = ({ userInfo, gameMode, onStartCoaching, onLogout, onSettings }) => {
   const [hoveredCharacter, setHoveredCharacter] = useState(null);
 
+  const handleCharacterClick = (character) => {
+    if (character.id === 'jamie') {
+      onStartCoaching();
+    }
+  };
+
   const coachingLevels = [
     {
       id: 'jamie',
@@ -118,6 +124,7 @@ const HomePage = ({ userInfo, gameMode, onStartCoaching, onLogout, onSettings })
                         : 'bg-gray-300'
                     } transition-colors`}
                     style={(level.id === 'jamie' || level.id === 'andres' || level.id === 'kavya') && level.completed ? { backgroundColor: '#2C73EB' } : {}}
+                    onClick={() => handleCharacterClick(level)}
                   >
                     {level.status === 'Locked' ? (
                       ''

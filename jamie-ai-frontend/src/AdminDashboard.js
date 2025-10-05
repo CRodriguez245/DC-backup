@@ -155,7 +155,7 @@ const AdminDashboard = ({ onBackToHome, onLogout }) => {
                 </div>
                 <div className="text-gray-900">{student.studentId}</div>
                 <div className="text-gray-900">{student.dqScore}</div>
-                <div className="flex justify-center">
+                <div className="flex justify-start">
                   <button className="text-blue-600 hover:text-blue-800 px-3 py-1 rounded border border-blue-600 hover:bg-blue-50 transition-colors">
                     View Assessment
                   </button>

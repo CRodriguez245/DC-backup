@@ -22,7 +22,7 @@ const HomePage = ({ userInfo, gameMode, onStartCoaching, onLogout, onSettings })
       dqScore: 0.6,
       avatar: '/images/cu-Andres.png',
       description: 'Software engineer considering a career pivot',
-      position: { x: 1100, y: 280 },
+      position: { x: 1100, y: 320 },
       completed: true
     },
     {
@@ -42,7 +42,7 @@ const HomePage = ({ userInfo, gameMode, onStartCoaching, onLogout, onSettings })
       dqScore: null,
       avatar: '👨‍🎨',
       description: 'Sophomore Mechanical Engineering student considering switching to Art/Design',
-      position: { x: 1100, y: 680 },
+      position: { x: 1100, y: 670 },
       completed: false
     },
     {
@@ -74,7 +74,7 @@ const HomePage = ({ userInfo, gameMode, onStartCoaching, onLogout, onSettings })
           <svg className="absolute inset-0 w-full h-full" style={{ zIndex: 0 }}>
             {/* Jamie to Andres - noticeable upward arching curve */}
             <path
-              d="M 700 120 Q 900 150 1100 280"
+              d="M 700 120 Q 900 220 1100 320"
               stroke="#3B82F6"
               strokeWidth="2"
               strokeDasharray="5,5"
@@ -82,7 +82,7 @@ const HomePage = ({ userInfo, gameMode, onStartCoaching, onLogout, onSettings })
             />
             {/* Kavya to Andres - noticeable upward arching curve */}
             <path
-              d="M 700 520 Q 900 350 1100 280"
+              d="M 700 520 Q 900 420 1100 320"
               stroke="#3B82F6"
               strokeWidth="2"
               strokeDasharray="5,5"

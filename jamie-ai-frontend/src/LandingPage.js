@@ -67,7 +67,7 @@ const LandingPage = ({ onLogin }) => {
   return (
     <div className="min-h-screen bg-white flex flex-col">
       {/* Header with Logo */}
-      <div className="p-[35px]">
+      <div style={{ padding: '29px' }}>
         <div className="text-black font-bold text-[25px] leading-[28px]">
           <div>Decision</div>
           <div>Coach</div>

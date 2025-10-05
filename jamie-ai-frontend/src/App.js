@@ -890,7 +890,7 @@ const JamieAI = () => {
       `}</style>
       
       {/* Left Sidebar */}
-      <div className="w-[320px] flex flex-col p-[35px]">
+      <div className="w-[320px] flex flex-col" style={{ padding: '29px' }}>
         {/* Page Title */}
         <div className="mb-[100px]">
           <h1 className="text-[25px] font-bold text-black leading-[28px]">

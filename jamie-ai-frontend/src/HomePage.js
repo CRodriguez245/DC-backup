@@ -128,7 +128,7 @@ const HomePage = ({ userInfo, gameMode, onStartCoaching, onLogout, onSettings, o
       </div>
 
       {/* Main Network Visualization */}
-      <div className="flex-1 overflow-y-auto px-8 pt-8 pb-16" style={{ animation: 'elementFadeIn 0.8s ease-out 0.2s both' }}>
+      <div className="flex-1 overflow-y-auto px-8 pt-8 pb-32" style={{ animation: 'elementFadeIn 0.8s ease-out 0.2s both' }}>
         <div className="relative w-full max-w-7xl h-[900px]">
           {/* Network connections - Curved pattern */}
           <svg className="absolute inset-0 w-full h-full" style={{ zIndex: 0 }}>

@@ -136,7 +136,7 @@ const HomePage = ({ userInfo, gameMode, onStartCoaching, onLogout, onSettings })
                       ? 'mr-4' 
                       : 'ml-4'
                   }`} style={{
-                    left: level.id === 'jamie' || level.id === 'kavya' || level.id === 'sarah' ? '-280px' : '120px',
+                    left: level.id === 'jamie' || level.id === 'kavya' || level.id === 'sarah' ? '-280px' : '100px',
                     top: '-20px',
                     width: '250px'
                   }}>

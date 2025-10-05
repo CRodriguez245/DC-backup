@@ -981,17 +981,16 @@ const JamieAI = () => {
               <div className="text-center py-16">
                 <div className="w-20 h-20 rounded-full bg-[#2C73EB] flex items-end justify-center mx-auto mb-6 shadow-lg overflow-hidden">
                   <img 
-                    src="/images/cu-JAMIE.png" 
-                    alt="Jamie" 
-                    className="w-20 h-20 object-cover object-bottom"
+                    src={currentCharacter === 'jamie' ? "/images/cu-JAMIE.png" : "/images/cu-Andres.png"} 
+                    alt={characterData[currentCharacter].name} 
+                    className={`w-20 h-20 object-cover object-bottom ${currentCharacter === 'andres' ? 'scale-x-[-1]' : ''}`}
                   />
                 </div>
                 <h2 className="text-2xl font-bold text-gray-800 mb-3">
-                  Start Coaching Jamie {demoMode && <span className="text-sm font-medium text-blue-600 bg-blue-100 px-3 py-1 rounded-full ml-2">Demo Mode</span>}
+                  Start Coaching {characterData[currentCharacter].name} {demoMode && <span className="text-sm font-medium text-blue-600 bg-blue-100 px-3 py-1 rounded-full ml-2">Demo Mode</span>}
                 </h2>
                 <p className="text-gray-600 max-w-lg mx-auto mb-8 text-lg leading-relaxed">
-                  Jamie is a sophomore mechanical engineering student considering switching to art/design. 
-                  He's worried about disappointing his immigrant parents. How would you coach him?
+                  {characterData[currentCharacter].context}
                 </p>
                 
                 {!demoMode && connectionStatus === 'failed' && (

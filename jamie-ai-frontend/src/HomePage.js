@@ -6,7 +6,7 @@ const HomePage = ({ userInfo, gameMode, onStartCoaching, onLogout, onSettings, o
 
   const handleCharacterClick = (character) => {
     if (character.id === 'jamie') {
-      onStartCoaching();
+      onCharacterClick('jamie');
     } else if (character.id === 'andres') {
       onCharacterClick('andres');
     }

@@ -127,6 +127,7 @@ const HomePage = ({ userInfo, gameMode, onStartCoaching, onLogout, onSettings })
               d="M 700 120 Q 900 160 1100 320"
               stroke="#3B82F6"
               strokeWidth="2"
+              strokeDasharray="5,5"
               fill="none"
               style={{ animation: 'drawLineReverse 1.5s ease-out 0.6s both' }}
             />
@@ -135,6 +136,7 @@ const HomePage = ({ userInfo, gameMode, onStartCoaching, onLogout, onSettings })
               d="M 700 520 Q 900 480 1100 320"
               stroke="#3B82F6"
               strokeWidth="2"
+              strokeDasharray="5,5"
               fill="none"
               style={{ animation: 'drawLine 1.5s ease-out 1.0s both' }}
             />

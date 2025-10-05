@@ -78,10 +78,10 @@ const AdminDashboard = ({ onBackToHome, onLogout }) => {
         
         {/* Navigation Icons */}
         <div className="flex-1 flex items-end p-6">
-          <div className="bg-white rounded-lg shadow-sm p-4 flex items-center space-x-4 w-full">
+          <div className="bg-white rounded-lg shadow-lg p-4 flex items-center space-x-4 border w-full">
             <button 
               onClick={onBackToHome}
-              className="w-8 h-8 flex items-center justify-center text-white bg-blue-600 rounded transition-colors"
+              className="w-8 h-8 flex items-center justify-center text-blue-600 hover:bg-blue-50 rounded transition-colors"
             >
               <Home className="w-5 h-5" />
             </button>

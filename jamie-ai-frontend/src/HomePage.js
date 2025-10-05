@@ -92,6 +92,14 @@ const HomePage = ({ userInfo, gameMode, onStartCoaching, onLogout, onSettings })
             opacity: 1;
           }
         }
+        @keyframes drawLine {
+          from {
+            stroke-dashoffset: 1000;
+          }
+          to {
+            stroke-dashoffset: 0;
+          }
+        }
       `}</style>
       {/* Header */}
       <div className="absolute top-6 left-6 z-10">
@@ -112,7 +120,9 @@ const HomePage = ({ userInfo, gameMode, onStartCoaching, onLogout, onSettings })
               stroke="#3B82F6"
               strokeWidth="2"
               strokeDasharray="5,5"
+              strokeDashoffset="1000"
               fill="none"
+              style={{ animation: 'drawLine 1.5s ease-out 0.5s both' }}
             />
             {/* Kavya to Andres - downward curve */}
             <path
@@ -120,7 +130,9 @@ const HomePage = ({ userInfo, gameMode, onStartCoaching, onLogout, onSettings })
               stroke="#3B82F6"
               strokeWidth="2"
               strokeDasharray="5,5"
+              strokeDashoffset="1000"
               fill="none"
+              style={{ animation: 'drawLine 1.5s ease-out 0.8s both' }}
             />
           </svg>
 

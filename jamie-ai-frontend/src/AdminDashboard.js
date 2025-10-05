@@ -138,7 +138,7 @@ const AdminDashboard = ({ onBackToHome, onLogout }) => {
         {/* Student Table */}
         <div className="flex-1 px-6 pb-6">
           {/* Table Headers */}
-          <div className="grid grid-cols-4 gap-4 py-3 border-b border-gray-200 text-sm font-medium text-gray-500">
+          <div className="grid grid-cols-4 gap-4 py-4 px-4 border-b border-gray-200 text-sm font-semibold text-gray-600 bg-gray-50">
             <div>Name</div>
             <div>Student ID</div>
             <div>DQ Score</div>
@@ -146,17 +146,21 @@ const AdminDashboard = ({ onBackToHome, onLogout }) => {
           </div>
 
           {/* Student Rows */}
-          <div className="space-y-2">
+          <div className="space-y-1">
             {students.map((student, index) => (
-              <div key={student.id} className="grid grid-cols-4 gap-4 py-4 border-b border-gray-100 hover:bg-gray-50">
-                <div>
-                  <div className="text-gray-900">{student.name}</div>
-                  <div className="text-blue-600 underline text-sm">{student.email}</div>
+              <div key={student.id} className="grid grid-cols-4 gap-4 py-5 px-4 border-b border-gray-100 hover:bg-gray-50 transition-colors">
+                <div className="flex flex-col justify-center">
+                  <div className="text-gray-900 font-medium text-base mb-1">{student.name}</div>
+                  <div className="text-blue-600 text-sm hover:underline cursor-pointer">{student.email}</div>
                 </div>
-                <div className="text-gray-900">{student.studentId}</div>
-                <div className="text-gray-900">{student.dqScore}</div>
-                <div className="flex justify-start">
-                  <button className="text-blue-600 hover:text-blue-800 px-3 py-1 rounded border border-blue-600 hover:bg-blue-50 transition-colors">
+                <div className="flex items-center">
+                  <span className="text-gray-700 font-mono text-sm bg-gray-100 px-2 py-1 rounded">{student.studentId}</span>
+                </div>
+                <div className="flex items-center">
+                  <span className="text-gray-900 font-semibold text-lg">{student.dqScore}</span>
+                </div>
+                <div className="flex items-center">
+                  <button className="text-white bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-lg text-sm font-medium transition-colors shadow-sm hover:shadow-md">
                     View Assessment
                   </button>
                 </div>

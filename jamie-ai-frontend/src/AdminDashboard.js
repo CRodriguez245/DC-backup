@@ -110,7 +110,7 @@ const AdminDashboard = ({ onBackToHome, onLogout }) => {
       </div>
 
       {/* Right Main Content */}
-      <div className="flex-1 flex flex-col pt-16 overflow-y-auto">
+      <div className="flex-1 flex flex-col pt-16 pl-8 overflow-y-auto">
         {/* Header with User Greeting */}
         <div className="p-6">
           <div className="flex items-center space-x-3">

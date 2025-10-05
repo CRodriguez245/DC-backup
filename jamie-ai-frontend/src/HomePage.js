@@ -64,32 +64,12 @@ const HomePage = ({ userInfo, gameMode, onStartCoaching, onLogout, onSettings })
   ];
 
   return (
-    <div className="h-screen bg-white relative flex flex-col" style={{ animation: 'homepageSlideIn 0.6s ease-out' }}>
+    <div className="h-screen bg-white relative flex flex-col">
       <style jsx>{`
         @keyframes tooltipFadeIn {
           from {
             opacity: 0;
             transform: scale(0.95) translateY(10px);
-          }
-          to {
-            opacity: 1;
-            transform: scale(1) translateY(0);
-          }
-        }
-        @keyframes homepageSlideIn {
-          from {
-            opacity: 0;
-            transform: translateY(30px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-        @keyframes characterFadeIn {
-          from {
-            opacity: 0;
-            transform: scale(0.8) translateY(20px);
           }
           to {
             opacity: 1;
@@ -106,7 +86,7 @@ const HomePage = ({ userInfo, gameMode, onStartCoaching, onLogout, onSettings })
       </div>
 
       {/* Main Network Visualization */}
-      <div className="flex-1 overflow-y-auto p-8" style={{ animation: 'homepageSlideIn 0.8s ease-out 0.2s both' }}>
+      <div className="flex-1 overflow-y-auto p-8">
         <div className="relative w-full max-w-7xl h-[900px]">
           {/* Network connections - Curved pattern */}
           <svg className="absolute inset-0 w-full h-full" style={{ zIndex: 0 }}>
@@ -137,8 +117,7 @@ const HomePage = ({ userInfo, gameMode, onStartCoaching, onLogout, onSettings })
                 left: `${level.position.x}px`,
                 top: `${level.position.y}px`,
                 transform: 'translate(-50%, -50%)',
-                zIndex: 10,
-                animation: `characterFadeIn 0.5s ease-out ${index * 0.1 + 0.4}s both`
+                zIndex: 10
               }}
             >
               <div className="flex items-center space-x-4">

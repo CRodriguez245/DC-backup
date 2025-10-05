@@ -120,7 +120,7 @@ const HomePage = ({ userInfo, gameMode, onStartCoaching, onLogout, onSettings, o
         }
       `}</style>
       {/* Header */}
-      <div className="absolute left-6 z-10" style={{ top: '29px' }}>
+      <div className="absolute z-10" style={{ top: '29px', left: '29px' }}>
         <div className="text-black font-bold text-[25px] leading-[28px]">
           <div>Decision</div>
           <div>Coach</div>

@@ -2,63 +2,63 @@ import React, { useState } from 'react';
 import { Search, Home, Settings, LogOut, BarChart3 } from 'lucide-react';
 
 const AdminDashboard = ({ onBackToHome, onLogout }) => {
-  // Demo student data matching the design
+  // Demo student data with realistic information
   const [students] = useState([
     {
       id: 1,
-      name: 'Jane Doe',
-      studentId: '740',
-      dqScore: '5 years',
-      email: 'Janedoe@hawk.illinoistech.edu'
+      name: 'Alex Chen',
+      studentId: 'A123456',
+      dqScore: '0.85',
+      email: 'alex.chen@hawk.illinoistech.edu'
     },
     {
       id: 2,
-      name: 'Jane Doe',
-      studentId: '740',
-      dqScore: '5 years',
-      email: 'Janedoe@hawk.illinoistech.edu'
+      name: 'Maria Rodriguez',
+      studentId: 'A123457',
+      dqScore: '0.72',
+      email: 'maria.rodriguez@hawk.illinoistech.edu'
     },
     {
       id: 3,
-      name: 'Jane Doe',
-      studentId: '740',
-      dqScore: '5 years',
-      email: 'Janedoe@hawk.illinoistech.edu'
+      name: 'David Kim',
+      studentId: 'A123458',
+      dqScore: '0.91',
+      email: 'david.kim@hawk.illinoistech.edu'
     },
     {
       id: 4,
-      name: 'Jane Doe',
-      studentId: '740',
-      dqScore: '5 years',
-      email: 'Janedoe@hawk.illinoistech.edu'
+      name: 'Sarah Johnson',
+      studentId: 'A123459',
+      dqScore: '0.68',
+      email: 'sarah.johnson@hawk.illinoistech.edu'
     },
     {
       id: 5,
-      name: 'Jane Doe',
-      studentId: '740',
-      dqScore: '5 years',
-      email: 'Janedoe@hawk.illinoistech.edu'
+      name: 'Michael Brown',
+      studentId: 'A123460',
+      dqScore: '0.79',
+      email: 'michael.brown@hawk.illinoistech.edu'
     },
     {
       id: 6,
-      name: 'Jane Doe',
-      studentId: '740',
-      dqScore: '5 years',
-      email: 'Janedoe@hawk.illinoistech.edu'
+      name: 'Emily Davis',
+      studentId: 'A123461',
+      dqScore: '0.83',
+      email: 'emily.davis@hawk.illinoistech.edu'
     },
     {
       id: 7,
-      name: 'Jane Doe',
-      studentId: '740',
-      dqScore: '5 years',
-      email: 'Janedoe@hawk.illinoistech.edu'
+      name: 'James Wilson',
+      studentId: 'A123462',
+      dqScore: '0.76',
+      email: 'james.wilson@hawk.illinoistech.edu'
     },
     {
       id: 8,
-      name: 'Jane Doe',
-      studentId: '740',
-      dqScore: '5 years',
-      email: 'Janedoe@hawk.illinoistech.edu'
+      name: 'Lisa Anderson',
+      studentId: 'A123463',
+      dqScore: '0.88',
+      email: 'lisa.anderson@hawk.illinoistech.edu'
     }
   ]);
 

@@ -105,7 +105,7 @@ const JamieAI = () => {
   // Handle logout
   const handleLogout = () => {
     setUserInfo(null);
-    setCurrentView('homepage');
+    setCurrentView(null);
     setMessages([]);
     setCurrentMessage('');
   };

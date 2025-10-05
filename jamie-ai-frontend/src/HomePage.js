@@ -74,7 +74,7 @@ const HomePage = ({ userInfo, gameMode, onStartCoaching, onLogout, onSettings })
           <svg className="absolute inset-0 w-full h-full" style={{ zIndex: 0 }}>
             {/* Jamie to Andres - upward arching curve */}
             <path
-              d="M 700 160 Q 900 100 1100 280"
+              d="M 700 120 Q 900 100 1100 280"
               stroke="#3B82F6"
               strokeWidth="2"
               strokeDasharray="5,5"

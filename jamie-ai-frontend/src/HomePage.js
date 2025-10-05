@@ -100,6 +100,14 @@ const HomePage = ({ userInfo, gameMode, onStartCoaching, onLogout, onSettings })
             stroke-dasharray: 5, 5;
           }
         }
+        @keyframes drawLineSmooth {
+          from {
+            stroke-dasharray: 0, 1000;
+          }
+          to {
+            stroke-dasharray: 5, 5;
+          }
+        }
         @keyframes drawLineReverse {
           from {
             stroke-dasharray: 1000, 0;
@@ -129,7 +137,7 @@ const HomePage = ({ userInfo, gameMode, onStartCoaching, onLogout, onSettings })
               strokeWidth="2"
               strokeDasharray="5,5"
               fill="none"
-              style={{ animation: 'drawLine 1.5s ease-out 0.6s both' }}
+              style={{ animation: 'drawLineSmooth 2.0s cubic-bezier(0.4, 0, 0.2, 1) 0.6s both' }}
             />
             {/* Kavya to Andres - downward curve */}
             <path
@@ -138,7 +146,7 @@ const HomePage = ({ userInfo, gameMode, onStartCoaching, onLogout, onSettings })
               strokeWidth="2"
               strokeDasharray="5,5"
               fill="none"
-              style={{ animation: 'drawLine 1.5s ease-out 1.0s both' }}
+              style={{ animation: 'drawLineSmooth 2.0s cubic-bezier(0.4, 0, 0.2, 1) 1.2s both' }}
             />
           </svg>
 

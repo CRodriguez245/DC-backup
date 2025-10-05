@@ -129,7 +129,7 @@ const HomePage = ({ userInfo, gameMode, onStartCoaching, onLogout, onSettings })
               strokeWidth="2"
               strokeDasharray="5,5"
               fill="none"
-              style={{ animation: 'drawLineReverse 1.5s ease-out 0.6s both' }}
+              style={{ animation: 'drawLine 1.5s ease-out 0.6s both' }}
             />
             {/* Kavya to Andres - downward curve */}
             <path

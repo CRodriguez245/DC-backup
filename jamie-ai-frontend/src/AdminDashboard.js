@@ -138,22 +138,23 @@ const AdminDashboard = ({ onBackToHome, onLogout }) => {
         {/* Student Table */}
         <div className="flex-1 px-6 pb-6">
           {/* Table Headers */}
-          <div className="grid grid-cols-5 gap-4 py-3 border-b border-gray-200 text-sm font-medium text-gray-500">
+          <div className="grid grid-cols-4 gap-4 py-3 border-b border-gray-200 text-sm font-medium text-gray-500">
             <div>Name</div>
             <div>Student ID</div>
             <div>DQ Score</div>
-            <div>Email</div>
             <div></div>
           </div>
 
           {/* Student Rows */}
           <div className="space-y-2">
             {students.map((student, index) => (
-              <div key={student.id} className="grid grid-cols-5 gap-4 py-4 border-b border-gray-100 hover:bg-gray-50">
-                <div className="text-gray-900">{student.name}</div>
+              <div key={student.id} className="grid grid-cols-4 gap-4 py-4 border-b border-gray-100 hover:bg-gray-50">
+                <div>
+                  <div className="text-gray-900">{student.name}</div>
+                  <div className="text-blue-600 underline text-sm">{student.email}</div>
+                </div>
                 <div className="text-gray-900">{student.studentId}</div>
                 <div className="text-gray-900">{student.dqScore}</div>
-                <div className="text-blue-600 underline">{student.email}</div>
                 <div className="flex justify-end">
                   <button className="text-blue-600 hover:text-blue-800">
                     <Eye className="w-4 h-4" />

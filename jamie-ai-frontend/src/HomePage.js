@@ -124,9 +124,9 @@ const HomePage = ({ userInfo, gameMode, onStartCoaching, onLogout, onSettings })
               fill="none"
               style={{ animation: 'drawLine 1.2s ease-out 0.6s both' }}
             />
-            {/* Andres to Kavya - downward curve */}
+            {/* Kavya to Andres - downward curve */}
             <path
-              d="M 1100 320 Q 900 420 700 520"
+              d="M 700 520 Q 900 480 1100 320"
               stroke="#3B82F6"
               strokeWidth="2"
               strokeDasharray="5,5"

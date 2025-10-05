@@ -893,21 +893,30 @@ const JamieAI = () => {
         <div className="w-[229px] h-[80px] flex items-center justify-center">
           <div className="bg-white rounded-lg shadow-lg px-6 py-4 flex items-center justify-between w-full">
             <button 
-              onClick={() => setCurrentView('homepage')}
+              onClick={() => {
+                console.log('Home button clicked');
+                setCurrentView('homepage');
+              }}
               className="w-[30px] h-[30px] flex items-center justify-center hover:bg-gray-100 rounded transition-colors"
             >
               <Home className="w-6 h-6 text-gray-600" />
             </button>
             <div className="w-px h-6 bg-gray-300"></div>
             <button 
-              onClick={handleSettings}
+              onClick={() => {
+                console.log('Settings button clicked');
+                handleSettings();
+              }}
               className="w-[30px] h-[30px] flex items-center justify-center hover:bg-gray-100 rounded transition-colors"
             >
               <Settings className="w-6 h-6 text-gray-600" />
             </button>
             <div className="w-px h-6 bg-gray-300"></div>
             <button 
-              onClick={handleLogout}
+              onClick={() => {
+                console.log('Logout button clicked');
+                handleLogout();
+              }}
               className="w-[30px] h-[30px] flex items-center justify-center hover:bg-gray-100 rounded transition-colors"
             >
               <LogOut className="w-6 h-6 text-gray-600" />

@@ -71,13 +71,15 @@ const JamieAI = () => {
       name: 'Jamie',
       title: 'Mechanical Engineering',
       context: 'Jamie is a sophomore mechanical engineering student considering switching to art/design. He\'s worried about disappointing his immigrant parents. How would you coach him?',
-      progressLabel: 'Jamie\'s Progress'
+      progressLabel: 'Jamie\'s Progress',
+      gameMode: 'assessment' // Jamie uses assessment mode
     },
     andres: {
       name: 'Andres',
       title: 'Software Engineering',
       context: 'Andres is a software engineer considering a career pivot to product management. He\'s feeling burnt out from coding and wants to work more with people and strategy. How would you coach him?',
-      progressLabel: 'Andres\'s Progress'
+      progressLabel: 'Andres\'s Progress',
+      gameMode: 'game' // Andres uses game mode
     }
   };
   
@@ -526,7 +528,7 @@ const JamieAI = () => {
                 </div>
                 
                 {/* Coaching Effectiveness - show when clicked and in game mode */}
-                {dqScore && showDqScore && gameMode === 'game' && (
+                {dqScore && showDqScore && characterData[currentCharacter].gameMode === 'game' && (
                   <div className="mt-4 pt-4 border-t border-gray-200">
                     <div className="flex items-center gap-2 mb-3">
                       <div className="w-6 h-6 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center">
@@ -911,7 +913,7 @@ const JamieAI = () => {
         )}
         
         {/* Progress Bar - Only show in Game mode */}
-        {gameMode === 'game' && (
+        {characterData[currentCharacter].gameMode === 'game' && (
           <div className="mb-2 mt-2">
             <div className="flex items-center justify-between mb-1">
               <span className="text-[12px] font-medium text-[#535862]">{characterData[currentCharacter].progressLabel}</span>
@@ -927,7 +929,7 @@ const JamieAI = () => {
         )}
         
         {/* Character's State - Only show in Game mode */}
-        {gameMode === 'game' && (
+        {characterData[currentCharacter].gameMode === 'game' && (
           <p className="text-[16px] font-medium text-[#797979] text-left mb-4">
             {getCharacterState()}
           </p>
@@ -1087,12 +1089,12 @@ const JamieAI = () => {
                         </div>
                         
                         {/* Gray Hairline Divider */}
-                        {msg.dqScore && gameMode === 'game' && (
+                        {msg.dqScore && characterData[currentCharacter].gameMode === 'game' && (
                           <div className="w-full h-px bg-gray-300"></div>
                         )}
                         
                         {/* DQ Score Panel */}
-                        {msg.dqScore && gameMode === 'game' && (
+                        {msg.dqScore && characterData[currentCharacter].gameMode === 'game' && (
                           <div className="flex flex-col gap-[25px]">
                             {/* DQ Header */}
                             <div className="flex flex-col">

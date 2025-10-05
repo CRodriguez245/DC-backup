@@ -123,7 +123,7 @@ const HomePage = ({ userInfo, gameMode, onStartCoaching, onLogout, onSettings })
                         ? 'bg-gray-300 hover:bg-gray-400'
                         : 'bg-gray-300'
                     } transition-colors`}
-                    style={(level.id === 'jamie' || level.id === 'andres' || level.id === 'kavya') && level.completed ? { backgroundColor: '#2C73EB' } : {}}
+                    style={(level.id === 'jamie' || level.id === 'andres' || level.id === 'kavya') && level.completed ? { backgroundColor: '#2C73EB', opacity: 1 } : {}}
                     onClick={() => handleCharacterClick(level)}
                   >
                     {level.status === 'Locked' ? (

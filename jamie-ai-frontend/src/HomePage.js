@@ -171,7 +171,7 @@ const HomePage = ({ userInfo, gameMode, onStartCoaching, onLogout, onSettings })
                   onMouseLeave={() => setHoveredCharacter(null)}
                 >
                   <div 
-                    className={`w-24 h-24 rounded-full flex items-center justify-center text-2xl cursor-pointer overflow-hidden transition-all duration-300 ease-in-out hover:scale-110 hover:shadow-xl ${
+                    className={`w-28 h-28 rounded-full flex items-center justify-center text-2xl cursor-pointer overflow-hidden transition-all duration-300 ease-in-out hover:scale-110 hover:shadow-xl ${
                       level.completed 
                         ? (level.id === 'jamie' || level.id === 'andres' || level.id === 'kavya') ? 'hover:opacity-90' : 'border-2 border-blue-300 hover:opacity-90'
                         : level.status === 'Available'

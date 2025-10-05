@@ -58,7 +58,7 @@ const HomePage = ({ userInfo, gameMode, onStartCoaching, onLogout, onSettings })
   ];
 
   return (
-    <div className="min-h-screen bg-white relative">
+    <div className="h-screen bg-white relative flex flex-col">
       {/* Header */}
       <div className="absolute top-6 left-6 z-10">
         <div className="text-black font-bold text-[25px] leading-[28px]">
@@ -68,7 +68,7 @@ const HomePage = ({ userInfo, gameMode, onStartCoaching, onLogout, onSettings })
       </div>
 
       {/* Main Network Visualization */}
-      <div className="flex items-start justify-start min-h-screen p-8">
+      <div className="flex-1 overflow-y-auto p-8">
         <div className="relative w-full max-w-7xl h-[900px]">
           {/* Network connections - Zig-zag pattern */}
           <svg className="absolute inset-0 w-full h-full" style={{ zIndex: 0 }}>

@@ -72,17 +72,17 @@ const HomePage = ({ userInfo, gameMode, onStartCoaching, onLogout, onSettings })
         <div className="relative w-full max-w-7xl h-[900px]">
           {/* Network connections - Curved pattern */}
           <svg className="absolute inset-0 w-full h-full" style={{ zIndex: 0 }}>
-            {/* Jamie to Andres - curved at midpoint */}
+            {/* Jamie to Andres - more pronounced curve */}
             <path
-              d="M 700 120 Q 900 200 1100 320"
+              d="M 700 120 Q 900 160 1100 320"
               stroke="#3B82F6"
               strokeWidth="2"
               strokeDasharray="5,5"
               fill="none"
             />
-            {/* Kavya to Andres - curved at midpoint */}
+            {/* Kavya to Andres - more pronounced curve */}
             <path
-              d="M 700 520 Q 900 400 1100 320"
+              d="M 700 520 Q 900 360 1100 320"
               stroke="#3B82F6"
               strokeWidth="2"
               strokeDasharray="5,5"

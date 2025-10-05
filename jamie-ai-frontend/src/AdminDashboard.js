@@ -112,7 +112,7 @@ const AdminDashboard = ({ onBackToHome, onLogout }) => {
       {/* Right Main Content */}
       <div className="flex-1 flex flex-col pt-16 overflow-y-auto">
         {/* Header with User Greeting */}
-        <div className="p-6 border-b border-gray-200">
+        <div className="p-6">
           <div className="flex items-center space-x-3">
             <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center">
               <span className="text-white text-sm font-medium">J</span>

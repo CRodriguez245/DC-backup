@@ -65,9 +65,9 @@ const AdminDashboard = ({ onBackToHome, onLogout }) => {
   const [searchTerm, setSearchTerm] = useState('');
 
   return (
-    <div className="min-h-screen bg-white flex">
+    <div className="h-screen bg-white flex overflow-hidden">
       {/* Left Sidebar */}
-      <div className="w-80 bg-gray-50 flex flex-col">
+      <div className="w-80 bg-gray-50 flex flex-col flex-shrink-0">
         {/* Decision Coach Title */}
         <div style={{ padding: '29px' }}>
           <div className="text-black font-bold text-[25px] leading-[28px]">

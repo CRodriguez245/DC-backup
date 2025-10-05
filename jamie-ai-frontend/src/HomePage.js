@@ -100,6 +100,14 @@ const HomePage = ({ userInfo, gameMode, onStartCoaching, onLogout, onSettings })
             stroke-dasharray: 5, 5;
           }
         }
+        @keyframes drawLineReverse {
+          from {
+            stroke-dasharray: 1000, 0;
+          }
+          to {
+            stroke-dasharray: 5, 5;
+          }
+        }
       `}</style>
       {/* Header */}
       <div className="absolute top-6 left-6 z-10">
@@ -120,7 +128,7 @@ const HomePage = ({ userInfo, gameMode, onStartCoaching, onLogout, onSettings })
               stroke="#3B82F6"
               strokeWidth="2"
               fill="none"
-              style={{ animation: 'drawLine 1.5s ease-out 0.6s both' }}
+              style={{ animation: 'drawLineReverse 1.5s ease-out 0.6s both' }}
             />
             {/* Kavya to Andres - downward curve */}
             <path

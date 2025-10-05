@@ -143,10 +143,7 @@ const AdminDashboard = ({ onBackToHome, onLogout }) => {
           <div className="space-y-2">
             {students.map((student, index) => (
               <div key={student.id} className="grid grid-cols-5 gap-4 py-4 border-b border-gray-100 hover:bg-gray-50">
-                <div className="flex items-center">
-                  <span className="text-gray-400 text-sm mr-3">{index + 1}</span>
-                  <span className="text-gray-900">{student.name}</span>
-                </div>
+                <div className="text-gray-900">{student.name}</div>
                 <div className="text-gray-900">{student.studentId}</div>
                 <div className="text-gray-900">{student.dqScore}</div>
                 <div className="text-blue-600 underline">{student.email}</div>

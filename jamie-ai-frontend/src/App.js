@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Send, User, Bot, Star, Home, Settings, LogOut } from 'lucide-react';
+import { Send, User, Bot, Star, Home, Settings, LogOut, BarChart3 } from 'lucide-react';
 import LandingPage from './LandingPage';
 import HomePage from './HomePage';
+import AdminDashboard from './AdminDashboard';
 
 // Jamie's Animated Face Component
 const JamieFace = ({ dqScore, avgDqScore, size = 'small' }) => {
@@ -806,6 +807,16 @@ const JamieAI = () => {
     );
   }
 
+  // Show admin dashboard if user is on admin view
+  if (currentView === 'admin') {
+    return (
+      <AdminDashboard 
+        onBackToHome={() => setCurrentView('homepage')}
+        onLogout={handleLogout}
+      />
+    );
+  }
+
   return (
     <div className="bg-white h-screen w-full flex">
       <style jsx>{`
@@ -911,6 +922,14 @@ const JamieAI = () => {
             className="w-8 h-8 flex items-center justify-center text-blue-600 hover:bg-blue-50 rounded transition-colors"
           >
             <Home className="w-5 h-5" />
+          </button>
+          <div className="w-px h-6 bg-gray-300"></div>
+          <button 
+            onClick={() => setCurrentView('admin')}
+            className="w-8 h-8 flex items-center justify-center text-green-600 hover:bg-green-50 rounded transition-colors"
+            title="Admin Dashboard"
+          >
+            <BarChart3 className="w-5 h-5" />
           </button>
           <div className="w-px h-6 bg-gray-300"></div>
           <button 

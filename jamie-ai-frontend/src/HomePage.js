@@ -65,6 +65,18 @@ const HomePage = ({ userInfo, gameMode, onStartCoaching, onLogout, onSettings })
 
   return (
     <div className="h-screen bg-white relative flex flex-col">
+      <style jsx>{`
+        @keyframes tooltipFadeIn {
+          from {
+            opacity: 0;
+            transform: scale(0.95) translateY(10px);
+          }
+          to {
+            opacity: 1;
+            transform: scale(1) translateY(0);
+          }
+        }
+      `}</style>
       {/* Header */}
       <div className="absolute top-6 left-6 z-10">
         <div className="text-black font-bold text-[25px] leading-[28px]">
@@ -146,14 +158,15 @@ const HomePage = ({ userInfo, gameMode, onStartCoaching, onLogout, onSettings })
 
                 {/* Character Info Card - only show on hover */}
                 {hoveredCharacter === level.id && (
-                  <div className={`bg-white rounded-lg shadow-lg p-4 border absolute z-10 ${
+                  <div className={`bg-white rounded-lg shadow-lg p-4 border absolute z-10 transition-all duration-300 ease-in-out transform animate-in fade-in-0 zoom-in-95 ${
                     level.id === 'jamie' || level.id === 'kavya' || level.id === 'sarah' 
                       ? 'mr-4' 
                       : 'ml-4'
                   }`} style={{
                     left: level.id === 'jamie' || level.id === 'kavya' || level.id === 'sarah' ? '-280px' : '100px',
                     top: '-20px',
-                    width: '250px'
+                    width: '250px',
+                    animation: 'tooltipFadeIn 0.3s ease-out'
                   }}>
                     {/* Speech bubble tail - centered to the left of the circle */}
                     <div className={`absolute top-1/2 transform -translate-y-1/2 w-0 h-0 ${

@@ -42,7 +42,7 @@ const HomePage = ({ userInfo, gameMode, onStartCoaching, onLogout, onSettings })
       dqScore: null,
       avatar: '👨‍🎨',
       description: 'Sophomore Mechanical Engineering student considering switching to Art/Design',
-      position: { x: 1100, y: 620 },
+      position: { x: 1100, y: 920 },
       completed: false
     },
     {
@@ -52,7 +52,7 @@ const HomePage = ({ userInfo, gameMode, onStartCoaching, onLogout, onSettings })
       dqScore: null,
       avatar: '👩‍🎓',
       description: 'Coming soon...',
-      position: { x: 700, y: 720 },
+      position: { x: 700, y: 920 },
       completed: false
     }
   ];
@@ -90,7 +90,7 @@ const HomePage = ({ userInfo, gameMode, onStartCoaching, onLogout, onSettings })
             />
             {/* Kavya to Daniel - noticeable upward arching curve */}
             <path
-              d="M 700 520 Q 900 570 1100 620"
+              d="M 700 520 Q 900 720 1100 920"
               stroke="#3B82F6"
               strokeWidth="2"
               strokeDasharray="5,5"

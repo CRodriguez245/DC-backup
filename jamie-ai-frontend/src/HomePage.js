@@ -1,12 +1,14 @@
 import React, { useState } from 'react';
 import { Home, Settings, LogOut } from 'lucide-react';
 
-const HomePage = ({ userInfo, gameMode, onStartCoaching, onLogout, onSettings }) => {
+const HomePage = ({ userInfo, gameMode, onStartCoaching, onLogout, onSettings, onCharacterClick }) => {
   const [hoveredCharacter, setHoveredCharacter] = useState(null);
 
   const handleCharacterClick = (character) => {
     if (character.id === 'jamie') {
       onStartCoaching();
+    } else if (character.id === 'andres') {
+      onCharacterClick('andres');
     }
   };
 

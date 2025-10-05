@@ -63,6 +63,23 @@ const JamieAI = () => {
     return localStorage.getItem('gameMode') || 'game';
   });
   const [currentView, setCurrentView] = useState('homepage'); // 'homepage' or 'chat'
+  const [currentCharacter, setCurrentCharacter] = useState('jamie'); // 'jamie' or 'andres'
+  
+  // Character data
+  const characterData = {
+    jamie: {
+      name: 'Jamie',
+      title: 'Mechanical Engineering',
+      context: 'Jamie is a sophomore mechanical engineering student considering switching to art/design. He\'s worried about disappointing his immigrant parents. How would you coach him?',
+      progressLabel: 'Jamie\'s Progress'
+    },
+    andres: {
+      name: 'Andres',
+      title: 'Software Engineering',
+      context: 'Andres is a software engineer considering a career pivot to product management. He\'s feeling burnt out from coding and wants to work more with people and strategy. How would you coach him?',
+      progressLabel: 'Andres\'s Progress'
+    }
+  };
   
   // Chat state
   const [messages, setMessages] = useState([]);
@@ -111,6 +128,13 @@ const JamieAI = () => {
     setIsTyping(false);
     setAnimatedProgress(0);
     setIsProgressAnimating(false);
+  };
+
+  // Handle character selection
+  const handleCharacterClick = (characterId) => {
+    setCurrentCharacter(characterId);
+    setCurrentView('chat');
+    setMessages([]); // Clear messages when switching characters
   };
 
   // Handle logout
@@ -192,8 +216,8 @@ const JamieAI = () => {
     return Math.round(averageScore * 100);
   };
 
-  // Get Jamie's current state
-  const getJamieState = () => {
+  // Get character's current state
+  const getCharacterState = () => {
     const progress = getJamieProgress();
     if (progress >= 80) return 'Confident';
     if (progress >= 60) return 'Thoughtful';
@@ -803,6 +827,7 @@ const JamieAI = () => {
         onStartCoaching={handleStartCoaching}
         onLogout={handleLogout}
         onSettings={handleSettings}
+        onCharacterClick={handleCharacterClick}
       />
     );
   }
@@ -870,18 +895,17 @@ const JamieAI = () => {
           </h1>
         </div>
         
-        {/* Jamie Info */}
+        {/* Character Info */}
         <div className="mb-2">
-          <h2 className="text-[20px] font-semibold text-[#363636] mb-0">Jamie</h2>
-          <p className="text-[16px] text-[#363636]">Mechanical Engineering</p>
+          <h2 className="text-[20px] font-semibold text-[#363636] mb-0">{characterData[currentCharacter].name}</h2>
+          <p className="text-[16px] text-[#363636]">{characterData[currentCharacter].title}</p>
         </div>
         
         {/* Context Section - Show only after first message in both modes */}
         {messages.length > 0 && (
           <div className="mb-6">
             <p className="text-[12px] text-[#535862] leading-relaxed">
-              Jamie is a sophomore mechanical engineering student considering switching to art/design. 
-              He's worried about disappointing his immigrant parents. How would you coach him?
+              {characterData[currentCharacter].context}
             </p>
           </div>
         )}
@@ -890,7 +914,7 @@ const JamieAI = () => {
         {gameMode === 'game' && (
           <div className="mb-2 mt-2">
             <div className="flex items-center justify-between mb-1">
-              <span className="text-[12px] font-medium text-[#535862]">Jamie's Progress</span>
+              <span className="text-[12px] font-medium text-[#535862]">{characterData[currentCharacter].progressLabel}</span>
               <span className="text-[12px] font-semibold text-[#181d27]">{animatedProgress}%</span>
             </div>
             <div className="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
@@ -902,10 +926,10 @@ const JamieAI = () => {
           </div>
         )}
         
-        {/* Jamie's State - Only show in Game mode */}
+        {/* Character's State - Only show in Game mode */}
         {gameMode === 'game' && (
           <p className="text-[16px] font-medium text-[#797979] text-left mb-4">
-            {getJamieState()}
+            {getCharacterState()}
           </p>
         )}
         

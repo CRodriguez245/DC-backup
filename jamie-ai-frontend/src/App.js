@@ -888,31 +888,31 @@ const JamieAI = () => {
         
         {/* Spacer to push navigation to bottom */}
         <div className="flex-1"></div>
-        
-        {/* Navigation Bar */}
-        <div className="absolute bottom-6 left-6">
-          <div className="bg-white rounded-lg shadow-lg p-4 flex items-center space-x-4 border">
-            <button 
-              onClick={() => setCurrentView('homepage')}
-              className="w-8 h-8 flex items-center justify-center text-blue-600 hover:bg-blue-50 rounded transition-colors"
-            >
-              <Home className="w-5 h-5" />
-            </button>
-            <div className="w-px h-6 bg-gray-300"></div>
-            <button 
-              onClick={handleSettings}
-              className="w-8 h-8 flex items-center justify-center text-gray-600 hover:bg-gray-50 rounded transition-colors"
-            >
-              <Settings className="w-5 h-5" />
-            </button>
-            <div className="w-px h-6 bg-gray-300"></div>
-            <button 
-              onClick={handleLogout}
-              className="w-8 h-8 flex items-center justify-center text-gray-600 hover:bg-gray-50 rounded transition-colors"
-            >
-              <LogOut className="w-5 h-5" />
-            </button>
-          </div>
+      </div>
+      
+      {/* Navigation Bar - positioned outside sidebar for proper click events */}
+      <div className="absolute bottom-6 left-6 z-50">
+        <div className="bg-white rounded-lg shadow-lg p-4 flex items-center space-x-4 border">
+          <button 
+            onClick={() => setCurrentView('homepage')}
+            className="w-8 h-8 flex items-center justify-center text-blue-600 hover:bg-blue-50 rounded transition-colors"
+          >
+            <Home className="w-5 h-5" />
+          </button>
+          <div className="w-px h-6 bg-gray-300"></div>
+          <button 
+            onClick={handleSettings}
+            className="w-8 h-8 flex items-center justify-center text-gray-600 hover:bg-gray-50 rounded transition-colors"
+          >
+            <Settings className="w-5 h-5" />
+          </button>
+          <div className="w-px h-6 bg-gray-300"></div>
+          <button 
+            onClick={handleLogout}
+            className="w-8 h-8 flex items-center justify-center text-gray-600 hover:bg-gray-50 rounded transition-colors"
+          >
+            <LogOut className="w-5 h-5" />
+          </button>
         </div>
       </div>
       

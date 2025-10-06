@@ -77,6 +77,13 @@ const AdminDashboard = ({ onBackToHome, onLogout, currentView }) => {
     setSelectedStudent(null);
   };
 
+  // Filter students based on search term
+  const filteredStudents = students.filter(student => 
+    student.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    student.studentId.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    student.email.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
   return (
     <div className="h-screen bg-white flex overflow-hidden">
       {/* Left Sidebar */}
@@ -168,28 +175,35 @@ const AdminDashboard = ({ onBackToHome, onLogout, currentView }) => {
 
           {/* Student Rows */}
           <div className="space-y-1">
-            {students.map((student, index) => (
-              <div key={student.id} className="grid grid-cols-4 gap-4 py-5 px-4 border-b border-gray-100 hover:bg-gray-50 transition-colors">
-                <div className="flex flex-col justify-center">
-                  <div className="text-gray-900 font-medium text-base mb-1">{student.name}</div>
-                  <div className="text-blue-600 text-sm hover:underline cursor-pointer">{student.email}</div>
+            {filteredStudents.length > 0 ? (
+              filteredStudents.map((student, index) => (
+                <div key={student.id} className="grid grid-cols-4 gap-4 py-5 px-4 border-b border-gray-100 hover:bg-gray-50 transition-colors">
+                  <div className="flex flex-col justify-center">
+                    <div className="text-gray-900 font-medium text-base mb-1">{student.name}</div>
+                    <div className="text-blue-600 text-sm hover:underline cursor-pointer">{student.email}</div>
+                  </div>
+                  <div className="flex items-center">
+                    <span className="text-gray-700 font-mono text-sm bg-gray-100 px-2 py-1 rounded">{student.studentId}</span>
+                  </div>
+                  <div className="flex items-center">
+                    <span className="text-gray-900 font-semibold text-lg">{student.dqScore}</span>
+                  </div>
+                  <div className="flex items-center">
+                    <button 
+                      onClick={() => handleViewAssessment(student)}
+                      className="text-white bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-lg text-sm font-medium transition-colors shadow-sm hover:shadow-md"
+                    >
+                      View Assessment
+                    </button>
+                  </div>
                 </div>
-                <div className="flex items-center">
-                  <span className="text-gray-700 font-mono text-sm bg-gray-100 px-2 py-1 rounded">{student.studentId}</span>
-                </div>
-                <div className="flex items-center">
-                  <span className="text-gray-900 font-semibold text-lg">{student.dqScore}</span>
-                </div>
-                <div className="flex items-center">
-                  <button 
-                    onClick={() => handleViewAssessment(student)}
-                    className="text-white bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-lg text-sm font-medium transition-colors shadow-sm hover:shadow-md"
-                  >
-                    View Assessment
-                  </button>
-                </div>
+              ))
+            ) : (
+              <div className="py-8 text-center">
+                <p className="text-gray-500 text-lg">No students found matching "{searchTerm}"</p>
+                <p className="text-gray-400 text-sm mt-2">Try searching by name, student ID, or email</p>
               </div>
-            ))}
+            )}
           </div>
         </div>
       </div>

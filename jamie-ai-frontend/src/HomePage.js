@@ -1,8 +1,27 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Home, Settings, LogOut, BarChart3 } from 'lucide-react';
 
 const HomePage = ({ userInfo, gameMode, onStartCoaching, onLogout, onSettings, onCharacterClick, onAdminClick }) => {
   const [hoveredCharacter, setHoveredCharacter] = useState(null);
+  const [displayedText, setDisplayedText] = useState('');
+  const [isTyping, setIsTyping] = useState(true);
+
+  const fullText = "Welcome to Decision Coach! Start with Jamie's assessment to evaluate your coaching skills. Complete Jamie's session to unlock the game mode with other characters.";
+
+  useEffect(() => {
+    let index = 0;
+    const typingInterval = setInterval(() => {
+      if (index < fullText.length) {
+        setDisplayedText(fullText.slice(0, index + 1));
+        index++;
+      } else {
+        setIsTyping(false);
+        clearInterval(typingInterval);
+      }
+    }, 50); // 50ms delay between characters
+
+    return () => clearInterval(typingInterval);
+  }, []);
 
   const handleCharacterClick = (character) => {
     if (character.id === 'jamie') {
@@ -118,19 +137,12 @@ const HomePage = ({ userInfo, gameMode, onStartCoaching, onLogout, onSettings, o
             stroke-dasharray: 5, 5;
           }
         }
-        @keyframes typewriter {
-          from { width: 0; }
-          to { width: 100%; }
-        }
         @keyframes blink {
-          0%, 50% { border-color: transparent; }
-          51%, 100% { border-color: #3B82F6; }
+          0%, 50% { opacity: 1; }
+          51%, 100% { opacity: 0; }
         }
-        .typewriter {
-          overflow: hidden;
-          border-right: 2px solid #3B82F6;
-          white-space: pre-wrap;
-          animation: typewriter 6s steps(80, end), blink 0.75s step-end infinite;
+        .typing-cursor {
+          animation: blink 1s infinite;
         }
       `}</style>
       {/* Header */}
@@ -143,8 +155,9 @@ const HomePage = ({ userInfo, gameMode, onStartCoaching, onLogout, onSettings, o
 
       {/* Welcome Instructions */}
       <div className="absolute z-10" style={{ top: '200px', left: '29px' }}>
-        <div className="text-gray-700 text-base leading-relaxed max-w-md typewriter">
-          {`Welcome to Decision Coach! Start with Jamie's assessment to evaluate your coaching skills. Complete Jamie's session to unlock the game mode with other characters.`}
+        <div className="text-gray-700 text-base leading-relaxed max-w-md">
+          {displayedText}
+          {isTyping && <span className="typing-cursor text-blue-600">|</span>}
         </div>
       </div>
 

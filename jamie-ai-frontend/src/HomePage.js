@@ -118,6 +118,20 @@ const HomePage = ({ userInfo, gameMode, onStartCoaching, onLogout, onSettings, o
             stroke-dasharray: 5, 5;
           }
         }
+        @keyframes typewriter {
+          from { width: 0; }
+          to { width: 100%; }
+        }
+        @keyframes blink {
+          0%, 50% { border-color: transparent; }
+          51%, 100% { border-color: #3B82F6; }
+        }
+        .typewriter {
+          overflow: hidden;
+          border-right: 2px solid #3B82F6;
+          white-space: pre-wrap;
+          animation: typewriter 6s steps(80, end), blink 0.75s step-end infinite;
+        }
       `}</style>
       {/* Header */}
       <div className="absolute z-10" style={{ top: '29px', left: '29px' }}>
@@ -129,8 +143,8 @@ const HomePage = ({ userInfo, gameMode, onStartCoaching, onLogout, onSettings, o
 
       {/* Welcome Instructions */}
       <div className="absolute z-10" style={{ top: '200px', left: '29px' }}>
-        <div className="text-gray-700 text-base leading-relaxed max-w-md">
-          Welcome to Decision Coach! Start with Jamie's assessment to evaluate your coaching skills. Complete Jamie's session to unlock the game mode with other characters.
+        <div className="text-gray-700 text-base leading-relaxed max-w-md typewriter">
+          {`Welcome to Decision Coach! Start with Jamie's assessment to evaluate your coaching skills. Complete Jamie's session to unlock the game mode with other characters.`}
         </div>
       </div>
 

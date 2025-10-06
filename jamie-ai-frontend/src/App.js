@@ -842,6 +842,7 @@ const JamieAI = () => {
       <AdminDashboard 
         onBackToHome={() => setCurrentView('homepage')}
         onLogout={handleLogout}
+        currentView={currentView}
       />
     );
   }

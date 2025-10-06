@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Search, Home, Settings, LogOut, BarChart3 } from 'lucide-react';
 
-const AdminDashboard = ({ onBackToHome, onLogout }) => {
+const AdminDashboard = ({ onBackToHome, onLogout, currentView }) => {
   // Demo student data with realistic information
   const [students] = useState([
     {
@@ -87,7 +87,11 @@ const AdminDashboard = ({ onBackToHome, onLogout }) => {
             </button>
             <div className="w-px h-6 bg-gray-300"></div>
             <button 
-              className="w-8 h-8 flex items-center justify-center text-green-600 hover:bg-green-50 rounded transition-colors"
+              className={`w-8 h-8 flex items-center justify-center rounded transition-colors ${
+                currentView === 'admin' 
+                  ? 'text-blue-600 hover:bg-blue-50' 
+                  : 'text-gray-600 hover:bg-gray-50'
+              }`}
               title="Admin Dashboard"
             >
               <BarChart3 className="w-5 h-5" />

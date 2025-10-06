@@ -218,76 +218,88 @@ const AdminDashboard = ({ onBackToHome, onLogout, currentView }) => {
 
             {/* Modal Content - Scrollable Chat Session */}
             <div className="flex-1 overflow-y-auto p-6">
-              <div className="space-y-4">
-                {/* Welcome Message */}
-                <div className="flex items-start space-x-3">
-                  <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center flex-shrink-0">
-                    <span className="text-white text-sm font-medium">J</span>
+              <div className="space-y-6">
+                {/* Welcome Message - Jamie */}
+                <div className="flex gap-[30px] items-start">
+                  {/* Jamie's Avatar */}
+                  <div className="w-[70px] h-[70px] rounded-full bg-[#2C73EB] flex items-end justify-center flex-shrink-0 overflow-hidden">
+                    <img 
+                      src="/images/cu-JAMIE.png" 
+                      alt="Jamie" 
+                      className="w-[70px] h-[70px] object-cover object-bottom"
+                    />
                   </div>
-                  <div className="bg-gray-100 rounded-lg p-4 max-w-md">
-                    <p className="text-gray-800">
-                      Hi {selectedStudent.name}! I'm Jamie, a sophomore mechanical engineering student considering switching to art/design. I'm worried about disappointing my immigrant parents. How would you coach me through this decision?
-                    </p>
+                  
+                  {/* Jamie's Message */}
+                  <div className="bg-white rounded-[5px] shadow-[0px_6px_20px_10px_rgba(200,201,201,0.11)] px-[33px] py-6 max-w-[597px]">
+                    <div className="text-[16px] text-[#333333] leading-[26px]">
+                      <p>Hi {selectedStudent.name}! I'm Jamie, a sophomore mechanical engineering student considering switching to art/design. I'm worried about disappointing my immigrant parents. How would you coach me through this decision?</p>
+                    </div>
                   </div>
                 </div>
 
                 {/* Student Response */}
-                <div className="flex items-start space-x-3 justify-end">
-                  <div className="bg-blue-600 rounded-lg p-4 max-w-md">
-                    <p className="text-white">
+                <div className="flex justify-end">
+                  <div className="bg-[#e8f1f8] rounded-[5px] shadow-[0px_6px_20px_10px_rgba(200,201,201,0.11)] px-6 py-6 max-w-[605px]">
+                    <p className="text-[16px] text-[#363636] leading-[26px]">
                       I understand this is a difficult decision. Let's start by exploring what draws you to art/design. What specific aspects of these fields excite you most?
                     </p>
                   </div>
-                  <div className="w-8 h-8 bg-gray-400 rounded-full flex items-center justify-center flex-shrink-0">
-                    <span className="text-white text-sm font-medium">C</span>
-                  </div>
                 </div>
 
                 {/* Jamie's Response */}
-                <div className="flex items-start space-x-3">
-                  <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center flex-shrink-0">
-                    <span className="text-white text-sm font-medium">J</span>
+                <div className="flex gap-[30px] items-start">
+                  {/* Jamie's Avatar */}
+                  <div className="w-[70px] h-[70px] rounded-full bg-[#2C73EB] flex items-end justify-center flex-shrink-0 overflow-hidden">
+                    <img 
+                      src="/images/cu-JAMIE.png" 
+                      alt="Jamie" 
+                      className="w-[70px] h-[70px] object-cover object-bottom"
+                    />
                   </div>
-                  <div className="bg-gray-100 rounded-lg p-4 max-w-md">
-                    <p className="text-gray-800">
-                      I've always loved creating things with my hands and expressing myself visually. In my engineering classes, I find myself doodling and thinking about how things could look better, not just function better. But I'm scared I'm not talented enough to succeed in art.
-                    </p>
+                  
+                  {/* Jamie's Message */}
+                  <div className="bg-white rounded-[5px] shadow-[0px_6px_20px_10px_rgba(200,201,201,0.11)] px-[33px] py-6 max-w-[597px]">
+                    <div className="text-[16px] text-[#333333] leading-[26px]">
+                      <p>I've always loved creating things with my hands and expressing myself visually. In my engineering classes, I find myself doodling and thinking about how things could look better, not just function better. But I'm scared I'm not talented enough to succeed in art.</p>
+                    </div>
                   </div>
                 </div>
 
                 {/* Student Response */}
-                <div className="flex items-start space-x-3 justify-end">
-                  <div className="bg-blue-600 rounded-lg p-4 max-w-md">
-                    <p className="text-white">
+                <div className="flex justify-end">
+                  <div className="bg-[#e8f1f8] rounded-[5px] shadow-[0px_6px_20px_10px_rgba(200,201,201,0.11)] px-6 py-6 max-w-[605px]">
+                    <p className="text-[16px] text-[#363636] leading-[26px]">
                       That's a common concern. Let's reframe this - what if we looked at this as developing skills rather than relying on innate talent? What steps could you take to build your confidence in your artistic abilities?
                     </p>
                   </div>
-                  <div className="w-8 h-8 bg-gray-400 rounded-full flex items-center justify-center flex-shrink-0">
-                    <span className="text-white text-sm font-medium">C</span>
-                  </div>
                 </div>
 
                 {/* Jamie's Response */}
-                <div className="flex items-start space-x-3">
-                  <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center flex-shrink-0">
-                    <span className="text-white text-sm font-medium">J</span>
+                <div className="flex gap-[30px] items-start">
+                  {/* Jamie's Avatar */}
+                  <div className="w-[70px] h-[70px] rounded-full bg-[#2C73EB] flex items-end justify-center flex-shrink-0 overflow-hidden">
+                    <img 
+                      src="/images/cu-JAMIE.png" 
+                      alt="Jamie" 
+                      className="w-[70px] h-[70px] object-cover object-bottom"
+                    />
                   </div>
-                  <div className="bg-gray-100 rounded-lg p-4 max-w-md">
-                    <p className="text-gray-800">
-                      I could take some art classes, maybe join a design club, or even start a portfolio. But what about my parents? They've sacrificed so much for me to have this engineering opportunity.
-                    </p>
+                  
+                  {/* Jamie's Message */}
+                  <div className="bg-white rounded-[5px] shadow-[0px_6px_20px_10px_rgba(200,201,201,0.11)] px-[33px] py-6 max-w-[597px]">
+                    <div className="text-[16px] text-[#333333] leading-[26px]">
+                      <p>I could take some art classes, maybe join a design club, or even start a portfolio. But what about my parents? They've sacrificed so much for me to have this engineering opportunity.</p>
+                    </div>
                   </div>
                 </div>
 
                 {/* Student Response */}
-                <div className="flex items-start space-x-3 justify-end">
-                  <div className="bg-blue-600 rounded-lg p-4 max-w-md">
-                    <p className="text-white">
+                <div className="flex justify-end">
+                  <div className="bg-[#e8f1f8] rounded-[5px] shadow-[0px_6px_20px_10px_rgba(200,201,201,0.11)] px-6 py-6 max-w-[605px]">
+                    <p className="text-[16px] text-[#363636] leading-[26px]">
                       Your parents' sacrifices show they want the best for you. How might you involve them in this exploration? What if you could show them that design and engineering can complement each other?
                     </p>
-                  </div>
-                  <div className="w-8 h-8 bg-gray-400 rounded-full flex items-center justify-center flex-shrink-0">
-                    <span className="text-white text-sm font-medium">C</span>
                   </div>
                 </div>
 

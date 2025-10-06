@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Home, Settings, LogOut, BarChart3 } from 'lucide-react';
 
-const HomePage = ({ userInfo, gameMode, onStartCoaching, onLogout, onSettings, onCharacterClick, onAdminClick }) => {
+const HomePage = ({ userInfo, gameMode, onStartCoaching, onLogout, onSettings, onCharacterClick, onAdminClick, currentView }) => {
   const [hoveredCharacter, setHoveredCharacter] = useState(null);
   const [displayedText, setDisplayedText] = useState('');
   const [isTyping, setIsTyping] = useState(true);
@@ -286,7 +286,11 @@ const HomePage = ({ userInfo, gameMode, onStartCoaching, onLogout, onSettings, o
           <div className="w-px h-6 bg-gray-300"></div>
           <button 
             onClick={onAdminClick}
-            className="w-8 h-8 flex items-center justify-center text-green-600 hover:bg-green-50 rounded transition-colors"
+            className={`w-8 h-8 flex items-center justify-center rounded transition-colors ${
+              currentView === 'admin' 
+                ? 'text-blue-600 hover:bg-blue-50' 
+                : 'text-gray-600 hover:bg-gray-50'
+            }`}
             title="Admin Dashboard"
           >
             <BarChart3 className="w-5 h-5" />

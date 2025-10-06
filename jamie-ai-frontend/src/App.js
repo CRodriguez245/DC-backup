@@ -831,6 +831,7 @@ const JamieAI = () => {
         onSettings={handleSettings}
         onCharacterClick={handleCharacterClick}
         onAdminClick={() => setCurrentView('admin')}
+        currentView={currentView}
       />
     );
   }

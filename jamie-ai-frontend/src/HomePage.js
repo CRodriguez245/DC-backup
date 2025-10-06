@@ -127,6 +127,13 @@ const HomePage = ({ userInfo, gameMode, onStartCoaching, onLogout, onSettings, o
         </div>
       </div>
 
+      {/* Welcome Instructions */}
+      <div className="absolute z-10" style={{ top: '100px', left: '29px' }}>
+        <div className="text-gray-700 text-base leading-relaxed max-w-md">
+          Welcome to Decision Coach! Start with Jamie's assessment to evaluate your coaching skills. Complete Jamie's session to unlock the game mode with other characters.
+        </div>
+      </div>
+
       {/* Main Network Visualization */}
       <div className="flex-1 overflow-y-auto px-8 pt-8 pb-48" style={{ animation: 'elementFadeIn 0.8s ease-out 0.2s both' }}>
         <div className="relative w-full max-w-7xl h-[900px]">

@@ -155,7 +155,7 @@ const HomePage = ({ userInfo, gameMode, onStartCoaching, onLogout, onSettings, o
 
       {/* Welcome Instructions */}
       <div className="absolute z-10" style={{ top: '250px', left: '29px' }}>
-        <div className="text-gray-700 text-base leading-relaxed max-w-md">
+        <div className="text-gray-700 text-base leading-relaxed max-w-sm">
           {displayedText}
           {isTyping && <span className="typing-cursor text-blue-600">|</span>}
         </div>

@@ -3,6 +3,7 @@ import { Send, User, Bot, Star, Home, Settings, LogOut, BarChart3 } from 'lucide
 import LandingPage from './LandingPage';
 import HomePage from './HomePage';
 import AdminDashboard from './AdminDashboard';
+import SettingsPage from './SettingsPage';
 
 // Jamie's Animated Face Component
 const JamieFace = ({ dqScore, avgDqScore, size = 'small' }) => {
@@ -152,8 +153,7 @@ const JamieAI = () => {
 
   // Handle settings (placeholder for now)
   const handleSettings = () => {
-    // TODO: Implement settings modal or page
-    console.log('Settings clicked');
+    setCurrentView('settings');
   };
 
   // Reset session function
@@ -847,6 +847,17 @@ const JamieAI = () => {
     );
   }
 
+  // Show settings page if user is on settings view
+  if (currentView === 'settings') {
+    return (
+      <SettingsPage 
+        onBackToHome={() => setCurrentView('homepage')}
+        onLogout={handleLogout}
+        currentView={currentView}
+      />
+    );
+  }
+
   return (
     <div className="bg-white h-screen w-full flex">
       <style jsx>{`
@@ -971,7 +982,11 @@ const JamieAI = () => {
           <div className="w-px h-6 bg-gray-300"></div>
           <button 
             onClick={handleSettings}
-            className="w-8 h-8 flex items-center justify-center text-gray-600 hover:bg-gray-50 rounded transition-colors"
+            className={`w-8 h-8 flex items-center justify-center rounded transition-colors ${
+              currentView === 'settings' 
+                ? 'text-blue-600 hover:bg-blue-50' 
+                : 'text-gray-600 hover:bg-gray-50'
+            }`}
           >
             <Settings className="w-5 h-5" />
           </button>

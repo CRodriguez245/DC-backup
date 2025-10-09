@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Search, Home, Settings, LogOut, BarChart3 } from 'lucide-react';
 
-const AdminDashboard = ({ onBackToHome, onLogout, currentView }) => {
+const AdminDashboard = ({ onBackToHome, onLogout, onSettings, currentView }) => {
   const [selectedStudent, setSelectedStudent] = useState(null);
   const [showAssessmentModal, setShowAssessmentModal] = useState(false);
 
@@ -87,7 +87,7 @@ const AdminDashboard = ({ onBackToHome, onLogout, currentView }) => {
   return (
     <div className="h-screen bg-white flex overflow-hidden">
       {/* Left Sidebar */}
-      <div className="w-80 bg-gray-50 flex flex-col flex-shrink-0">
+      <div className="w-80 bg-white flex flex-col flex-shrink-0 border-r border-gray-100">
         {/* Decision Coach Title */}
         <div style={{ padding: '29px' }}>
           <div className="text-black font-bold text-[25px] leading-[28px]">
@@ -122,7 +122,12 @@ const AdminDashboard = ({ onBackToHome, onLogout, currentView }) => {
             </button>
             <div className="w-px h-6 bg-gray-300"></div>
             <button 
-              className="w-8 h-8 flex items-center justify-center text-gray-600 hover:bg-gray-50 rounded transition-colors"
+              onClick={onSettings}
+              className={`w-8 h-8 flex items-center justify-center rounded transition-colors ${
+                currentView === 'settings' 
+                  ? 'text-blue-600 hover:bg-blue-50' 
+                  : 'text-gray-600 hover:bg-gray-50'
+              }`}
             >
               <Settings className="w-5 h-5" />
             </button>
@@ -141,12 +146,15 @@ const AdminDashboard = ({ onBackToHome, onLogout, currentView }) => {
       <div className="flex-1 flex flex-col pt-16 pl-8 overflow-y-auto">
         {/* Header with User Greeting */}
         <div className="p-6">
-          <div className="flex items-center space-x-3">
-            <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center">
-              <span className="text-white text-sm font-medium">J</span>
-            </div>
-            <span className="text-gray-700 font-medium">Welcome back, Jeremy!</span>
-          </div>
+          <h1 
+            className="text-3xl text-black mb-2" 
+            style={{ fontFamily: 'Futura, -apple-system, BlinkMacSystemFont, sans-serif', fontWeight: 400 }}
+          >
+            Welcome back, Carlos!
+          </h1>
+          <p className="text-gray-600 text-sm">
+            Monitor student progress and coaching sessions
+          </p>
         </div>
 
         {/* Search Bar */}
@@ -157,16 +165,16 @@ const AdminDashboard = ({ onBackToHome, onLogout, currentView }) => {
               placeholder="Search for a Student, #A number Eg. Tanya"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-600"
+              className="w-full px-4 py-3 bg-white border border-gray-200 rounded-lg focus:outline-none focus:border-gray-400 transition-colors text-gray-900"
             />
-            <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-blue-600" />
+            <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
           </div>
         </div>
 
         {/* Student Table */}
         <div className="flex-1 px-6 pb-6">
           {/* Table Headers */}
-          <div className="grid grid-cols-4 gap-4 py-4 px-4 border-b border-gray-200 text-sm font-semibold text-gray-600 bg-gray-50">
+          <div className="grid grid-cols-4 gap-4 py-4 px-4 border-b border-gray-200 text-sm font-medium text-gray-700">
             <div>Name</div>
             <div>Student ID</div>
             <div>DQ Score</div>
@@ -177,7 +185,7 @@ const AdminDashboard = ({ onBackToHome, onLogout, currentView }) => {
           <div className="space-y-1">
             {filteredStudents.length > 0 ? (
               filteredStudents.map((student, index) => (
-                <div key={student.id} className="grid grid-cols-4 gap-4 py-5 px-4 border-b border-gray-100 hover:bg-gray-50 transition-colors">
+                <div key={student.id} className="grid grid-cols-4 gap-4 py-5 px-4 border-b border-gray-100 hover:bg-gray-50 transition-colors duration-150">
                   <div className="flex flex-col justify-center">
                     <div className="text-gray-900 font-medium text-base mb-1">{student.name}</div>
                     <div className="text-blue-600 text-sm hover:underline cursor-pointer">{student.email}</div>
@@ -191,7 +199,7 @@ const AdminDashboard = ({ onBackToHome, onLogout, currentView }) => {
                   <div className="flex items-center">
                     <button 
                       onClick={() => handleViewAssessment(student)}
-                      className="text-white bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-lg text-sm font-medium transition-colors shadow-sm hover:shadow-md"
+                      className="px-4 py-2 bg-white border border-gray-200 text-gray-700 rounded-lg hover:border-gray-400 transition-colors text-sm font-medium"
                     >
                       View Assessment
                     </button>

@@ -156,8 +156,26 @@ const HomePage = ({ userInfo, gameMode, onStartCoaching, onLogout, onSettings, o
       {/* Welcome Instructions */}
       <div className="absolute z-10" style={{ top: '250px', left: '29px' }}>
         <div className="text-gray-700 text-base leading-relaxed max-w-sm">
-          {displayedText}
-          {isTyping && <span className="typing-cursor text-blue-600">|</span>}
+          {displayedText.startsWith('Welcome to Decision Coach!') && (
+            <>
+              <span style={{ fontFamily: 'Futura, -apple-system, BlinkMacSystemFont, sans-serif', fontSize: '18px' }}>
+                {displayedText.slice(0, 'Welcome to Decision Coach!'.length)}
+              </span>
+              {displayedText.length > 'Welcome to Decision Coach!'.length && (
+                <>
+                  <br />
+                  {displayedText.slice('Welcome to Decision Coach!'.length).trim()}
+                </>
+              )}
+              {isTyping && <span className="typing-cursor text-blue-600">|</span>}
+            </>
+          )}
+          {!displayedText.startsWith('Welcome to Decision Coach!') && (
+            <>
+              {displayedText}
+              {isTyping && <span className="typing-cursor text-blue-600">|</span>}
+            </>
+          )}
         </div>
       </div>
 

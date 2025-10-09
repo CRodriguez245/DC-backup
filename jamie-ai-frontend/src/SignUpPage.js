@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Eye, EyeOff } from 'lucide-react';
+import { Eye, EyeOff, GraduationCap, Users } from 'lucide-react';
 
 const SignUpPage = ({ onSignUp, onBackToLogin }) => {
   const [formData, setFormData] = useState({
@@ -7,12 +7,14 @@ const SignUpPage = ({ onSignUp, onBackToLogin }) => {
     lastName: '',
     email: '',
     password: '',
-    confirmPassword: ''
+    confirmPassword: '',
+    userType: ''
   });
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [errors, setErrors] = useState({});
   const [gameMode, setGameMode] = useState('game'); // 'game' or 'assessment'
+
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -44,6 +46,10 @@ const SignUpPage = ({ onSignUp, onBackToLogin }) => {
       newErrors.confirmPassword = 'Passwords do not match';
     }
 
+    if (!formData.userType) {
+      newErrors.userType = 'Please select your role';
+    }
+
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
       return;
@@ -69,63 +75,43 @@ const SignUpPage = ({ onSignUp, onBackToLogin }) => {
   };
 
   return (
-    <div className="min-h-screen bg-white flex flex-col">
-      {/* Header with Logo */}
-      <div style={{ padding: '29px' }}>
-        <div className="text-black font-bold text-[25px] leading-[28px]">
-          <div>Decision</div>
-          <div>Coach</div>
-        </div>
-      </div>
-
-      {/* Main Content */}
-      <div className="flex-1 flex items-center justify-center px-6 py-4">
-        <div className="w-full max-w-sm">
-          {/* Welcome Heading */}
-          <div className="text-center mb-6">
-            <h1 className="text-3xl font-bold text-black mb-3">
-              Create Account
-            </h1>
-            <p className="text-gray-600 text-sm">
-              Join Decision Coach to practice coaching skills and help others make informed life decisions.
-            </p>
-          </div>
-
-          {/* Mode Selection */}
-          <div className="mb-6">
-            <label className="block text-sm font-medium text-gray-700 mb-3">
-              Select Mode
-            </label>
-            <div className="grid grid-cols-2 gap-3">
-              <button
-                type="button"
-                onClick={() => setGameMode('game')}
-                className={`p-3 rounded-lg border-2 transition-all duration-200 ${
-                  gameMode === 'game' 
-                    ? 'border-blue-600 bg-blue-50 text-blue-600' 
-                    : 'border-gray-300 bg-gray-50 text-gray-600 hover:border-gray-400'
-                }`}
-              >
-                <div className="text-sm font-semibold">Game</div>
-                <div className="text-xs text-gray-500 mt-1">With progress tracking</div>
-              </button>
-              <button
-                type="button"
-                onClick={() => setGameMode('assessment')}
-                className={`p-3 rounded-lg border-2 transition-all duration-200 ${
-                  gameMode === 'assessment' 
-                    ? 'border-blue-600 bg-blue-50 text-blue-600' 
-                    : 'border-gray-300 bg-gray-50 text-gray-600 hover:border-gray-400'
-                }`}
-              >
-                <div className="text-sm font-semibold">Assessment</div>
-                <div className="text-xs text-gray-500 mt-1">Clean evaluation mode</div>
-              </button>
+    <form onSubmit={handleSubmit} className="space-y-4">
+            {/* User Type Field */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                I am a
+              </label>
+              <div className="flex gap-3">
+                <button
+                  type="button"
+                  onClick={() => setFormData(prev => ({ ...prev, userType: 'student' }))}
+                  className={`flex-1 py-3 px-4 rounded-lg border transition-colors font-medium flex items-center justify-center gap-2 ${
+                    formData.userType === 'student'
+                      ? 'bg-blue-50 text-blue-700 border-blue-300'
+                      : 'bg-white text-gray-700 border-gray-300 hover:border-gray-400 hover:bg-gray-50'
+                  }`}
+                >
+                  <GraduationCap size={18} />
+                  Student
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setFormData(prev => ({ ...prev, userType: 'teacher' }))}
+                  className={`flex-1 py-3 px-4 rounded-lg border transition-colors font-medium flex items-center justify-center gap-2 ${
+                    formData.userType === 'teacher'
+                      ? 'bg-blue-50 text-blue-700 border-blue-300'
+                      : 'bg-white text-gray-700 border-gray-300 hover:border-gray-400 hover:bg-gray-50'
+                  }`}
+                >
+                  <Users size={18} />
+                  Teacher
+                </button>
+              </div>
+              {errors.userType && (
+                <p className="mt-1 text-sm text-red-600">{errors.userType}</p>
+              )}
             </div>
-          </div>
 
-          {/* Sign Up Form */}
-          <form onSubmit={handleSubmit} className="space-y-4">
             {/* Name Fields */}
             <div className="grid grid-cols-2 gap-4">
               <div>
@@ -189,6 +175,7 @@ const SignUpPage = ({ onSignUp, onBackToLogin }) => {
                 <p className="mt-1 text-sm text-red-600">{errors.email}</p>
               )}
             </div>
+
 
             {/* Password Field */}
             <div>
@@ -272,9 +259,6 @@ const SignUpPage = ({ onSignUp, onBackToLogin }) => {
               </p>
             </div>
           </form>
-        </div>
-      </div>
-    </div>
   );
 };
 

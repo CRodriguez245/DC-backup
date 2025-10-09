@@ -4,6 +4,7 @@ import LandingPage from './LandingPage';
 import HomePage from './HomePage';
 import AdminDashboard from './AdminDashboard';
 import SettingsPage from './SettingsPage';
+import SharedVisual from './SharedVisual';
 
 // Jamie's Animated Face Component
 const JamieFace = ({ dqScore, avgDqScore, size = 'small' }) => {
@@ -89,6 +90,8 @@ const JamieAI = () => {
   const [currentMessage, setCurrentMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isTyping, setIsTyping] = useState(false);
+  const [thinkingText, setThinkingText] = useState('Thinking');
+  const [isTextTransitioning, setIsTextTransitioning] = useState(false);
   const [connectionStatus, setConnectionStatus] = useState('untested');
   const [demoMode, setDemoMode] = useState(false); // Start with real backend
   const [showDqPanel, setShowDqPanel] = useState(false);
@@ -640,6 +643,28 @@ const JamieAI = () => {
     setTimeout(() => {
       setIsLoading(true);
       setIsTyping(true);
+      
+      // Start thinking text animation with smooth transitions
+      const thinkingStates = ['Thinking', 'Analyzing', 'Processing', 'Reflecting', 'Considering'];
+      let currentIndex = 0;
+      const thinkingInterval = setInterval(() => {
+        // Fade out
+        setIsTextTransitioning(true);
+        
+        // Change text after fade out
+        setTimeout(() => {
+          setThinkingText(thinkingStates[currentIndex]);
+          currentIndex = (currentIndex + 1) % thinkingStates.length;
+          
+          // Fade in
+          setTimeout(() => {
+            setIsTextTransitioning(false);
+          }, 50);
+        }, 150);
+      }, 1200);
+      
+      // Store interval ID to clear later
+      window.thinkingInterval = thinkingInterval;
     }, 150);
 
     // Handle demo mode
@@ -673,6 +698,12 @@ const JamieAI = () => {
         setMessages(prev => [...prev, jamieMessage]);
         setIsLoading(false);
         setIsTyping(false);
+        
+        // Clear thinking animation
+        if (window.thinkingInterval) {
+          clearInterval(window.thinkingInterval);
+          window.thinkingInterval = null;
+        }
         
         // Check if session should end after Jamie's demo response
         if (attemptsRemaining - 1 <= 0) {
@@ -747,6 +778,12 @@ const JamieAI = () => {
         setIsLoading(false);
         setIsTyping(false);
         
+        // Clear thinking animation
+        if (window.thinkingInterval) {
+          clearInterval(window.thinkingInterval);
+          window.thinkingInterval = null;
+        }
+        
         // Check if session should end after Jamie's response
         if (attemptsRemaining - 1 <= 0) {
           setTimeout(() => {
@@ -797,6 +834,12 @@ const JamieAI = () => {
         setMessages(prev => [...prev, errorMessage]);
         setIsLoading(false);
         setIsTyping(false);
+        
+        // Clear thinking animation
+        if (window.thinkingInterval) {
+          clearInterval(window.thinkingInterval);
+          window.thinkingInterval = null;
+        }
       }, 200);
     }
   };
@@ -815,51 +858,44 @@ const JamieAI = () => {
     // Allow Shift+Enter for new lines
   };
 
-  // Show landing page if user is not logged in
-  if (!userInfo) {
-    return <LandingPage onLogin={handleLogin} />;
-  }
-
-  // Show homepage if user is logged in and on homepage
-  if (currentView === 'homepage') {
-    return (
-      <HomePage 
-        userInfo={userInfo}
-        gameMode={gameMode}
-        onStartCoaching={handleStartCoaching}
-        onLogout={handleLogout}
-        onSettings={handleSettings}
-        onCharacterClick={handleCharacterClick}
-        onAdminClick={() => setCurrentView('admin')}
-        currentView={currentView}
-      />
-    );
-  }
-
-  // Show admin dashboard if user is on admin view
-  if (currentView === 'admin') {
-    return (
-      <AdminDashboard 
-        onBackToHome={() => setCurrentView('homepage')}
-        onLogout={handleLogout}
-        currentView={currentView}
-      />
-    );
-  }
-
-  // Show settings page if user is on settings view
-  if (currentView === 'settings') {
-    return (
-      <SettingsPage 
-        onBackToHome={() => setCurrentView('homepage')}
-        onLogout={handleLogout}
-        currentView={currentView}
-      />
-    );
-  }
+  // Determine if we should show the shared visual
+  const showSharedVisual = !userInfo || currentView === 'homepage';
 
   return (
-    <div className="bg-white h-screen w-full flex">
+    <div className="min-h-screen bg-white">
+      {/* Shared visual that persists across login and homepage */}
+      {showSharedVisual && <SharedVisual />}
+      
+      {/* Page Content */}
+      {!userInfo ? (
+        <LandingPage onLogin={handleLogin} />
+      ) : currentView === 'homepage' ? (
+        <HomePage 
+          userInfo={userInfo}
+          gameMode={gameMode}
+          onStartCoaching={handleStartCoaching}
+          onLogout={handleLogout}
+          onSettings={handleSettings}
+          onCharacterClick={handleCharacterClick}
+          onAdminClick={() => setCurrentView('admin')}
+          currentView={currentView}
+        />
+      ) : currentView === 'admin' ? (
+        <AdminDashboard 
+          onBackToHome={() => setCurrentView('homepage')}
+          onLogout={handleLogout}
+          onSettings={() => setCurrentView('settings')}
+          currentView={currentView}
+        />
+      ) : currentView === 'settings' ? (
+        <SettingsPage 
+          onBackToHome={() => setCurrentView('homepage')}
+          onLogout={handleLogout}
+          onAdminClick={() => setCurrentView('admin')}
+          currentView={currentView}
+        />
+      ) : (
+        <div className="bg-white h-screen w-full flex">
       <style jsx>{`
         @keyframes slideInUp {
           from {
@@ -912,14 +948,17 @@ const JamieAI = () => {
         </div>
         
         {/* Character Info */}
-        <div className="mb-2">
-          <h2 className="text-[20px] font-semibold text-[#363636] mb-0">{characterData[currentCharacter].name}</h2>
+        <div className="mb-10">
+          <h2 className="text-[20px] font-semibold text-[#363636] mb-0" style={{ fontFamily: 'Futura, -apple-system, BlinkMacSystemFont, sans-serif', fontWeight: 400 }}>{characterData[currentCharacter].name}</h2>
           <p className="text-[16px] text-[#363636]">{characterData[currentCharacter].title}</p>
         </div>
         
         {/* Context Section - Show only after first message in both modes */}
         {messages.length > 0 && (
-          <div className="mb-6">
+          <div className="mb-6 max-w-[250px]">
+            <h3 className="text-[14px] font-semibold text-[#363636] mb-1" style={{ fontFamily: 'Futura, -apple-system, BlinkMacSystemFont, sans-serif', fontWeight: 400 }}>
+              Scenario
+            </h3>
             <p className="text-[12px] text-[#535862] leading-relaxed">
               {characterData[currentCharacter].context}
             </p>
@@ -1014,8 +1053,8 @@ const JamieAI = () => {
                     className={`w-20 h-20 object-cover object-bottom ${currentCharacter === 'andres' ? 'scale-x-[-1]' : ''}`}
                   />
                 </div>
-                <h2 className="text-2xl font-bold text-gray-800 mb-3">
-                  Start Coaching {characterData[currentCharacter].name} {demoMode && <span className="text-sm font-medium text-blue-600 bg-blue-100 px-3 py-1 rounded-full ml-2">Demo Mode</span>}
+                <h2 className="text-2xl font-bold text-gray-800 mb-3" style={{ fontFamily: 'Futura, -apple-system, BlinkMacSystemFont, sans-serif', fontWeight: 400 }}>
+                  Start coaching {characterData[currentCharacter].name} {demoMode && <span className="text-sm font-medium text-blue-600 bg-blue-100 px-3 py-1 rounded-full ml-2">Demo Mode</span>}
                 </h2>
                 <p className="text-gray-600 max-w-lg mx-auto mb-8 text-lg leading-relaxed">
                   {characterData[currentCharacter].context}
@@ -1175,10 +1214,21 @@ const JamieAI = () => {
                     />
                   </div>
                   <div className="bg-white rounded-[5px] shadow-[0px_6px_20px_10px_rgba(200,201,201,0.11)] px-[33px] py-6">
-                    <div className="flex gap-1">
-                      <div className="w-2 h-2 bg-[#538FF6] rounded-full animate-bounce" style={{animationDelay: '0ms'}}></div>
-                      <div className="w-2 h-2 bg-[#538FF6] rounded-full animate-bounce" style={{animationDelay: '150ms'}}></div>
-                      <div className="w-2 h-2 bg-[#538FF6] rounded-full animate-bounce" style={{animationDelay: '300ms'}}></div>
+                    <div className="flex items-center gap-1">
+                      <span 
+                        className="text-[16px] text-[#6B7280] font-medium transition-all duration-200 ease-in-out"
+                        style={{
+                          opacity: isTextTransitioning ? 0.3 : 1,
+                          transform: isTextTransitioning ? 'translateY(2px)' : 'translateY(0px)'
+                        }}
+                      >
+                        {thinkingText}
+                      </span>
+                      <div className="flex gap-0.5">
+                        <div className="w-1 h-1 bg-[#6B7280] rounded-full animate-pulse" style={{animationDelay: '0ms', animationDuration: '1s'}}></div>
+                        <div className="w-1 h-1 bg-[#6B7280] rounded-full animate-pulse" style={{animationDelay: '200ms', animationDuration: '1s'}}></div>
+                        <div className="w-1 h-1 bg-[#6B7280] rounded-full animate-pulse" style={{animationDelay: '400ms', animationDuration: '1s'}}></div>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -1230,6 +1280,8 @@ const JamieAI = () => {
           </div>
         </div>
       </div>
+    </div>
+      )}
     </div>
   );
 };

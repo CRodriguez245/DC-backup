@@ -187,7 +187,7 @@ const LandingPage = ({ onLogin }) => {
                       className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors ${
                         errors.email ? 'border-red-500' : 'border-gray-300'
                       }`}
-                      placeholder="Your name"
+                      placeholder="email@example.com"
                     />
                     {errors.email && (
                       <p className="mt-1 text-sm text-red-600">{errors.email}</p>
@@ -209,7 +209,7 @@ const LandingPage = ({ onLogin }) => {
                         className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors pr-10 ${
                           errors.password ? 'border-red-500' : 'border-gray-300'
                         }`}
-                        placeholder="email@example.com"
+                        placeholder="Enter your password"
                       />
                       <button
                         type="button"

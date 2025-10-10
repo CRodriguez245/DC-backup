@@ -28,6 +28,8 @@ const HomePage = ({ userInfo, gameMode, onStartCoaching, onLogout, onSettings, o
       onCharacterClick('jamie');
     } else if (character.id === 'andres') {
       onCharacterClick('andres');
+    } else if (character.id === 'kavya') {
+      onCharacterClick('kavya');
     }
   };
 
@@ -55,7 +57,7 @@ const HomePage = ({ userInfo, gameMode, onStartCoaching, onLogout, onSettings, o
     {
       id: 'kavya',
       name: 'Kavya',
-      status: 'Completed',
+      status: 'In Progress',
       dqScore: 0.8,
       avatar: '/images/cu-GIRL-2.png',
       description: 'Recent graduate exploring career options',

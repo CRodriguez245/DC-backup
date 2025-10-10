@@ -82,6 +82,13 @@ const JamieAI = () => {
       context: 'Andres is a software engineer considering a career pivot to product management. He\'s feeling burnt out from coding and wants to work more with people and strategy. How would you coach him?',
       progressLabel: 'Andres\'s Progress',
       gameMode: 'game' // Andres uses game mode
+    },
+    kavya: {
+      name: 'Kavya',
+      title: 'Career Exploration',
+      context: 'Kavya is a recent graduate exploring career options. She\'s torn between pursuing a traditional corporate path or starting her own business. She values work-life balance and wants to make a meaningful impact. How would you coach her?',
+      progressLabel: 'Kavya\'s Progress',
+      gameMode: 'game' // Kavya uses game mode
     }
   };
   
@@ -294,7 +301,7 @@ const JamieAI = () => {
         behavior: 'smooth',
         block: 'end'
       });
-    }, 50);
+    }, 150);
     
     return () => clearTimeout(timeoutId);
   }, [messages, isTyping]);
@@ -708,19 +715,33 @@ const JamieAI = () => {
         // Check if session should end after Jamie's demo response
         if (attemptsRemaining - 1 <= 0) {
           setTimeout(() => {
+            // Get the latest DQ scores
+            const jamieMessages = messages.filter(msg => !msg.isUser && msg.dqScore);
+            const latestMessage = jamieMessages.length > 0 ? jamieMessages[jamieMessages.length - 1] : null;
+            const finalDqScore = latestMessage?.dqScore || demoDqScore;
+            
             // Check if user achieved 0.8 or higher score
             const currentProgress = getJamieProgress();
             const hasWon = currentProgress >= 80; // 80% = 0.8 score
             
+            // Different messages for assessment vs game mode
+            const isAssessment = characterData[currentCharacter].gameMode === 'assessment';
+            
             const sessionEndMessage = {
               id: Date.now() + 2,
-              message: hasWon 
-                ? `🎉 Congratulations! You achieved ${currentProgress}% progress! You've successfully helped Jamie improve their decision-making skills. Click 'Start New Session' to begin again.`
-                : `Session ended. You've used all 20 attempts but didn't reach the target score of 80%. Jamie's current progress is ${currentProgress}%. Click 'Start New Session' to try again.`,
+              message: isAssessment 
+                ? hasWon 
+                  ? `🎉 Congratulations! You've completed Jamie's assessment with a strong performance! Your coaching helped Jamie make progress in their decision-making. Here's your final Decision Quality Score:`
+                  : `Assessment complete! You've finished Jamie's coaching session. While you didn't reach the target score of 80%, you've helped Jamie think through their decision. Here's your final Decision Quality Score:`
+                : hasWon 
+                  ? `🎉 Congratulations! You achieved ${currentProgress}% progress! You've successfully helped ${characterData[currentCharacter].name} improve their decision-making skills. Click 'Start New Session' to begin again.`
+                  : `Session ended. You've used all 20 attempts but didn't reach the target score of 80%. ${characterData[currentCharacter].name}'s current progress is ${currentProgress}%. Click 'Start New Session' to try again.`,
               isUser: false,
               timestamp: new Date().toISOString(),
               isSessionEnd: true,
-              hasWon: hasWon
+              hasWon: hasWon,
+              dqScore: isAssessment ? finalDqScore : undefined,
+              showFinalScore: isAssessment
             };
             setMessages(prev => [...prev, sessionEndMessage]);
           }, 1000);
@@ -787,19 +808,34 @@ const JamieAI = () => {
         // Check if session should end after Jamie's response
         if (attemptsRemaining - 1 <= 0) {
           setTimeout(() => {
+            // Get the latest DQ scores
+            const allMessages = [...messages, jamieMessage];
+            const characterMessages = allMessages.filter(msg => !msg.isUser && msg.dqScore);
+            const latestMessage = characterMessages.length > 0 ? characterMessages[characterMessages.length - 1] : null;
+            const finalDqScore = latestMessage?.dqScore || data.dq_score;
+            
             // Check if user achieved 0.8 or higher score
             const currentProgress = getJamieProgress();
             const hasWon = currentProgress >= 80; // 80% = 0.8 score
             
+            // Different messages for assessment vs game mode
+            const isAssessment = characterData[currentCharacter].gameMode === 'assessment';
+            
             const sessionEndMessage = {
               id: Date.now() + 2,
-              message: hasWon 
-                ? `🎉 Congratulations! You achieved ${currentProgress}% progress! You've successfully helped Jamie improve their decision-making skills. Click 'Start New Session' to begin again.`
-                : `Session ended. You've used all 20 attempts but didn't reach the target score of 80%. Jamie's current progress is ${currentProgress}%. Click 'Start New Session' to try again.`,
+              message: isAssessment 
+                ? hasWon 
+                  ? `🎉 Congratulations! You've completed Jamie's assessment with a strong performance! Your coaching helped Jamie make progress in their decision-making. Here's your final Decision Quality Score:`
+                  : `Assessment complete! You've finished Jamie's coaching session. While you didn't reach the target score of 80%, you've helped Jamie think through their decision. Here's your final Decision Quality Score:`
+                : hasWon 
+                  ? `🎉 Congratulations! You achieved ${currentProgress}% progress! You've successfully helped ${characterData[currentCharacter].name} improve their decision-making skills. Click 'Start New Session' to begin again.`
+                  : `Session ended. You've used all 20 attempts but didn't reach the target score of 80%. ${characterData[currentCharacter].name}'s current progress is ${currentProgress}%. Click 'Start New Session' to try again.`,
               isUser: false,
               timestamp: new Date().toISOString(),
               isSessionEnd: true,
-              hasWon: hasWon
+              hasWon: hasWon,
+              dqScore: isAssessment ? finalDqScore : undefined,
+              showFinalScore: isAssessment
             };
             setMessages(prev => [...prev, sessionEndMessage]);
           }, 1000);
@@ -1042,15 +1078,19 @@ const JamieAI = () => {
       {/* Main Chat Area */}
       <div className="flex-1 flex flex-col relative">
         {/* Chat Messages Container */}
-        <div className="flex-1 bg-[rgba(217,217,217,0.19)] overflow-y-auto relative pb-24">
+        <div className="flex-1 bg-[rgba(217,217,217,0.19)] overflow-y-auto relative pb-40">
           <div className="max-w-[866px] mx-auto p-[76px_0] flex flex-col gap-[46px]">
             {messages.length === 0 && (
               <div className="text-center py-16">
                 <div className="w-20 h-20 rounded-full bg-[#2C73EB] flex items-end justify-center mx-auto mb-6 shadow-lg overflow-hidden">
                   <img 
-                    src={currentCharacter === 'jamie' ? "/images/cu-JAMIE.png" : "/images/cu-Andres.png"} 
+                    src={
+                      currentCharacter === 'jamie' ? "/images/cu-JAMIE.png" : 
+                      currentCharacter === 'andres' ? "/images/cu-Andres.png" :
+                      "/images/cu-GIRL-2.png"
+                    } 
                     alt={characterData[currentCharacter].name} 
-                    className={`w-20 h-20 object-cover object-bottom ${currentCharacter === 'andres' ? 'scale-x-[-1]' : ''}`}
+                    className={`w-20 h-20 object-cover object-bottom ${currentCharacter === 'andres' || currentCharacter === 'kavya' ? 'scale-x-[-1]' : ''}`}
                   />
                 </div>
                 <h2 className="text-2xl font-bold text-gray-800 mb-3" style={{ fontFamily: 'Futura, -apple-system, BlinkMacSystemFont, sans-serif', fontWeight: 400 }}>
@@ -1120,12 +1160,16 @@ const JamieAI = () => {
                 ) : (
                   // Jamie's messages - white bubble with avatar and DQ scores
                   <div className="flex gap-[30px] items-start message-enter">
-                  {/* Jamie's Avatar */}
+                  {/* Character Avatar */}
                   <div className="w-[70px] h-[70px] rounded-full bg-[#2C73EB] flex items-end justify-center flex-shrink-0 overflow-hidden">
                     <img 
-                      src="/images/cu-JAMIE.png" 
-                      alt="Jamie" 
-                      className="w-[70px] h-[70px] object-cover object-bottom"
+                      src={
+                        currentCharacter === 'jamie' ? "/images/cu-JAMIE.png" : 
+                        currentCharacter === 'andres' ? "/images/cu-Andres.png" :
+                        "/images/cu-GIRL-2.png"
+                      } 
+                      alt={characterData[currentCharacter].name} 
+                      className={`w-[70px] h-[70px] object-cover object-bottom ${currentCharacter === 'andres' || currentCharacter === 'kavya' ? 'scale-x-[-1]' : ''}`}
                     />
                   </div>
                     
@@ -1136,9 +1180,80 @@ const JamieAI = () => {
                         <div className="text-[16px] text-[#333333] leading-[26px]">
                           <p className="whitespace-pre-wrap">{msg.message}</p>
                           
+                          {/* Final DQ Score for Assessment Mode */}
+                          {msg.showFinalScore && msg.dqScore && (
+                            <div className="mt-6">
+                              {/* Gray Hairline Divider */}
+                              <div className="w-full h-px bg-gray-300 mb-6"></div>
+                              
+                              <div className="flex flex-col gap-[25px]">
+                                {/* DQ Header */}
+                                <div className="flex flex-col">
+                                  <p className="text-[18px] font-bold text-[#363636] leading-[26px]">
+                                    Your Final Decision Quality Score
+                                  </p>
+                                  <p className="text-[24px] font-bold text-[#2C73EB] leading-[32px] mt-1">
+                                    {Math.min(...Object.values(msg.dqScore)).toFixed(2)}/1.0
+                                  </p>
+                                  <p className="text-[14px] text-[#797979] mt-2">
+                                    This score reflects your coaching effectiveness across all six dimensions of decision quality.
+                                  </p>
+                                </div>
+                                
+                                {/* DQ Metrics Grid */}
+                                <div className="grid grid-cols-2 gap-[34px]">
+                                  {[
+                                    { key: 'framing', label: 'Framing', color: 'bg-[#0385c3]', value: msg.dqScore.framing },
+                                    { key: 'alternatives', label: 'Alternatives', color: 'bg-[#53b723]', value: msg.dqScore.alternatives },
+                                    { key: 'information', label: 'Information', color: 'bg-[#ff8210]', value: msg.dqScore.information },
+                                    { key: 'values', label: 'Values', color: 'bg-[#991bb2]', value: msg.dqScore.values },
+                                    { key: 'reasoning', label: 'Reasoning', color: 'bg-[#d01102]', value: msg.dqScore.reasoning },
+                                    { key: 'commitment', label: 'Commitment', color: 'bg-[#ffb20d]', value: msg.dqScore.commitment }
+                                  ].map(metric => (
+                                    <div key={metric.key} className="flex flex-col gap-[6px]">
+                                      <div className="flex justify-between items-center">
+                                        <p className="text-[14px] font-medium text-[#363636]">{metric.label}</p>
+                                        <p className="text-[14px] font-semibold text-[#363636]">{metric.value.toFixed(2)}</p>
+                                      </div>
+                                      <div className="relative w-full h-[11px] bg-[rgba(217,217,217,0.44)] rounded-[10px]">
+                                        <div 
+                                          className={`absolute top-0 left-0 h-full rounded-[10px] ${metric.color}`}
+                                          style={{ width: `${metric.value * 100}%` }}
+                                        ></div>
+                                      </div>
+                                    </div>
+                                  ))}
+                                </div>
+                                
+                                {/* Performance Feedback */}
+                                <div className={`p-4 rounded-lg ${
+                                  Math.min(...Object.values(msg.dqScore)) >= 0.8 
+                                    ? 'bg-green-50 border border-green-200' 
+                                    : Math.min(...Object.values(msg.dqScore)) >= 0.6
+                                    ? 'bg-blue-50 border border-blue-200'
+                                    : 'bg-yellow-50 border border-yellow-200'
+                                }`}>
+                                  <p className={`text-[14px] font-medium ${
+                                    Math.min(...Object.values(msg.dqScore)) >= 0.8 
+                                      ? 'text-green-800' 
+                                      : Math.min(...Object.values(msg.dqScore)) >= 0.6
+                                      ? 'text-blue-800'
+                                      : 'text-yellow-800'
+                                  }`}>
+                                    {Math.min(...Object.values(msg.dqScore)) >= 0.8 
+                                      ? '🎉 Excellent! You demonstrated strong coaching skills across all dimensions.'
+                                      : Math.min(...Object.values(msg.dqScore)) >= 0.6
+                                      ? '👍 Good effort! Review the lower-scoring dimensions to improve your coaching approach.'
+                                      : '💡 Keep practicing! Focus on asking questions that address all six dimensions of decision quality.'}
+                                  </p>
+                                </div>
+                              </div>
+                            </div>
+                          )}
+                          
                           {/* Session End Button */}
     {msg.isSessionEnd && (
-      <div className="mt-4 flex justify-center">
+      <div className="mt-6 flex justify-center">
         <button
           onClick={resetSession}
           className={`px-6 py-3 rounded-lg font-semibold transition-colors ${
@@ -1208,13 +1323,17 @@ const JamieAI = () => {
                 <div className="flex gap-[30px] items-start">
                   <div className="w-[70px] h-[70px] rounded-full bg-[#2C73EB] flex items-end justify-center flex-shrink-0 overflow-hidden">
                     <img 
-                      src="/images/cu-JAMIE.png" 
-                      alt="Jamie" 
-                      className="w-[70px] h-[70px] object-cover object-bottom"
+                      src={
+                        currentCharacter === 'jamie' ? "/images/cu-JAMIE.png" : 
+                        currentCharacter === 'andres' ? "/images/cu-Andres.png" :
+                        "/images/cu-GIRL-2.png"
+                      } 
+                      alt={characterData[currentCharacter].name} 
+                      className={`w-[70px] h-[70px] object-cover object-bottom ${currentCharacter === 'andres' || currentCharacter === 'kavya' ? 'scale-x-[-1]' : ''}`}
                     />
                   </div>
                   <div className="bg-white rounded-[5px] shadow-[0px_6px_20px_10px_rgba(200,201,201,0.11)] px-[33px] py-6">
-                    <div className="flex items-center gap-1">
+                    <div className="flex items-center">
                       <span 
                         className="text-[16px] text-[#6B7280] font-medium transition-all duration-200 ease-in-out"
                         style={{
@@ -1224,11 +1343,6 @@ const JamieAI = () => {
                       >
                         {thinkingText}
                       </span>
-                      <div className="flex gap-0.5">
-                        <div className="w-1 h-1 bg-[#6B7280] rounded-full animate-pulse" style={{animationDelay: '0ms', animationDuration: '1s'}}></div>
-                        <div className="w-1 h-1 bg-[#6B7280] rounded-full animate-pulse" style={{animationDelay: '200ms', animationDuration: '1s'}}></div>
-                        <div className="w-1 h-1 bg-[#6B7280] rounded-full animate-pulse" style={{animationDelay: '400ms', animationDuration: '1s'}}></div>
-                      </div>
                     </div>
                   </div>
                 </div>

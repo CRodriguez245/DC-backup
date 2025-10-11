@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Eye, EyeOff, GraduationCap, Users } from 'lucide-react';
+import { authService } from './services/AuthService.js';
 
 const SignUpPage = ({ onSignUp, onBackToLogin }) => {
   const [formData, setFormData] = useState({
@@ -55,8 +56,21 @@ const SignUpPage = ({ onSignUp, onBackToLogin }) => {
       return;
     }
 
-    // Call onSignUp with the form data
-    onSignUp({ ...formData, gameMode });
+    // Use authentication service for signup
+    const userData = {
+      name: `${formData.firstName} ${formData.lastName}`,
+      email: formData.email,
+      role: formData.userType
+    };
+    
+    authService.register(userData).then(result => {
+      if (result.success) {
+        // Call onSignUp with the form data to handle the UI transition
+        onSignUp({ ...formData, gameMode, user: result.user });
+      } else {
+        setErrors({ general: result.error });
+      }
+    });
   };
 
   const handleInputChange = (e) => {
@@ -76,8 +90,15 @@ const SignUpPage = ({ onSignUp, onBackToLogin }) => {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
-            {/* User Type Field */}
-            <div>
+      {/* General Error Message */}
+      {errors.general && (
+        <div className="p-4 bg-red-50/50 border border-red-100 rounded-2xl backdrop-blur-sm">
+          <p className="text-sm text-red-600 font-medium text-center">{errors.general}</p>
+        </div>
+      )}
+      
+      {/* User Type Field */}
+      <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 I am a
               </label>
@@ -108,7 +129,7 @@ const SignUpPage = ({ onSignUp, onBackToLogin }) => {
                 </button>
               </div>
               {errors.userType && (
-                <p className="mt-1 text-sm text-red-600">{errors.userType}</p>
+                <p className="mt-1.5 text-xs text-red-600 font-medium">{errors.userType}</p>
               )}
             </div>
 
@@ -125,12 +146,12 @@ const SignUpPage = ({ onSignUp, onBackToLogin }) => {
                   value={formData.firstName}
                   onChange={handleInputChange}
                   className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors ${
-                    errors.firstName ? 'border-red-500' : 'border-gray-300'
+                    errors.firstName ? 'border-red-300 bg-red-50/30' : 'border-gray-300'
                   }`}
                   placeholder="First name"
                 />
                 {errors.firstName && (
-                  <p className="mt-1 text-sm text-red-600">{errors.firstName}</p>
+                  <p className="mt-1.5 text-xs text-red-600 font-medium">{errors.firstName}</p>
                 )}
               </div>
               
@@ -145,12 +166,12 @@ const SignUpPage = ({ onSignUp, onBackToLogin }) => {
                   value={formData.lastName}
                   onChange={handleInputChange}
                   className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors ${
-                    errors.lastName ? 'border-red-500' : 'border-gray-300'
+                    errors.lastName ? 'border-red-300 bg-red-50/30' : 'border-gray-300'
                   }`}
                   placeholder="Last name"
                 />
                 {errors.lastName && (
-                  <p className="mt-1 text-sm text-red-600">{errors.lastName}</p>
+                  <p className="mt-1.5 text-xs text-red-600 font-medium">{errors.lastName}</p>
                 )}
               </div>
             </div>
@@ -167,12 +188,12 @@ const SignUpPage = ({ onSignUp, onBackToLogin }) => {
                 value={formData.email}
                 onChange={handleInputChange}
                 className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors ${
-                  errors.email ? 'border-red-500' : 'border-gray-300'
+                  errors.email ? 'border-red-300 bg-red-50/30' : 'border-gray-300'
                 }`}
                 placeholder="your.email@example.com"
               />
               {errors.email && (
-                <p className="mt-1 text-sm text-red-600">{errors.email}</p>
+                <p className="mt-1.5 text-xs text-red-600 font-medium">{errors.email}</p>
               )}
             </div>
 
@@ -190,7 +211,7 @@ const SignUpPage = ({ onSignUp, onBackToLogin }) => {
                   value={formData.password}
                   onChange={handleInputChange}
                   className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors pr-10 ${
-                    errors.password ? 'border-red-500' : 'border-gray-300'
+                    errors.password ? 'border-red-300 bg-red-50/30' : 'border-gray-300'
                   }`}
                   placeholder="Create a password"
                 />
@@ -203,7 +224,7 @@ const SignUpPage = ({ onSignUp, onBackToLogin }) => {
                 </button>
               </div>
               {errors.password && (
-                <p className="mt-1 text-sm text-red-600">{errors.password}</p>
+                <p className="mt-1.5 text-xs text-red-600 font-medium">{errors.password}</p>
               )}
             </div>
 
@@ -220,7 +241,7 @@ const SignUpPage = ({ onSignUp, onBackToLogin }) => {
                   value={formData.confirmPassword}
                   onChange={handleInputChange}
                   className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors pr-10 ${
-                    errors.confirmPassword ? 'border-red-500' : 'border-gray-300'
+                    errors.confirmPassword ? 'border-red-300 bg-red-50/30' : 'border-gray-300'
                   }`}
                   placeholder="Confirm your password"
                 />
@@ -233,7 +254,7 @@ const SignUpPage = ({ onSignUp, onBackToLogin }) => {
                 </button>
               </div>
               {errors.confirmPassword && (
-                <p className="mt-1 text-sm text-red-600">{errors.confirmPassword}</p>
+                <p className="mt-1.5 text-xs text-red-600 font-medium">{errors.confirmPassword}</p>
               )}
             </div>
 

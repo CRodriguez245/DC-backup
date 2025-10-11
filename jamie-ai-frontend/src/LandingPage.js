@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Eye, EyeOff } from 'lucide-react';
 import SignUpPage from './SignUpPage';
 
-const LandingPage = ({ onLogin }) => {
+const LandingPage = ({ onLogin, onSignUp }) => {
   const [showSignUp, setShowSignUp] = useState(false);
   const [formData, setFormData] = useState({
     email: '',
@@ -14,7 +14,7 @@ const LandingPage = ({ onLogin }) => {
   const [isTaglineTyping, setIsTaglineTyping] = useState(true);
 
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     const newErrors = {};
 
@@ -33,9 +33,12 @@ const LandingPage = ({ onLogin }) => {
       return;
     }
 
-    // For now, we'll just call onLogin with the form data
-    // In a real app, this would authenticate with a backend
-    onLogin({ ...formData, gameMode: 'assessment' });
+    // Use authentication service for login
+    const result = await onLogin({ ...formData, gameMode: 'assessment' });
+    
+    if (result && !result.success) {
+      setErrors({ general: result.message });
+    }
   };
 
   const handleInputChange = (e) => {
@@ -53,13 +56,22 @@ const LandingPage = ({ onLogin }) => {
     }
   };
 
-  const handleSignUp = (signUpData) => {
-    // For demo purposes, we'll just call onLogin with the sign up data
-    onLogin(signUpData);
-  };
-
   const handleBackToLogin = () => {
     setShowSignUp(false);
+  };
+
+  const handleSignUp = async (signupData) => {
+    // Handle successful signup - the authService already saved the user
+    // Now we need to call onLogin to transition to the app
+    const result = await onLogin({ 
+      email: signupData.email, 
+      password: signupData.password, 
+      gameMode: signupData.gameMode 
+    });
+    
+    if (result && !result.success) {
+      setErrors({ general: result.message });
+    }
   };
 
   // Tagline typing animation
@@ -173,6 +185,13 @@ const LandingPage = ({ onLogin }) => {
               >
                 {/* Login Form */}
                 <form onSubmit={handleSubmit} className="space-y-4">
+                  {/* General Error Message */}
+                  {errors.general && (
+                    <div className="p-4 bg-red-50/50 border border-red-100 rounded-2xl backdrop-blur-sm">
+                      <p className="text-sm text-red-600 font-medium text-center">{errors.general}</p>
+                    </div>
+                  )}
+                  
                   {/* Email Field */}
                   <div>
                     <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
@@ -185,12 +204,12 @@ const LandingPage = ({ onLogin }) => {
                       value={formData.email}
                       onChange={handleInputChange}
                       className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors ${
-                        errors.email ? 'border-red-500' : 'border-gray-300'
+                        errors.email ? 'border-red-300 bg-red-50/30' : 'border-gray-300'
                       }`}
                       placeholder="email@example.com"
                     />
                     {errors.email && (
-                      <p className="mt-1 text-sm text-red-600">{errors.email}</p>
+                      <p className="mt-1.5 text-xs text-red-600 font-medium">{errors.email}</p>
                     )}
                   </div>
 
@@ -207,7 +226,7 @@ const LandingPage = ({ onLogin }) => {
                         value={formData.password}
                         onChange={handleInputChange}
                         className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors pr-10 ${
-                          errors.password ? 'border-red-500' : 'border-gray-300'
+                          errors.password ? 'border-red-300 bg-red-50/30' : 'border-gray-300'
                         }`}
                         placeholder="Enter your password"
                       />
@@ -220,7 +239,7 @@ const LandingPage = ({ onLogin }) => {
                       </button>
                     </div>
                     {errors.password && (
-                      <p className="mt-1 text-sm text-red-600">{errors.password}</p>
+                      <p className="mt-1.5 text-xs text-red-600 font-medium">{errors.password}</p>
                     )}
                   </div>
 

@@ -1,10 +1,14 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Send, User, Bot, Star, Home, Settings, LogOut, BarChart3 } from 'lucide-react';
+import { Send, User, Bot, Star, Home, Settings, LogOut, BarChart3, RotateCcw, X } from 'lucide-react';
 import LandingPage from './LandingPage';
 import HomePage from './HomePage';
 import AdminDashboard from './AdminDashboard';
 import SettingsPage from './SettingsPage';
+import UserDashboard from './UserDashboard';
+import TeacherClassrooms from './TeacherClassrooms';
+import ClassroomDetail from './ClassroomDetail';
 import SharedVisual from './SharedVisual';
+import { authService } from './services/AuthService.js';
 
 // Jamie's Animated Face Component
 const JamieFace = ({ dqScore, avgDqScore, size = 'small' }) => {
@@ -54,18 +58,31 @@ const JamieFace = ({ dqScore, avgDqScore, size = 'small' }) => {
 };
 
 const JamieAI = () => {
-  // User information state
+  // User information state - now using auth service
   const [userInfo, setUserInfo] = useState(() => {
-    // Load user info from localStorage on component mount
-    const savedUserInfo = localStorage.getItem('userInfo');
-    return savedUserInfo ? JSON.parse(savedUserInfo) : null;
+    // Initialize auth service and get current user
+    authService.init();
+    // Make authService available in console for demo
+    window.authService = authService;
+    
+    // Debug helper
+    window.debugAuth = () => {
+      console.log('=== AUTH DEBUG ===');
+      console.log('Current User:', authService.getCurrentUser());
+      console.log('All Users:', localStorage.getItem('decision_coach_all_users'));
+      console.log('Classrooms:', localStorage.getItem('decision_coach_classrooms'));
+      console.log('Current User Storage:', localStorage.getItem('decision_coach_user'));
+    };
+    
+    return authService.getCurrentUser();
   });
   const [gameMode, setGameMode] = useState(() => {
     // Load game mode from localStorage on component mount
     return localStorage.getItem('gameMode') || 'game';
   });
-  const [currentView, setCurrentView] = useState('homepage'); // 'homepage' or 'chat'
-  const [currentCharacter, setCurrentCharacter] = useState('jamie'); // 'jamie' or 'andres'
+  const [currentView, setCurrentView] = useState('homepage'); // 'homepage', 'chat', 'dashboard', 'admin', 'settings', 'classrooms', 'classroom-detail'
+  const [currentCharacter, setCurrentCharacter] = useState('jamie'); // 'jamie', 'andres', or 'kavya'
+  const [selectedClassroomId, setSelectedClassroomId] = useState(null);
   
   // Character data
   const characterData = {
@@ -111,31 +128,48 @@ const JamieAI = () => {
   const chatContainerRef = useRef(null);
 
   // Handle login from landing page
-  const handleLogin = (loginData) => {
-    // Set the game mode from landing page
-    if (loginData.gameMode) {
-      setGameMode(loginData.gameMode);
-      localStorage.setItem('gameMode', loginData.gameMode);
+  const handleLogin = async (loginData) => {
+    try {
+      // Set the game mode from landing page
+      if (loginData.gameMode) {
+        setGameMode(loginData.gameMode);
+        localStorage.setItem('gameMode', loginData.gameMode);
+      }
+      
+      // Use authentication service for login
+      const result = await authService.login({
+        email: loginData.email,
+        password: loginData.password || 'demo' // For demo purposes
+      });
+      
+      if (result.success) {
+        setUserInfo(result.user);
+        setCurrentView('homepage');
+        return { success: true, message: result.message };
+      } else {
+        return { success: false, message: result.error };
+      }
+    } catch (error) {
+      return { success: false, message: 'Login failed. Please try again.' };
     }
-    
-    // For demo purposes, we'll create user info from login data
-    const userData = {
-      name: loginData.email.split('@')[0], // Use email prefix as name
-      email: loginData.email,
-      affiliation: 'Demo User'
-    };
-    setUserInfo(userData);
-    localStorage.setItem('userInfo', JSON.stringify(userData));
-    
-    // Start on homepage after login
-    setCurrentView('homepage');
   };
 
   // Handle starting a coaching session
   const handleStartCoaching = (session) => {
     setCurrentView('chat');
-    // Reset chat state for new session
-    setMessages([]);
+    
+    // Try to load in-progress session
+    const savedSession = loadInProgressSession(currentCharacter);
+    if (savedSession && savedSession.messages.length > 0) {
+      // Restore saved session
+      setMessages(savedSession.messages);
+      setAttemptsRemaining(savedSession.attemptsRemaining);
+    } else {
+      // Reset chat state for new session
+      setMessages([]);
+      setAttemptsRemaining(20);
+    }
+    
     setCurrentMessage('');
     setIsLoading(false);
     setIsTyping(false);
@@ -145,19 +179,34 @@ const JamieAI = () => {
 
   // Handle character selection
   const handleCharacterClick = (characterId) => {
+    // Save current session before switching
+    if (messages.length > 0) {
+      saveInProgressSession();
+    }
+    
     setCurrentCharacter(characterId);
     setCurrentView('chat');
-    setMessages([]); // Clear messages when switching characters
+    
+    // Load saved session for new character
+    const savedSession = loadInProgressSession(characterId);
+    if (savedSession && savedSession.messages.length > 0) {
+      setMessages(savedSession.messages);
+      setAttemptsRemaining(savedSession.attemptsRemaining);
+    } else {
+      setMessages([]);
+      setAttemptsRemaining(20);
+    }
   };
 
   // Handle logout
   const handleLogout = () => {
+    // Use authentication service for logout
+    authService.logout();
     setUserInfo(null);
     setCurrentView(null);
     setMessages([]);
     setCurrentMessage('');
-    // Clear localStorage on logout
-    localStorage.removeItem('userInfo');
+    // Clear game mode from localStorage
     localStorage.removeItem('gameMode');
   };
 
@@ -166,8 +215,60 @@ const JamieAI = () => {
     setCurrentView('settings');
   };
 
+  // Save in-progress session to localStorage
+  const saveInProgressSession = () => {
+    if (!userInfo || messages.length === 0) return;
+    
+    // Clean messages to avoid circular references
+    const cleanMessages = messages.map(msg => ({
+      id: msg.id,
+      message: msg.message,
+      isUser: msg.isUser,
+      timestamp: msg.timestamp,
+      isSessionEnd: msg.isSessionEnd,
+      showFinalScore: msg.showFinalScore,
+      dqScore: msg.dqScore,
+      sessionId: msg.sessionId,
+      userId: msg.userId
+      // Exclude userInfo to avoid circular reference
+    }));
+    
+    const sessionData = {
+      character: currentCharacter,
+      messages: cleanMessages,
+      attemptsRemaining: attemptsRemaining,
+      timestamp: new Date().toISOString()
+    };
+    
+    localStorage.setItem(`session_${userInfo.id}_${currentCharacter}`, JSON.stringify(sessionData));
+  };
+
+  // Load in-progress session
+  const loadInProgressSession = (character) => {
+    if (!userInfo) return null;
+    
+    const savedSession = localStorage.getItem(`session_${userInfo.id}_${character}`);
+    if (savedSession) {
+      return JSON.parse(savedSession);
+    }
+    return null;
+  };
+
+  // Clear in-progress session
+  const clearInProgressSession = (character) => {
+    if (!userInfo) return;
+    localStorage.removeItem(`session_${userInfo.id}_${character}`);
+  };
+
   // Reset session function
   const resetSession = () => {
+    // Confirm reset if there are messages
+    if (messages.length > 0 && attemptsRemaining > 0) {
+      const confirmed = window.confirm('Are you sure you want to reset this session? All progress will be lost.');
+      if (!confirmed) return;
+    }
+    
+    clearInProgressSession(currentCharacter);
     setMessages([]);
     setAttemptsRemaining(20);
     setCurrentMessage('');
@@ -176,6 +277,13 @@ const JamieAI = () => {
     setAnimatedProgress(0);
     setIsProgressAnimating(false);
   };
+
+  // Auto-save in-progress session whenever messages change
+  useEffect(() => {
+    if (messages.length > 0) {
+      saveInProgressSession();
+    }
+  }, [messages, attemptsRemaining]);
 
   // Animate progress changes
   useEffect(() => {
@@ -294,17 +402,18 @@ const JamieAI = () => {
     commitment: Math.random() * 0.3 + 0.58
   });
 
-  // Scroll to bottom when new messages arrive (optimized)
+  // Scroll to bottom when loading a saved session
   useEffect(() => {
-    const timeoutId = setTimeout(() => {
-      messagesEndRef.current?.scrollIntoView({ 
-        behavior: 'smooth',
-        block: 'end'
-      });
-    }, 150);
-    
-    return () => clearTimeout(timeoutId);
-  }, [messages, isTyping]);
+    if (messages.length > 0 && !isLoading) {
+      // Small delay to ensure DOM is rendered
+      setTimeout(() => {
+        if (chatContainerRef.current) {
+          chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
+        }
+      }, 100);
+    }
+  }, [messages.length, isLoading]);
+
 
   // Test connection on mount
   useEffect(() => {
@@ -646,10 +755,23 @@ const JamieAI = () => {
     
     setMessages(prev => [...prev, userMessage]);
     
+    
     // Small delay before showing loading state for smoother transition
     setTimeout(() => {
       setIsLoading(true);
       setIsTyping(true);
+      
+      // Scroll to the user's message during loading
+      setTimeout(() => {
+        const userMessageElement = document.querySelector('[data-message-id="' + userMessage.id + '"]');
+        if (userMessageElement && chatContainerRef.current) {
+          const messageOffsetTop = userMessageElement.offsetTop;
+          chatContainerRef.current.scrollTo({
+            top: messageOffsetTop,
+            behavior: 'smooth'
+          });
+        }
+      }, 100);
       
       // Start thinking text animation with smooth transitions
       const thinkingStates = ['Thinking', 'Analyzing', 'Processing', 'Reflecting', 'Considering'];
@@ -743,6 +865,23 @@ const JamieAI = () => {
               dqScore: isAssessment ? finalDqScore : undefined,
               showFinalScore: isAssessment
             };
+            
+            // Update user progress
+            if (userInfo) {
+              const progressData = {
+                finalScore: currentProgress / 100, // Convert to 0-1 scale
+                attemptsUsed: 20, // All 20 attempts were used when session ends
+                mode: characterData[currentCharacter].gameMode,
+                dqScores: finalDqScore,
+                completed: hasWon,
+                messages: [...messages, sessionEndMessage] // Include the full chat transcript with end message
+              };
+              authService.updateProgress(currentCharacter, progressData);
+              
+              // Clear in-progress session since it's complete
+              clearInProgressSession(currentCharacter);
+            }
+            
             setMessages(prev => [...prev, sessionEndMessage]);
           }, 1000);
         }
@@ -799,6 +938,21 @@ const JamieAI = () => {
         setIsLoading(false);
         setIsTyping(false);
         
+        // Scroll the AI response to the top of the view
+        setTimeout(() => {
+          const lastMessageElement = document.querySelector('[data-message-id="' + jamieMessage.id + '"]');
+          if (lastMessageElement && chatContainerRef.current) {
+            // Get the message's offset from the top of its container
+            const messageOffsetTop = lastMessageElement.offsetTop;
+            
+            // Scroll the container so the message appears at the top
+            chatContainerRef.current.scrollTo({
+              top: messageOffsetTop,
+              behavior: 'smooth'
+            });
+          }
+        }, 200);
+        
         // Clear thinking animation
         if (window.thinkingInterval) {
           clearInterval(window.thinkingInterval);
@@ -837,6 +991,23 @@ const JamieAI = () => {
               dqScore: isAssessment ? finalDqScore : undefined,
               showFinalScore: isAssessment
             };
+            
+            // Update user progress
+            if (userInfo) {
+              const progressData = {
+                finalScore: currentProgress / 100, // Convert to 0-1 scale
+                attemptsUsed: 20, // All 20 attempts were used when session ends
+                mode: characterData[currentCharacter].gameMode,
+                dqScores: finalDqScore,
+                completed: hasWon,
+                messages: [...messages, sessionEndMessage] // Include the full chat transcript with end message
+              };
+              authService.updateProgress(currentCharacter, progressData);
+              
+              // Clear in-progress session since it's complete
+              clearInProgressSession(currentCharacter);
+            }
+            
             setMessages(prev => [...prev, sessionEndMessage]);
           }, 1000);
         }
@@ -904,7 +1075,7 @@ const JamieAI = () => {
       
       {/* Page Content */}
       {!userInfo ? (
-        <LandingPage onLogin={handleLogin} />
+        <LandingPage onLogin={handleLogin} onSignUp={handleLogin} />
       ) : currentView === 'homepage' ? (
         <HomePage 
           userInfo={userInfo}
@@ -916,8 +1087,14 @@ const JamieAI = () => {
           onAdminClick={() => setCurrentView('admin')}
           currentView={currentView}
         />
+      ) : currentView === 'dashboard' ? (
+        <UserDashboard 
+          userInfo={userInfo}
+          onBackToHome={() => setCurrentView('homepage')}
+        />
       ) : currentView === 'admin' ? (
         <AdminDashboard 
+          userInfo={userInfo}
           onBackToHome={() => setCurrentView('homepage')}
           onLogout={handleLogout}
           onSettings={() => setCurrentView('settings')}
@@ -925,10 +1102,24 @@ const JamieAI = () => {
         />
       ) : currentView === 'settings' ? (
         <SettingsPage 
+          userInfo={userInfo}
           onBackToHome={() => setCurrentView('homepage')}
           onLogout={handleLogout}
           onAdminClick={() => setCurrentView('admin')}
           currentView={currentView}
+        />
+      ) : currentView === 'classrooms' ? (
+        <TeacherClassrooms 
+          onBackToHome={() => setCurrentView('homepage')}
+          onViewClassroom={(classroomId) => {
+            setSelectedClassroomId(classroomId);
+            setCurrentView('classroom-detail');
+          }}
+        />
+      ) : currentView === 'classroom-detail' ? (
+        <ClassroomDetail 
+          classroomId={selectedClassroomId}
+          onBack={() => setCurrentView('classrooms')}
         />
       ) : (
         <div className="bg-white h-screen w-full flex">
@@ -1031,7 +1222,7 @@ const JamieAI = () => {
       
       {/* Navigation Bar - positioned outside sidebar for proper click events */}
       <div className="absolute bottom-6 left-6 z-50">
-        <div className="bg-white rounded-lg shadow-lg p-4 flex items-center space-x-4 border">
+        <div className="bg-white rounded-lg shadow-lg p-4 flex items-center space-x-4 border w-fit">
           <button 
             onClick={() => setCurrentView('homepage')}
             className={`w-8 h-8 flex items-center justify-center rounded transition-colors ${
@@ -1042,19 +1233,39 @@ const JamieAI = () => {
           >
             <Home className="w-5 h-5" />
           </button>
-          <div className="w-px h-6 bg-gray-300"></div>
-          <button 
-            onClick={() => setCurrentView('admin')}
-            className={`w-8 h-8 flex items-center justify-center rounded transition-colors ${
-              currentView === 'admin' 
-                ? 'text-blue-600 hover:bg-blue-50' 
-                : 'text-gray-600 hover:bg-gray-50'
-            }`}
-            title="Admin Dashboard"
-          >
-            <BarChart3 className="w-5 h-5" />
-          </button>
-          <div className="w-px h-6 bg-gray-300"></div>
+          {userInfo?.role === 'teacher' && (
+            <>
+              <div className="w-px h-6 bg-gray-300"></div>
+              <button 
+                onClick={() => setCurrentView('dashboard')}
+                className={`w-8 h-8 flex items-center justify-center rounded transition-colors ${
+                  currentView === 'dashboard' 
+                    ? 'text-blue-600 hover:bg-blue-50' 
+                    : 'text-gray-600 hover:bg-gray-50'
+                }`}
+                title="My Progress"
+              >
+                <User className="w-5 h-5" />
+              </button>
+            </>
+          )}
+          {userInfo?.role === 'teacher' && (
+            <>
+              <div className="w-px h-6 bg-gray-300"></div>
+              <button 
+                onClick={() => setCurrentView('admin')}
+                className={`w-8 h-8 flex items-center justify-center rounded transition-colors ${
+                  currentView === 'admin' 
+                    ? 'text-blue-600 hover:bg-blue-50' 
+                    : 'text-gray-600 hover:bg-gray-50'
+                }`}
+                title="Admin Dashboard"
+              >
+                <BarChart3 className="w-5 h-5" />
+              </button>
+              <div className="w-px h-6 bg-gray-300"></div>
+            </>
+          )}
           <button 
             onClick={handleSettings}
             className={`w-8 h-8 flex items-center justify-center rounded transition-colors ${
@@ -1077,8 +1288,29 @@ const JamieAI = () => {
       
       {/* Main Chat Area */}
       <div className="flex-1 flex flex-col relative">
+        {/* Session Controls - Top Right */}
+       <div className="absolute top-6 right-6 z-10 flex items-center gap-2">
+         <button
+           onClick={resetSession}
+           className="w-9 h-9 text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors flex items-center justify-center"
+           title="Reset Session"
+         >
+           <RotateCcw className="w-5 h-5" />
+         </button>
+         <button
+           onClick={() => {
+             saveInProgressSession();
+             setCurrentView('homepage');
+           }}
+           className="w-9 h-9 text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors flex items-center justify-center"
+           title="Exit Session"
+         >
+           <X className="w-5 h-5" />
+         </button>
+       </div>
+        
         {/* Chat Messages Container */}
-        <div className="flex-1 bg-[rgba(217,217,217,0.19)] overflow-y-auto relative pb-40">
+        <div ref={chatContainerRef} className="flex-1 bg-[rgba(217,217,217,0.19)] overflow-y-auto relative pb-40">
           <div className="max-w-[866px] mx-auto p-[76px_0] flex flex-col gap-[46px]">
             {messages.length === 0 && (
               <div className="text-center py-16">
@@ -1150,7 +1382,7 @@ const JamieAI = () => {
               <React.Fragment key={msg.id}>
                 {msg.isUser ? (
                   // User messages - blue bubble
-                  <div className="flex justify-end message-enter">
+                  <div className="flex justify-end message-enter" data-message-id={msg.id}>
                     <div className="bg-[#e8f1f8] rounded-[5px] shadow-[0px_6px_20px_10px_rgba(200,201,201,0.11)] px-6 py-6 max-w-[605px]">
                       <p className="text-[16px] text-[#363636] leading-[26px]">
                         {msg.message}
@@ -1159,7 +1391,7 @@ const JamieAI = () => {
                   </div>
                 ) : (
                   // Jamie's messages - white bubble with avatar and DQ scores
-                  <div className="flex gap-[30px] items-start message-enter">
+                  <div className="flex gap-[30px] items-start message-enter" data-message-id={msg.id}>
                   {/* Character Avatar */}
                   <div className="w-[70px] h-[70px] rounded-full bg-[#2C73EB] flex items-end justify-center flex-shrink-0 overflow-hidden">
                     <img 

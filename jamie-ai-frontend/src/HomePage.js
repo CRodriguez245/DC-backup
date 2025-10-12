@@ -1,12 +1,43 @@
 import React, { useState, useEffect } from 'react';
 import { Home, Settings, LogOut, BarChart3 } from 'lucide-react';
 
-const HomePage = ({ userInfo, gameMode, onStartCoaching, onLogout, onSettings, onCharacterClick, onAdminClick, currentView }) => {
+const HomePage = ({ userInfo, gameMode, onStartCoaching, onLogout, onSettings, onCharacterClick, onAdminClick, currentView, userProgress }) => {
   const [hoveredCharacter, setHoveredCharacter] = useState(null);
   const [displayedText, setDisplayedText] = useState('');
   const [isTyping, setIsTyping] = useState(true);
 
   const fullText = "Welcome to Decision Coach! Start with Jamie's assessment to evaluate your coaching skills. Complete Jamie's session to unlock the game mode with other characters.";
+
+  // Get character status and score from user progress
+  const getCharacterStatus = (characterId) => {
+    if (!userProgress || !userProgress[characterId]) {
+      return { status: 'Not Started', score: null };
+    }
+
+    const charProgress = userProgress[characterId];
+    const hasSessions = charProgress.sessions && charProgress.sessions.length > 0;
+    
+    if (!hasSessions) {
+      return { status: 'Not Started', score: null };
+    }
+
+    // Get the latest session
+    const latestSession = charProgress.lastSession || charProgress.sessions[charProgress.sessions.length - 1];
+    
+    if (charProgress.completed) {
+      return { 
+        status: 'Completed', 
+        score: latestSession ? latestSession.score : null 
+      };
+    } else if (hasSessions) {
+      return { 
+        status: 'In Progress', 
+        score: latestSession ? latestSession.score : null 
+      };
+    }
+
+    return { status: 'Not Started', score: null };
+  };
 
   useEffect(() => {
     let index = 0;
@@ -279,10 +310,10 @@ const HomePage = ({ userInfo, gameMode, onStartCoaching, onLogout, onSettings, o
                     
                     <h3 className="font-semibold text-gray-900 mb-2">{level.name}</h3>
                     <div className="flex justify-between items-center">
-                      <span className="text-sm text-gray-600">{level.status}</span>
-                      {level.dqScore && (
+                      <span className="text-sm text-gray-600">{getCharacterStatus(level.id).status}</span>
+                      {getCharacterStatus(level.id).score !== null && (
                         <span className="text-sm font-medium text-blue-600">
-                          DQ Score: {level.dqScore}
+                          DQ Score: {getCharacterStatus(level.id).score?.toFixed(2) || 'N/A'}
                         </span>
                       )}
                     </div>

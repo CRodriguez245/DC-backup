@@ -1086,6 +1086,7 @@ const JamieAI = () => {
           onCharacterClick={handleCharacterClick}
           onAdminClick={() => setCurrentView('admin')}
           currentView={currentView}
+          userProgress={userInfo?.progress}
         />
       ) : currentView === 'dashboard' ? (
         <UserDashboard 

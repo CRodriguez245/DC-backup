@@ -71,9 +71,11 @@ export class User {
       characterProgress.bestScore = sessionData.finalScore;
     }
     
-    // Mark as completed if score >= 0.8 (same as what student sees)
-    if (sessionData.finalScore >= 0.8) {
-      characterProgress.completed = true;
+    // Mark as completed: assessment mode = always complete after first session, game mode = score >= 0.8
+    if (sessionData.mode === 'assessment') {
+      characterProgress.completed = true; // Assessment mode always completes after first session
+    } else if (sessionData.finalScore >= 0.8) {
+      characterProgress.completed = true; // Game mode needs 0.8+ score
     }
     
     // Store session data including chat messages

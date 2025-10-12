@@ -71,7 +71,7 @@ export class User {
       characterProgress.bestScore = sessionData.finalScore;
     }
     
-    // Mark as completed if score >= 0.8
+    // Mark as completed if score >= 0.8 (same as what student sees)
     if (sessionData.finalScore >= 0.8) {
       characterProgress.completed = true;
     }

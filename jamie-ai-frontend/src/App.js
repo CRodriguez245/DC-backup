@@ -869,11 +869,11 @@ const JamieAI = () => {
             // Update user progress
             if (userInfo) {
               const progressData = {
-                finalScore: currentProgress / 100, // Convert to 0-1 scale
+                finalScore: finalDqScore ? Math.min(...Object.values(finalDqScore)) : 0, // Use minimum DQ score (what student sees)
                 attemptsUsed: 20, // All 20 attempts were used when session ends
                 mode: characterData[currentCharacter].gameMode,
                 dqScores: finalDqScore,
-                completed: hasWon,
+                completed: finalDqScore ? Math.min(...Object.values(finalDqScore)) >= 0.8 : false,
                 messages: [...messages, sessionEndMessage] // Include the full chat transcript with end message
               };
               authService.updateProgress(currentCharacter, progressData);
@@ -995,11 +995,11 @@ const JamieAI = () => {
             // Update user progress
             if (userInfo) {
               const progressData = {
-                finalScore: currentProgress / 100, // Convert to 0-1 scale
+                finalScore: finalDqScore ? Math.min(...Object.values(finalDqScore)) : 0, // Use minimum DQ score (what student sees)
                 attemptsUsed: 20, // All 20 attempts were used when session ends
                 mode: characterData[currentCharacter].gameMode,
                 dqScores: finalDqScore,
-                completed: hasWon,
+                completed: finalDqScore ? Math.min(...Object.values(finalDqScore)) >= 0.8 : false,
                 messages: [...messages, sessionEndMessage] // Include the full chat transcript with end message
               };
               authService.updateProgress(currentCharacter, progressData);

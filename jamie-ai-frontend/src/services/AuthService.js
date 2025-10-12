@@ -11,7 +11,57 @@ export class AuthService {
   // Initialize auth service
   init() {
     this.currentUser = UserManager.loadUser();
+    if (this.currentUser) {
+      this.migrateCompletionStatus();
+    }
     return this.currentUser !== null;
+  }
+
+  // Migrate existing completion status to new logic
+  migrateCompletionStatus() {
+    if (!this.currentUser || !this.currentUser.progress) return;
+
+    let needsUpdate = false;
+
+    // Check Jamie assessment mode sessions
+    if (this.currentUser.progress.jamie) {
+      const jamieProgress = this.currentUser.progress.jamie;
+      
+      // If Jamie has sessions but is not marked as completed, fix it
+      if (jamieProgress.sessions && jamieProgress.sessions.length > 0 && !jamieProgress.completed) {
+        // Check if any session is assessment mode
+        const hasAssessmentSession = jamieProgress.sessions.some(session => session.mode === 'assessment');
+        if (hasAssessmentSession) {
+          jamieProgress.completed = true;
+          needsUpdate = true;
+        }
+      }
+    }
+
+    // Check other characters for game mode completion
+    ['andres', 'kavya'].forEach(character => {
+      if (this.currentUser.progress[character]) {
+        const charProgress = this.currentUser.progress[character];
+        
+        if (charProgress.sessions && charProgress.sessions.length > 0) {
+          // Check if any session has 0.8+ score
+          const hasHighScoreSession = charProgress.sessions.some(session => 
+            session.score >= 0.8 && session.mode === 'game'
+          );
+          
+          if (hasHighScoreSession && !charProgress.completed) {
+            charProgress.completed = true;
+            needsUpdate = true;
+          }
+        }
+      }
+    });
+
+    // Save updated user data if changes were made
+    if (needsUpdate) {
+      UserManager.saveUser(this.currentUser);
+      console.log('Migrated completion status for existing sessions');
+    }
   }
 
   // Register new user

@@ -1257,7 +1257,6 @@ const JamieAI = () => {
           >
             <Settings className="w-5 h-5" />
           </button>
-          <div className="w-px h-6 bg-gray-300"></div>
           <button 
             onClick={handleLogout}
             className="w-8 h-8 flex items-center justify-center text-gray-600 hover:bg-gray-50 rounded transition-colors"

@@ -156,7 +156,7 @@ const AdminDashboard = ({ onBackToHome, onLogout, onSettings, currentView, userI
         
         {/* Navigation Icons */}
         <div className="flex-1 flex items-end p-6">
-          <div className="bg-white rounded-lg shadow-lg p-4 flex items-center space-x-4 border w-full">
+          <div className="bg-white rounded-lg shadow-lg p-4 flex items-center space-x-4 border w-fit">
             <button 
               onClick={onBackToHome}
               className={`w-8 h-8 flex items-center justify-center rounded transition-colors ${

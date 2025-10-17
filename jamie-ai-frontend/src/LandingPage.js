@@ -161,10 +161,6 @@ const LandingPage = ({ onLogin, onSignUp }) => {
             >
               {showSignUp ? 'Create Account' : 'Welcome back!'}
             </h1>
-            {/* Mobile test indicator */}
-            <div className="sm:hidden bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded mb-2">
-              📱 Mobile Mode Active
-            </div>
             <p className="text-gray-600 text-sm transition-all duration-300 ease-in-out sm:text-base sm:leading-relaxed">
               {showSignUp 
                 ? 'Join Decision Coach to practice coaching skills and help others make informed life decisions.'
@@ -276,7 +272,7 @@ const LandingPage = ({ onLogin, onSignUp }) => {
       </div>
 
       {/* Tagline - Bottom Right */}
-      <div className="fixed bottom-8 right-8 z-20">
+      <div className="fixed bottom-8 right-8 z-20 hidden sm:block">
         <p 
           className="text-2xl text-gray-700 font-light inline-flex items-center"
           style={{ fontFamily: 'Futura, -apple-system, BlinkMacSystemFont, sans-serif' }}

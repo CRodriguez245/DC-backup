@@ -142,8 +142,8 @@ const LandingPage = ({ onLogin, onSignUp }) => {
       `}</style>
       
       {/* Header with Logo */}
-      <div style={{ padding: '29px' }} className="relative z-20">
-        <div className="text-black font-bold text-[25px] leading-[28px]">
+      <div style={{ padding: '29px' }} className="relative z-20 sm:px-8 sm:py-8">
+        <div className="text-black font-bold text-[25px] leading-[28px] sm:text-2xl">
           <div>Decision</div>
           <div>Coach</div>
         </div>
@@ -151,17 +151,17 @@ const LandingPage = ({ onLogin, onSignUp }) => {
 
 
       {/* Page Content */}
-      <div className="flex-1 flex items-start px-6 py-4 relative z-10">
-        <div className="w-full max-w-sm mt-16 ml-8">
+      <div className="flex-1 flex items-start px-6 py-4 relative z-10 sm:px-8 sm:py-6">
+        <div className="w-full max-w-sm mt-16 ml-8 sm:ml-0 sm:mt-8 sm:max-w-md">
           {/* Welcome Heading */}
-          <div className="mb-6">
+          <div className="mb-6 sm:mb-8">
             <h1 
-              className="text-3xl text-black mb-3 transition-all duration-300 ease-in-out" 
+              className="text-3xl text-black mb-3 transition-all duration-300 ease-in-out sm:text-4xl sm:mb-4" 
               style={{ fontFamily: 'Futura, -apple-system, BlinkMacSystemFont, sans-serif', fontWeight: 400 }}
             >
               {showSignUp ? 'Create Account' : 'Welcome back!'}
             </h1>
-            <p className="text-gray-600 text-sm transition-all duration-300 ease-in-out">
+            <p className="text-gray-600 text-sm transition-all duration-300 ease-in-out sm:text-base sm:leading-relaxed">
               {showSignUp 
                 ? 'Join Decision Coach to practice coaching skills and help others make informed life decisions.'
                 : 'Practice coaching skills and help others navigate important life decisions with confidence.'
@@ -194,7 +194,7 @@ const LandingPage = ({ onLogin, onSignUp }) => {
                   
                   {/* Email Field */}
                   <div>
-                    <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
+                    <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2 sm:text-base">
                       Email Address
                     </label>
                     <input
@@ -203,19 +203,19 @@ const LandingPage = ({ onLogin, onSignUp }) => {
                       name="email"
                       value={formData.email}
                       onChange={handleInputChange}
-                      className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors ${
+                      className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors sm:px-4 sm:py-3 sm:text-base ${
                         errors.email ? 'border-red-300 bg-red-50/30' : 'border-gray-300'
                       }`}
                       placeholder="email@example.com"
                     />
                     {errors.email && (
-                      <p className="mt-1.5 text-xs text-red-600 font-medium">{errors.email}</p>
+                      <p className="mt-1.5 text-xs text-red-600 font-medium sm:text-sm">{errors.email}</p>
                     )}
                   </div>
 
                   {/* Password Field */}
                   <div>
-                    <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
+                    <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2 sm:text-base">
                       Password
                     </label>
                     <div className="relative">
@@ -225,7 +225,7 @@ const LandingPage = ({ onLogin, onSignUp }) => {
                         name="password"
                         value={formData.password}
                         onChange={handleInputChange}
-                        className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors pr-10 ${
+                        className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors pr-10 sm:px-4 sm:py-3 sm:text-base ${
                           errors.password ? 'border-red-300 bg-red-50/30' : 'border-gray-300'
                         }`}
                         placeholder="Enter your password"
@@ -233,20 +233,20 @@ const LandingPage = ({ onLogin, onSignUp }) => {
                       <button
                         type="button"
                         onClick={() => setShowPassword(!showPassword)}
-                        className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                        className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 sm:right-4"
                       >
                         {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
                       </button>
                     </div>
                     {errors.password && (
-                      <p className="mt-1.5 text-xs text-red-600 font-medium">{errors.password}</p>
+                      <p className="mt-1.5 text-xs text-red-600 font-medium sm:text-sm">{errors.password}</p>
                     )}
                   </div>
 
                   {/* Login Button */}
                   <button
                     type="submit"
-                    className="w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors font-medium"
+                    className="w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors font-medium sm:py-3 sm:text-base"
                   >
                     Log in
                   </button>

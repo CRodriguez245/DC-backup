@@ -99,14 +99,14 @@ const SignUpPage = ({ onSignUp, onBackToLogin }) => {
       
       {/* User Type Field */}
       <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-700 mb-2 sm:text-base">
                 I am a
               </label>
-              <div className="flex gap-3">
+              <div className="flex gap-3 sm:gap-4">
                 <button
                   type="button"
                   onClick={() => setFormData(prev => ({ ...prev, userType: 'student' }))}
-                  className={`flex-1 py-3 px-4 rounded-lg border transition-colors font-medium flex items-center justify-center gap-2 ${
+                  className={`flex-1 py-3 px-4 rounded-lg border transition-colors font-medium flex items-center justify-center gap-2 sm:py-4 sm:text-base ${
                     formData.userType === 'student'
                       ? 'bg-blue-50 text-blue-700 border-blue-300'
                       : 'bg-white text-gray-700 border-gray-300 hover:border-gray-400 hover:bg-gray-50'
@@ -118,7 +118,7 @@ const SignUpPage = ({ onSignUp, onBackToLogin }) => {
                 <button
                   type="button"
                   onClick={() => setFormData(prev => ({ ...prev, userType: 'teacher' }))}
-                  className={`flex-1 py-3 px-4 rounded-lg border transition-colors font-medium flex items-center justify-center gap-2 ${
+                  className={`flex-1 py-3 px-4 rounded-lg border transition-colors font-medium flex items-center justify-center gap-2 sm:py-4 sm:text-base ${
                     formData.userType === 'teacher'
                       ? 'bg-blue-50 text-blue-700 border-blue-300'
                       : 'bg-white text-gray-700 border-gray-300 hover:border-gray-400 hover:bg-gray-50'
@@ -129,14 +129,14 @@ const SignUpPage = ({ onSignUp, onBackToLogin }) => {
                 </button>
               </div>
               {errors.userType && (
-                <p className="mt-1.5 text-xs text-red-600 font-medium">{errors.userType}</p>
+                <p className="mt-1.5 text-xs text-red-600 font-medium sm:text-sm">{errors.userType}</p>
               )}
             </div>
 
             {/* Name Fields */}
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-2 gap-4 sm:gap-6">
               <div>
-                <label htmlFor="firstName" className="block text-sm font-medium text-gray-700 mb-2">
+                <label htmlFor="firstName" className="block text-sm font-medium text-gray-700 mb-2 sm:text-base">
                   First Name
                 </label>
                 <input
@@ -145,18 +145,18 @@ const SignUpPage = ({ onSignUp, onBackToLogin }) => {
                   name="firstName"
                   value={formData.firstName}
                   onChange={handleInputChange}
-                  className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors ${
+                  className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors sm:px-4 sm:py-3 sm:text-base ${
                     errors.firstName ? 'border-red-300 bg-red-50/30' : 'border-gray-300'
                   }`}
                   placeholder="First name"
                 />
                 {errors.firstName && (
-                  <p className="mt-1.5 text-xs text-red-600 font-medium">{errors.firstName}</p>
+                  <p className="mt-1.5 text-xs text-red-600 font-medium sm:text-sm">{errors.firstName}</p>
                 )}
               </div>
               
               <div>
-                <label htmlFor="lastName" className="block text-sm font-medium text-gray-700 mb-2">
+                <label htmlFor="lastName" className="block text-sm font-medium text-gray-700 mb-2 sm:text-base">
                   Last Name
                 </label>
                 <input
@@ -165,20 +165,20 @@ const SignUpPage = ({ onSignUp, onBackToLogin }) => {
                   name="lastName"
                   value={formData.lastName}
                   onChange={handleInputChange}
-                  className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors ${
+                  className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors sm:px-4 sm:py-3 sm:text-base ${
                     errors.lastName ? 'border-red-300 bg-red-50/30' : 'border-gray-300'
                   }`}
                   placeholder="Last name"
                 />
                 {errors.lastName && (
-                  <p className="mt-1.5 text-xs text-red-600 font-medium">{errors.lastName}</p>
+                  <p className="mt-1.5 text-xs text-red-600 font-medium sm:text-sm">{errors.lastName}</p>
                 )}
               </div>
             </div>
 
             {/* Email Field */}
             <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2 sm:text-base">
                 Email Address
               </label>
               <input
@@ -187,20 +187,20 @@ const SignUpPage = ({ onSignUp, onBackToLogin }) => {
                 name="email"
                 value={formData.email}
                 onChange={handleInputChange}
-                className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors ${
+                className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors sm:px-4 sm:py-3 sm:text-base ${
                   errors.email ? 'border-red-300 bg-red-50/30' : 'border-gray-300'
                 }`}
                 placeholder="your.email@example.com"
               />
               {errors.email && (
-                <p className="mt-1.5 text-xs text-red-600 font-medium">{errors.email}</p>
+                <p className="mt-1.5 text-xs text-red-600 font-medium sm:text-sm">{errors.email}</p>
               )}
             </div>
 
 
             {/* Password Field */}
             <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2 sm:text-base">
                 Password
               </label>
               <div className="relative">
@@ -210,7 +210,7 @@ const SignUpPage = ({ onSignUp, onBackToLogin }) => {
                   name="password"
                   value={formData.password}
                   onChange={handleInputChange}
-                  className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors pr-10 ${
+                  className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors pr-10 sm:px-4 sm:py-3 sm:text-base ${
                     errors.password ? 'border-red-300 bg-red-50/30' : 'border-gray-300'
                   }`}
                   placeholder="Create a password"
@@ -218,19 +218,19 @@ const SignUpPage = ({ onSignUp, onBackToLogin }) => {
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 sm:right-4"
                 >
                   {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
                 </button>
               </div>
               {errors.password && (
-                <p className="mt-1.5 text-xs text-red-600 font-medium">{errors.password}</p>
+                <p className="mt-1.5 text-xs text-red-600 font-medium sm:text-sm">{errors.password}</p>
               )}
             </div>
 
             {/* Confirm Password Field */}
             <div>
-              <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-2 sm:text-base">
                 Confirm Password
               </label>
               <div className="relative">
@@ -240,7 +240,7 @@ const SignUpPage = ({ onSignUp, onBackToLogin }) => {
                   name="confirmPassword"
                   value={formData.confirmPassword}
                   onChange={handleInputChange}
-                  className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors pr-10 ${
+                  className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors pr-10 sm:px-4 sm:py-3 sm:text-base ${
                     errors.confirmPassword ? 'border-red-300 bg-red-50/30' : 'border-gray-300'
                   }`}
                   placeholder="Confirm your password"
@@ -248,20 +248,20 @@ const SignUpPage = ({ onSignUp, onBackToLogin }) => {
                 <button
                   type="button"
                   onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 sm:right-4"
                 >
                   {showConfirmPassword ? <EyeOff size={20} /> : <Eye size={20} />}
                 </button>
               </div>
               {errors.confirmPassword && (
-                <p className="mt-1.5 text-xs text-red-600 font-medium">{errors.confirmPassword}</p>
+                <p className="mt-1.5 text-xs text-red-600 font-medium sm:text-sm">{errors.confirmPassword}</p>
               )}
             </div>
 
             {/* Sign Up Button */}
             <button
               type="submit"
-              className="w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors font-medium"
+              className="w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors font-medium sm:py-3 sm:text-base"
             >
               Create Account
             </button>

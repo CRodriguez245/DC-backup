@@ -178,9 +178,9 @@ const HomePage = ({ userInfo, gameMode, onStartCoaching, onLogout, onSettings, o
           animation: blink 1s infinite;
         }
       `}</style>
-      {/* Header */}
-      <div className="absolute z-10 px-6 py-6 sm:px-8 sm:py-8">
-        <div className="text-black font-bold text-[25px] leading-[28px] sm:text-2xl">
+      {/* Header - Desktop */}
+      <div className="hidden sm:block absolute z-10 px-8 py-8">
+        <div className="text-black font-bold text-2xl">
           <div>Decision</div>
           <div>Coach</div>
         </div>
@@ -215,11 +215,19 @@ const HomePage = ({ userInfo, gameMode, onStartCoaching, onLogout, onSettings, o
       </div>
 
       {/* Main Network Visualization */}
-      <div className="flex-1 overflow-y-auto px-4 pt-12 pb-48 sm:px-8 sm:pt-8" style={{ animation: 'elementFadeIn 0.8s ease-out 0.2s both' }}>
+      <div className="flex-1 overflow-y-auto px-4 pt-4 pb-48 sm:px-8 sm:pt-8" style={{ animation: 'elementFadeIn 0.8s ease-out 0.2s both' }}>
         {/* Mobile Grid Layout */}
         <div className="block sm:hidden">
+          {/* Mobile Title */}
+          <div className="px-6 py-6">
+            <div className="text-black font-bold text-[25px] leading-[28px]">
+              <div>Decision</div>
+              <div>Coach</div>
+            </div>
+          </div>
+          
           {/* Mobile Welcome Instructions */}
-          <div className="px-6 py-8 mt-4">
+          <div className="px-6 py-4">
             <div className="text-gray-700 text-sm leading-relaxed">
               {displayedText.startsWith('Welcome to Decision Coach!') && (
                 <>

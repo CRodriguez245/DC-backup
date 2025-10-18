@@ -219,15 +219,15 @@ const HomePage = ({ userInfo, gameMode, onStartCoaching, onLogout, onSettings, o
         {/* Mobile Grid Layout */}
         <div className="block sm:hidden">
           {/* Mobile Title */}
-          <div className="px-6 py-4 relative z-20">
-            <div className="text-black font-bold text-[25px] leading-[28px] sm:text-2xl">
+          <div className="px-6 py-6">
+            <div className="text-black font-bold text-[25px] leading-[28px]">
               <div>Decision</div>
               <div>Coach</div>
             </div>
           </div>
           
           {/* Mobile Welcome Instructions */}
-          <div className="px-6 py-4 relative z-10">
+          <div className="px-6 py-4">
             <div className="text-gray-700 text-sm leading-relaxed">
               {displayedText.startsWith('Welcome to Decision Coach!') && (
                 <>

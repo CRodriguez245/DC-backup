@@ -187,8 +187,8 @@ const HomePage = ({ userInfo, gameMode, onStartCoaching, onLogout, onSettings, o
       </div>
 
       {/* Welcome Instructions */}
-      <div className="absolute z-10 px-6 py-4 sm:px-8 sm:py-8" style={{ top: '200px' }}>
-        <div className="text-gray-700 text-sm leading-relaxed max-w-sm sm:text-base sm:max-w-md">
+      <div className="absolute z-10 px-6 py-4 sm:px-8 sm:py-8" style={{ top: '120px' }}>
+        <div className="text-gray-700 text-sm leading-relaxed max-w-sm sm:text-base sm:max-w-md sm:top-64">
           {displayedText.startsWith('Welcome to Decision Coach!') && (
             <>
               <span style={{ fontFamily: 'Futura, -apple-system, BlinkMacSystemFont, sans-serif', fontSize: '18px' }}>
@@ -213,10 +213,10 @@ const HomePage = ({ userInfo, gameMode, onStartCoaching, onLogout, onSettings, o
       </div>
 
       {/* Main Network Visualization */}
-      <div className="flex-1 overflow-y-auto px-4 pt-8 pb-48 sm:px-8" style={{ animation: 'elementFadeIn 0.8s ease-out 0.2s both' }}>
+      <div className="flex-1 overflow-y-auto px-4 pt-20 pb-48 sm:px-8 sm:pt-8" style={{ animation: 'elementFadeIn 0.8s ease-out 0.2s both' }}>
         {/* Mobile Grid Layout */}
         <div className="block sm:hidden">
-          <div className="grid grid-cols-2 gap-6 py-8">
+          <div className="grid grid-cols-2 gap-6 py-16 px-4">
             {coachingLevels.map((level, index) => (
               <div
                 key={level.id}
@@ -229,7 +229,7 @@ const HomePage = ({ userInfo, gameMode, onStartCoaching, onLogout, onSettings, o
                   onMouseLeave={() => setHoveredCharacter(null)}
                 >
                   <div 
-                    className={`w-20 h-20 rounded-full flex items-center justify-center text-xl cursor-pointer overflow-hidden transition-all duration-300 ease-in-out hover:scale-110 hover:shadow-xl ${
+                    className={`w-16 h-16 rounded-full flex items-center justify-center text-lg cursor-pointer overflow-hidden transition-all duration-300 ease-in-out hover:scale-110 hover:shadow-xl ${
                       level.completed 
                         ? (level.id === 'jamie' || level.id === 'andres' || level.id === 'kavya') ? 'hover:opacity-90' : 'border-2 border-blue-300 hover:opacity-90'
                         : level.status === 'Available'
@@ -256,8 +256,8 @@ const HomePage = ({ userInfo, gameMode, onStartCoaching, onLogout, onSettings, o
                 </div>
                 
                 <div className="text-center">
-                  <h3 className="font-semibold text-gray-800 text-sm">{level.name}</h3>
-                  <p className="text-xs text-gray-600 mt-1">{level.description}</p>
+                  <h3 className="font-semibold text-gray-800 text-xs">{level.name}</h3>
+                  <p className="text-xs text-gray-600 mt-1 leading-tight">{level.description}</p>
                   {level.dqScore && (
                     <p className="text-xs text-blue-600 mt-1">Score: {Math.round(level.dqScore * 100)}%</p>
                   )}

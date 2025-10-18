@@ -118,6 +118,7 @@ const JamieAI = () => {
   const [isTextTransitioning, setIsTextTransitioning] = useState(false);
   const [connectionStatus, setConnectionStatus] = useState('untested');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [showCharacterInfo, setShowCharacterInfo] = useState(false);
   const [demoMode, setDemoMode] = useState(false); // Start with real backend
   const [showDqPanel, setShowDqPanel] = useState(false);
   const [attemptsRemaining, setAttemptsRemaining] = useState(20);
@@ -1167,8 +1168,8 @@ const JamieAI = () => {
         }
       `}</style>
       
-      {/* Left Sidebar */}
-      <div className="w-[320px] flex flex-col" style={{ padding: '29px' }}>
+      {/* Left Sidebar - Hidden on mobile */}
+      <div className="hidden sm:flex w-[320px] flex-col" style={{ padding: '29px' }}>
         {/* Page Title */}
         <div className="mb-[100px]">
           <h1 className="text-[25px] font-bold text-black leading-[28px]">
@@ -1223,8 +1224,81 @@ const JamieAI = () => {
       </div>
       
       
-      {/* Navigation Bar - positioned outside sidebar for proper click events */}
-      <div className="absolute bottom-6 left-6 z-50">
+      {/* Mobile Title */}
+      <div className="block sm:hidden px-6 py-4">
+        <div className="text-black font-bold text-[25px] leading-[28px]">
+          <div>Decision</div>
+          <div>Coach</div>
+        </div>
+      </div>
+
+      {/* Mobile Hamburger Menu */}
+      <div className="absolute top-4 right-4 sm:hidden z-50">
+        <button
+          onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+          className="w-10 h-10 flex items-center justify-center bg-white rounded-lg shadow-lg border text-gray-600 hover:bg-gray-50 transition-colors"
+        >
+          {isMobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+        </button>
+        
+        {/* Mobile Menu Dropdown */}
+        {isMobileMenuOpen && (
+          <div className="absolute top-12 right-0 bg-white rounded-lg shadow-lg border p-2 min-w-[200px]">
+            <button 
+              onClick={() => {
+                setCurrentView('homepage');
+                setIsMobileMenuOpen(false);
+              }}
+              className="w-full flex items-center space-x-3 px-3 py-2 text-left text-blue-600 hover:bg-blue-50 rounded transition-colors"
+            >
+              <Home className="w-4 h-4" />
+              <span>Home</span>
+            </button>
+            
+            {userInfo?.role === 'teacher' && (
+              <button 
+                onClick={() => {
+                  setCurrentView('admin');
+                  setIsMobileMenuOpen(false);
+                }}
+                className={`w-full flex items-center space-x-3 px-3 py-2 text-left rounded transition-colors ${
+                  currentView === 'admin' 
+                    ? 'text-blue-600 hover:bg-blue-50' 
+                    : 'text-gray-600 hover:bg-gray-50'
+                }`}
+              >
+                <BarChart3 className="w-4 h-4" />
+                <span>Admin Dashboard</span>
+              </button>
+            )}
+            
+            <button 
+              onClick={() => {
+                handleSettings();
+                setIsMobileMenuOpen(false);
+              }}
+              className="w-full flex items-center space-x-3 px-3 py-2 text-left text-gray-600 hover:bg-gray-50 rounded transition-colors"
+            >
+              <Settings className="w-4 h-4" />
+              <span>Settings</span>
+            </button>
+            
+            <button 
+              onClick={() => {
+                handleLogout();
+                setIsMobileMenuOpen(false);
+              }}
+              className="w-full flex items-center space-x-3 px-3 py-2 text-left text-gray-600 hover:bg-gray-50 rounded transition-colors"
+            >
+              <LogOut className="w-4 h-4" />
+              <span>Logout</span>
+            </button>
+          </div>
+        )}
+      </div>
+
+      {/* Desktop Navigation Bar - positioned outside sidebar for proper click events */}
+      <div className="hidden sm:block absolute bottom-6 left-6 z-50">
         <div className="bg-white rounded-lg shadow-lg p-4 flex items-center space-x-4 border w-fit">
           <button 
             onClick={() => setCurrentView('homepage')}
@@ -1271,6 +1345,16 @@ const JamieAI = () => {
             <LogOut className="w-5 h-5" />
           </button>
         </div>
+      </div>
+
+      {/* Mobile Character Info Button */}
+      <div className="block sm:hidden absolute top-4 left-4 z-40">
+        <button
+          onClick={() => setShowCharacterInfo(true)}
+          className="w-10 h-10 flex items-center justify-center bg-white rounded-lg shadow-lg border text-gray-600 hover:bg-gray-50 transition-colors"
+        >
+          <User className="w-5 h-5" />
+        </button>
       </div>
 
       {/* Main Chat Area */}
@@ -1615,6 +1699,57 @@ const JamieAI = () => {
           </div>
         </div>
       </div>
+
+      {/* Mobile Character Info Popup */}
+      {showCharacterInfo && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50 sm:hidden">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 border border-gray-100">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-bold text-gray-800">{characterData[currentCharacter].name}</h2>
+              <button
+                onClick={() => setShowCharacterInfo(false)}
+                className="w-8 h-8 flex items-center justify-center text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            
+            <div className="mb-4">
+              <p className="text-gray-600 text-sm">{characterData[currentCharacter].title}</p>
+            </div>
+            
+            <div className="mb-4">
+              <h3 className="text-sm font-semibold text-gray-800 mb-2">Scenario</h3>
+              <p className="text-sm text-gray-600 leading-relaxed">
+                {characterData[currentCharacter].context}
+              </p>
+            </div>
+            
+            {characterData[currentCharacter].gameMode === 'game' && (
+              <div className="mb-4">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-sm font-medium text-gray-600">{characterData[currentCharacter].progressLabel}</span>
+                  <span className="text-sm font-semibold text-gray-800">{animatedProgress}%</span>
+                </div>
+                <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
+                  <div 
+                    className={`h-full bg-gradient-to-r from-orange-400 to-orange-500 rounded-full transition-all duration-1000 ease-out ${isProgressAnimating ? 'progress-animate' : ''}`}
+                    style={{ width: `${animatedProgress}%` }}
+                  ></div>
+                </div>
+              </div>
+            )}
+            
+            {characterData[currentCharacter].gameMode === 'game' && (
+              <div className="mb-4">
+                <p className="text-sm text-gray-600">
+                  {getCharacterState()}
+                </p>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
       )}
     </div>

@@ -1125,7 +1125,7 @@ const JamieAI = () => {
           onBack={() => setCurrentView('classrooms')}
         />
       ) : (
-        <div className="bg-white h-screen w-full flex">
+        <div className="bg-white h-screen w-full flex flex-col sm:flex-row">
       <style jsx>{`
         @keyframes slideInUp {
           from {
@@ -1358,7 +1358,7 @@ const JamieAI = () => {
       </div>
 
       {/* Main Chat Area */}
-      <div className="flex-1 flex flex-col relative">
+      <div className="flex-1 flex flex-col relative w-full sm:w-auto">
         {/* Session Controls - Top Right */}
        <div className="absolute top-2 right-2 sm:top-6 sm:right-6 z-10 flex items-center gap-1 sm:gap-2">
          <button

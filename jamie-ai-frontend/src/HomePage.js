@@ -377,7 +377,6 @@ const HomePage = ({ userInfo, gameMode, onStartCoaching, onLogout, onSettings, o
             </div>
           ))}
         </div>
-        </div>
       </div>
 
       {/* Navigation Bar */}

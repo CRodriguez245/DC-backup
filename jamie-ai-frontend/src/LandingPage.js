@@ -142,7 +142,7 @@ const LandingPage = ({ onLogin, onSignUp }) => {
       `}</style>
       
       {/* Header with Logo */}
-      <div style={{ padding: '29px' }} className="relative z-20 sm:px-8 sm:py-8">
+      <div className="px-6 py-4 relative z-20 sm:px-8 sm:py-8">
         <div className="text-black font-bold text-[25px] leading-[28px] sm:text-2xl">
           <div>Decision</div>
           <div>Coach</div>
@@ -152,7 +152,7 @@ const LandingPage = ({ onLogin, onSignUp }) => {
 
       {/* Page Content */}
       <div className="flex-1 flex items-start px-6 py-4 relative z-10 sm:px-8 sm:py-6">
-        <div className="w-full max-w-sm mt-16 ml-8 sm:ml-0 sm:mt-8 sm:max-w-md">
+        <div className="w-full max-w-sm mt-8 sm:ml-0 sm:mt-8 sm:max-w-md">
           {/* Welcome Heading */}
           <div className="mb-6 sm:mb-8">
             <h1 

@@ -1466,7 +1466,7 @@ const JamieAI = () => {
                   // Jamie's messages - white bubble with avatar and DQ scores
                   <div className="flex gap-4 sm:gap-[30px] items-start message-enter" data-message-id={msg.id}>
                   {/* Character Avatar */}
-                  <div className="w-12 h-12 sm:w-[70px] sm:h-[70px] rounded-full bg-[#2C73EB] flex items-end justify-center flex-shrink-0 overflow-hidden">
+                  <div className="w-8 h-8 sm:w-[70px] sm:h-[70px] rounded-full bg-[#2C73EB] flex items-end justify-center flex-shrink-0 overflow-hidden">
                     <img 
                       src={
                         currentCharacter === 'jamie' ? "/images/cu-JAMIE.png" : 
@@ -1474,7 +1474,7 @@ const JamieAI = () => {
                         "/images/cu-GIRL-2.png"
                       } 
                       alt={characterData[currentCharacter].name} 
-                      className={`w-12 h-12 sm:w-[70px] sm:h-[70px] object-cover object-bottom ${currentCharacter === 'andres' || currentCharacter === 'kavya' ? 'scale-x-[-1]' : ''}`}
+                      className={`w-8 h-8 sm:w-[70px] sm:h-[70px] object-cover object-bottom ${currentCharacter === 'andres' || currentCharacter === 'kavya' ? 'scale-x-[-1]' : ''}`}
                     />
                   </div>
                     
@@ -1626,7 +1626,7 @@ const JamieAI = () => {
             
               {isTyping && (
                 <div className="flex gap-4 sm:gap-[30px] items-start">
-                  <div className="w-12 h-12 sm:w-[70px] sm:h-[70px] rounded-full bg-[#2C73EB] flex items-end justify-center flex-shrink-0 overflow-hidden">
+                  <div className="w-8 h-8 sm:w-[70px] sm:h-[70px] rounded-full bg-[#2C73EB] flex items-end justify-center flex-shrink-0 overflow-hidden">
                     <img 
                       src={
                         currentCharacter === 'jamie' ? "/images/cu-JAMIE.png" : 
@@ -1634,7 +1634,7 @@ const JamieAI = () => {
                         "/images/cu-GIRL-2.png"
                       } 
                       alt={characterData[currentCharacter].name} 
-                      className={`w-12 h-12 sm:w-[70px] sm:h-[70px] object-cover object-bottom ${currentCharacter === 'andres' || currentCharacter === 'kavya' ? 'scale-x-[-1]' : ''}`}
+                      className={`w-8 h-8 sm:w-[70px] sm:h-[70px] object-cover object-bottom ${currentCharacter === 'andres' || currentCharacter === 'kavya' ? 'scale-x-[-1]' : ''}`}
                     />
                   </div>
                   <div className="bg-white rounded-[5px] shadow-[0px_6px_20px_10px_rgba(200,201,201,0.11)] px-4 py-4 sm:px-[33px] sm:py-6 mx-4 sm:mx-0">

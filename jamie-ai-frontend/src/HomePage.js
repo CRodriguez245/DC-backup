@@ -179,7 +179,7 @@ const HomePage = ({ userInfo, gameMode, onStartCoaching, onLogout, onSettings, o
         }
       `}</style>
       {/* Header */}
-      <div className="absolute z-10 px-6 py-4 sm:px-8 sm:py-8">
+      <div className="absolute z-10 px-6 py-6 sm:px-8 sm:py-8">
         <div className="text-black font-bold text-[25px] leading-[28px] sm:text-2xl">
           <div>Decision</div>
           <div>Coach</div>
@@ -215,11 +215,11 @@ const HomePage = ({ userInfo, gameMode, onStartCoaching, onLogout, onSettings, o
       </div>
 
       {/* Main Network Visualization */}
-      <div className="flex-1 overflow-y-auto px-4 pt-8 pb-48 sm:px-8" style={{ animation: 'elementFadeIn 0.8s ease-out 0.2s both' }}>
+      <div className="flex-1 overflow-y-auto px-4 pt-12 pb-48 sm:px-8 sm:pt-8" style={{ animation: 'elementFadeIn 0.8s ease-out 0.2s both' }}>
         {/* Mobile Grid Layout */}
         <div className="block sm:hidden">
           {/* Mobile Welcome Instructions */}
-          <div className="px-6 py-6">
+          <div className="px-6 py-8 mt-4">
             <div className="text-gray-700 text-sm leading-relaxed">
               {displayedText.startsWith('Welcome to Decision Coach!') && (
                 <>
@@ -246,7 +246,7 @@ const HomePage = ({ userInfo, gameMode, onStartCoaching, onLogout, onSettings, o
             </div>
           </div>
           
-          <div className="grid grid-cols-2 gap-6 py-4 px-4">
+          <div className="grid grid-cols-2 gap-6 py-6 px-4 mt-4">
             {coachingLevels.map((level, index) => (
               <div
                 key={level.id}

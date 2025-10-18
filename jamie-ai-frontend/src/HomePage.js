@@ -187,7 +187,7 @@ const HomePage = ({ userInfo, gameMode, onStartCoaching, onLogout, onSettings, o
       </div>
 
       {/* Welcome Instructions - Desktop */}
-      <div className="hidden sm:block absolute z-10 px-8 py-8" style={{ top: '250px', left: '29px' }}>
+      <div className="hidden sm:block absolute z-10 px-8 py-8" style={{ top: '250px', left: '32px' }}>
         <div className="text-gray-700 text-base leading-relaxed max-w-sm">
           {displayedText.startsWith('Welcome to Decision Coach!') && (
             <>

@@ -1222,55 +1222,6 @@ const JamieAI = () => {
         <div className="flex-1"></div>
       </div>
       
-      {/* Navigation Bar - positioned outside sidebar for proper click events */}
-      <div className="absolute bottom-6 left-6 z-50">
-        <div className="bg-white rounded-lg shadow-lg p-4 flex items-center space-x-4 border w-fit">
-          <button 
-            onClick={() => setCurrentView('homepage')}
-            className={`w-8 h-8 flex items-center justify-center rounded transition-colors ${
-              currentView === 'homepage' 
-                ? 'text-blue-600 hover:bg-blue-50' 
-                : 'text-gray-600 hover:bg-gray-50'
-            }`}
-          >
-            <Home className="w-5 h-5" />
-          </button>
-          {userInfo?.role === 'teacher' && (
-            <>
-              <div className="w-px h-6 bg-gray-300"></div>
-              <button 
-                onClick={() => setCurrentView('admin')}
-                className={`w-8 h-8 flex items-center justify-center rounded transition-colors ${
-                  currentView === 'admin' 
-                    ? 'text-blue-600 hover:bg-blue-50' 
-                    : 'text-gray-600 hover:bg-gray-50'
-                }`}
-                title="Admin Dashboard"
-              >
-                <BarChart3 className="w-5 h-5" />
-              </button>
-            </>
-          )}
-          <div className="w-px h-6 bg-gray-300"></div>
-          <button 
-            onClick={handleSettings}
-            className={`w-8 h-8 flex items-center justify-center rounded transition-colors ${
-              currentView === 'settings' 
-                ? 'text-blue-600 hover:bg-blue-50' 
-                : 'text-gray-600 hover:bg-gray-50'
-            }`}
-          >
-            <Settings className="w-5 h-5" />
-          </button>
-          <div className="w-px h-6 bg-gray-300"></div>
-          <button 
-            onClick={handleLogout}
-            className="w-8 h-8 flex items-center justify-center text-gray-600 hover:bg-gray-50 rounded transition-colors"
-          >
-            <LogOut className="w-5 h-5" />
-          </button>
-        </div>
-      </div>
       
       {/* Header */}
       <div className="px-6 py-4 sm:px-8 sm:py-8 sm:absolute sm:z-10">

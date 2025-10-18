@@ -1223,14 +1223,6 @@ const JamieAI = () => {
       </div>
       
       
-      {/* Header */}
-      <div className="px-6 py-4 sm:px-8 sm:py-8 sm:absolute sm:z-10">
-        <div className="text-black font-bold text-[25px] leading-[28px] sm:text-2xl">
-          <div>Decision</div>
-          <div>Coach</div>
-        </div>
-      </div>
-
       {/* Navigation Bar - positioned outside sidebar for proper click events */}
       <div className="absolute bottom-6 left-6 z-50">
         <div className="bg-white rounded-lg shadow-lg p-4 flex items-center space-x-4 border w-fit">
@@ -1320,9 +1312,11 @@ const JamieAI = () => {
                     className={`w-16 h-16 sm:w-20 sm:h-20 object-cover object-bottom ${currentCharacter === 'andres' || currentCharacter === 'kavya' ? 'scale-x-[-1]' : ''}`}
                   />
                 </div>
-                <h2 className="text-xl sm:text-2xl font-bold text-gray-800 mb-3 px-4" style={{ fontFamily: 'Futura, -apple-system, BlinkMacSystemFont, sans-serif', fontWeight: 400 }}>
-                  Start coaching {characterData[currentCharacter].name} {demoMode && <span className="text-xs sm:text-sm font-medium text-blue-600 bg-blue-100 px-2 sm:px-3 py-1 rounded-full ml-2">Demo Mode</span>}
-                </h2>
+                <div className="absolute top-6 left-6 sm:top-8 sm:left-8 z-10">
+                  <h2 className="text-xl sm:text-2xl font-bold text-gray-800" style={{ fontFamily: 'Futura, -apple-system, BlinkMacSystemFont, sans-serif', fontWeight: 400 }}>
+                    Start coaching {characterData[currentCharacter].name} {demoMode && <span className="text-xs sm:text-sm font-medium text-blue-600 bg-blue-100 px-2 sm:px-3 py-1 rounded-full ml-2">Demo Mode</span>}
+                  </h2>
+                </div>
                 <p className="text-gray-600 max-w-lg mx-auto mb-6 sm:mb-8 text-base sm:text-lg leading-relaxed px-4">
                   {characterData[currentCharacter].context}
                 </p>

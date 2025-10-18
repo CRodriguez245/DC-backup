@@ -1223,77 +1223,54 @@ const JamieAI = () => {
       </div>
       
       
-      {/* Header */}
-      <div className="px-6 py-4 sm:px-8 sm:py-8 sm:absolute sm:z-10">
-        <div className="text-black font-bold text-[25px] leading-[28px] sm:text-2xl">
-          <div>Decision</div>
-          <div>Coach</div>
-        </div>
-      </div>
-
-      {/* Mobile Hamburger Menu */}
-      <div className="absolute top-4 right-4 sm:hidden z-50">
-        <button
-          onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-          className="w-10 h-10 flex items-center justify-center bg-white rounded-lg shadow-lg border text-gray-600 hover:bg-gray-50 transition-colors"
-        >
-          {isMobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
-        </button>
-        
-        {/* Mobile Menu Dropdown */}
-        {isMobileMenuOpen && (
-          <div className="absolute top-12 right-0 bg-white rounded-lg shadow-lg border p-2 min-w-[200px]">
-            <button 
-              onClick={() => {
-                setCurrentView('homepage');
-                setIsMobileMenuOpen(false);
-              }}
-              className="w-full flex items-center space-x-3 px-3 py-2 text-left text-blue-600 hover:bg-blue-50 rounded transition-colors"
-            >
-              <Home className="w-4 h-4" />
-              <span>Home</span>
-            </button>
-            
-            {userInfo?.role === 'teacher' && (
+      {/* Navigation Bar - positioned outside sidebar for proper click events */}
+      <div className="absolute bottom-6 left-6 z-50">
+        <div className="bg-white rounded-lg shadow-lg p-4 flex items-center space-x-4 border w-fit">
+          <button 
+            onClick={() => setCurrentView('homepage')}
+            className={`w-8 h-8 flex items-center justify-center rounded transition-colors ${
+              currentView === 'homepage' 
+                ? 'text-blue-600 hover:bg-blue-50' 
+                : 'text-gray-600 hover:bg-gray-50'
+            }`}
+          >
+            <Home className="w-5 h-5" />
+          </button>
+          {userInfo?.role === 'teacher' && (
+            <>
+              <div className="w-px h-6 bg-gray-300"></div>
               <button 
-                onClick={() => {
-                  setCurrentView('admin');
-                  setIsMobileMenuOpen(false);
-                }}
-                className={`w-full flex items-center space-x-3 px-3 py-2 text-left rounded transition-colors ${
+                onClick={() => setCurrentView('admin')}
+                className={`w-8 h-8 flex items-center justify-center rounded transition-colors ${
                   currentView === 'admin' 
                     ? 'text-blue-600 hover:bg-blue-50' 
                     : 'text-gray-600 hover:bg-gray-50'
                 }`}
+                title="Admin Dashboard"
               >
-                <BarChart3 className="w-4 h-4" />
-                <span>Admin Dashboard</span>
+                <BarChart3 className="w-5 h-5" />
               </button>
-            )}
-            
-            <button 
-              onClick={() => {
-                setCurrentView('settings');
-                setIsMobileMenuOpen(false);
-              }}
-              className="w-full flex items-center space-x-3 px-3 py-2 text-left text-gray-600 hover:bg-gray-50 rounded transition-colors"
-            >
-              <Settings className="w-4 h-4" />
-              <span>Settings</span>
-            </button>
-            
-            <button 
-              onClick={() => {
-                handleLogout();
-                setIsMobileMenuOpen(false);
-              }}
-              className="w-full flex items-center space-x-3 px-3 py-2 text-left text-gray-600 hover:bg-gray-50 rounded transition-colors"
-            >
-              <LogOut className="w-4 h-4" />
-              <span>Logout</span>
-            </button>
-          </div>
-        )}
+            </>
+          )}
+          <div className="w-px h-6 bg-gray-300"></div>
+          <button 
+            onClick={handleSettings}
+            className={`w-8 h-8 flex items-center justify-center rounded transition-colors ${
+              currentView === 'settings' 
+                ? 'text-blue-600 hover:bg-blue-50' 
+                : 'text-gray-600 hover:bg-gray-50'
+            }`}
+          >
+            <Settings className="w-5 h-5" />
+          </button>
+          <div className="w-px h-6 bg-gray-300"></div>
+          <button 
+            onClick={handleLogout}
+            className="w-8 h-8 flex items-center justify-center text-gray-600 hover:bg-gray-50 rounded transition-colors"
+          >
+            <LogOut className="w-5 h-5" />
+          </button>
+        </div>
       </div>
 
       {/* Main Chat Area */}

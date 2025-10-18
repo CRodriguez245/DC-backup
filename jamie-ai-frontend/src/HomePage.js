@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { Home, Settings, LogOut, BarChart3 } from 'lucide-react';
+import { Home, Settings, LogOut, BarChart3, Menu, X } from 'lucide-react';
 
 const HomePage = ({ userInfo, gameMode, onStartCoaching, onLogout, onSettings, onCharacterClick, onAdminClick, currentView, userProgress }) => {
   const [hoveredCharacter, setHoveredCharacter] = useState(null);
   const [displayedText, setDisplayedText] = useState('');
   const [isTyping, setIsTyping] = useState(true);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const fullText = "Welcome to Decision Coach! Start with Jamie's assessment to evaluate your coaching skills. Complete Jamie's session to unlock the game mode with other characters.";
 
@@ -409,44 +410,109 @@ const HomePage = ({ userInfo, gameMode, onStartCoaching, onLogout, onSettings, o
         </div>
       </div>
 
-      {/* Navigation Bar */}
-      <div className="absolute bottom-4 left-4 sm:bottom-6 sm:left-6">
-        <div className="bg-white rounded-lg shadow-lg p-3 flex items-center space-x-3 border w-fit sm:p-4 sm:space-x-4">
+      {/* Mobile Hamburger Menu */}
+      <div className="absolute top-4 right-4 sm:hidden z-50">
+        <button
+          onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+          className="w-10 h-10 flex items-center justify-center bg-white rounded-lg shadow-lg border text-gray-600 hover:bg-gray-50 transition-colors"
+        >
+          {isMobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+        </button>
+        
+        {/* Mobile Menu Dropdown */}
+        {isMobileMenuOpen && (
+          <div className="absolute top-12 right-0 bg-white rounded-lg shadow-lg border p-2 min-w-[200px]">
+            <button 
+              onClick={() => {
+                onStartCoaching({ id: 'home', name: 'Home' });
+                setIsMobileMenuOpen(false);
+              }}
+              className="w-full flex items-center space-x-3 px-3 py-2 text-left text-blue-600 hover:bg-blue-50 rounded transition-colors"
+            >
+              <Home className="w-4 h-4" />
+              <span>Home</span>
+            </button>
+            
+            {userInfo?.role === 'teacher' && (
+              <button 
+                onClick={() => {
+                  onAdminClick();
+                  setIsMobileMenuOpen(false);
+                }}
+                className={`w-full flex items-center space-x-3 px-3 py-2 text-left rounded transition-colors ${
+                  currentView === 'admin' 
+                    ? 'text-blue-600 hover:bg-blue-50' 
+                    : 'text-gray-600 hover:bg-gray-50'
+                }`}
+              >
+                <BarChart3 className="w-4 h-4" />
+                <span>Admin Dashboard</span>
+              </button>
+            )}
+            
+            <button 
+              onClick={() => {
+                onSettings();
+                setIsMobileMenuOpen(false);
+              }}
+              className="w-full flex items-center space-x-3 px-3 py-2 text-left text-gray-600 hover:bg-gray-50 rounded transition-colors"
+            >
+              <Settings className="w-4 h-4" />
+              <span>Settings</span>
+            </button>
+            
+            <button 
+              onClick={() => {
+                onLogout();
+                setIsMobileMenuOpen(false);
+              }}
+              className="w-full flex items-center space-x-3 px-3 py-2 text-left text-gray-600 hover:bg-gray-50 rounded transition-colors"
+            >
+              <LogOut className="w-4 h-4" />
+              <span>Logout</span>
+            </button>
+          </div>
+        )}
+      </div>
+
+      {/* Desktop Navigation Bar */}
+      <div className="hidden sm:block absolute bottom-6 left-6">
+        <div className="bg-white rounded-lg shadow-lg p-4 flex items-center space-x-4 border w-fit">
           <button 
             onClick={() => onStartCoaching({ id: 'home', name: 'Home' })}
-            className="w-7 h-7 flex items-center justify-center text-blue-600 hover:bg-blue-50 rounded transition-colors sm:w-8 sm:h-8"
+            className="w-8 h-8 flex items-center justify-center text-blue-600 hover:bg-blue-50 rounded transition-colors"
           >
-            <Home className="w-4 h-4 sm:w-5 sm:h-5" />
+            <Home className="w-5 h-5" />
           </button>
           {userInfo?.role === 'teacher' && (
             <>
               <div className="w-px h-6 bg-gray-300"></div>
               <button 
                 onClick={onAdminClick}
-                className={`w-7 h-7 flex items-center justify-center rounded transition-colors sm:w-8 sm:h-8 ${
+                className={`w-8 h-8 flex items-center justify-center rounded transition-colors ${
                   currentView === 'admin' 
                     ? 'text-blue-600 hover:bg-blue-50' 
                     : 'text-gray-600 hover:bg-gray-50'
                 }`}
                 title="Admin Dashboard"
               >
-                <BarChart3 className="w-4 h-4 sm:w-5 sm:h-5" />
+                <BarChart3 className="w-5 h-5" />
               </button>
             </>
           )}
           <div className="w-px h-6 bg-gray-300"></div>
           <button 
             onClick={onSettings}
-            className="w-7 h-7 flex items-center justify-center text-gray-600 hover:bg-gray-50 rounded transition-colors sm:w-8 sm:h-8"
+            className="w-8 h-8 flex items-center justify-center text-gray-600 hover:bg-gray-50 rounded transition-colors"
           >
-            <Settings className="w-4 h-4 sm:w-5 sm:h-5" />
+            <Settings className="w-5 h-5" />
           </button>
           <div className="w-px h-6 bg-gray-300"></div>
           <button 
             onClick={onLogout}
-            className="w-7 h-7 flex items-center justify-center text-gray-600 hover:bg-gray-50 rounded transition-colors sm:w-8 sm:h-8"
+            className="w-8 h-8 flex items-center justify-center text-gray-600 hover:bg-gray-50 rounded transition-colors"
           >
-            <LogOut className="w-4 h-4 sm:w-5 sm:h-5" />
+            <LogOut className="w-5 h-5" />
           </button>
         </div>
       </div>

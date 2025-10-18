@@ -1464,7 +1464,7 @@ const JamieAI = () => {
                   </div>
                 ) : (
                   // Jamie's messages - white bubble with avatar and DQ scores
-                  <div className="flex gap-4 sm:gap-[30px] items-start message-enter" data-message-id={msg.id}>
+                  <div className="flex gap-2 sm:gap-[30px] items-start message-enter" data-message-id={msg.id}>
                   {/* Character Avatar */}
                   <div className="w-8 h-8 sm:w-[70px] sm:h-[70px] rounded-full bg-[#2C73EB] flex items-end justify-center flex-shrink-0 overflow-hidden">
                     <img 
@@ -1625,7 +1625,7 @@ const JamieAI = () => {
             ))}
             
               {isTyping && (
-                <div className="flex gap-4 sm:gap-[30px] items-start">
+                <div className="flex gap-2 sm:gap-[30px] items-start">
                   <div className="w-8 h-8 sm:w-[70px] sm:h-[70px] rounded-full bg-[#2C73EB] flex items-end justify-center flex-shrink-0 overflow-hidden">
                     <img 
                       src={

@@ -1224,16 +1224,16 @@ const JamieAI = () => {
       </div>
       
       
-      {/* Mobile Title */}
-      <div className="block sm:hidden px-6 py-4">
+      {/* Mobile Title - Fixed Position */}
+      <div className="block sm:hidden fixed top-0 left-0 right-0 z-40 bg-white px-6 py-4">
         <div className="text-black font-bold text-[25px] leading-[28px]">
           <div>Decision</div>
           <div>Coach</div>
         </div>
       </div>
 
-      {/* Mobile Hamburger Menu */}
-      <div className="absolute top-4 right-4 sm:hidden z-50">
+      {/* Mobile Hamburger Menu - Fixed Position */}
+      <div className="fixed top-4 right-4 sm:hidden z-50">
         <button
           onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
           className="w-10 h-10 flex items-center justify-center bg-white rounded-lg shadow-lg border text-gray-600 hover:bg-gray-50 transition-colors"
@@ -1359,8 +1359,8 @@ const JamieAI = () => {
 
       {/* Main Chat Area */}
       <div className="flex-1 flex flex-col relative w-full sm:w-auto">
-        {/* Session Controls - Top Right */}
-       <div className="absolute top-2 right-2 sm:top-6 sm:right-6 z-10 flex items-center gap-1 sm:gap-2">
+        {/* Session Controls - Top Right - Hidden on Mobile */}
+       <div className="hidden sm:flex absolute top-6 right-6 z-10 items-center gap-2">
          <button
            onClick={resetSession}
            className="w-7 h-7 sm:w-9 sm:h-9 text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors flex items-center justify-center"
@@ -1381,8 +1381,8 @@ const JamieAI = () => {
        </div>
         
         {/* Chat Messages Container */}
-        <div ref={chatContainerRef} className="flex-1 bg-[rgba(217,217,217,0.19)] overflow-y-auto relative pb-32 sm:pb-40">
-          <div className="max-w-[866px] mx-auto px-3 py-6 sm:px-0 sm:py-[76px] flex flex-col gap-4 sm:gap-[46px]">
+        <div ref={chatContainerRef} className="flex-1 bg-white sm:bg-[rgba(217,217,217,0.19)] overflow-y-auto relative pb-32 sm:pb-40">
+          <div className="max-w-[866px] mx-auto px-3 py-6 sm:px-0 sm:py-[76px] flex flex-col gap-4 sm:gap-[46px] pt-20 sm:pt-0">
             {messages.length === 0 && (
               <div className="text-center py-8 sm:py-16">
                 <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-[#2C73EB] flex items-end justify-center mx-auto mb-4 sm:mb-6 shadow-lg overflow-hidden">

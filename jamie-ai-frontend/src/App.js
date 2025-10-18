@@ -1274,29 +1274,29 @@ const JamieAI = () => {
       {/* Main Chat Area */}
       <div className="flex-1 flex flex-col relative">
         {/* Session Controls - Top Right */}
-       <div className="absolute top-4 right-4 sm:top-6 sm:right-6 z-10 flex items-center gap-2">
+       <div className="absolute top-2 right-2 sm:top-6 sm:right-6 z-10 flex items-center gap-1 sm:gap-2">
          <button
            onClick={resetSession}
-           className="w-8 h-8 sm:w-9 sm:h-9 text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors flex items-center justify-center"
+           className="w-7 h-7 sm:w-9 sm:h-9 text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors flex items-center justify-center"
            title="Reset Session"
          >
-           <RotateCcw className="w-4 h-4 sm:w-5 sm:h-5" />
+           <RotateCcw className="w-3 h-3 sm:w-5 sm:h-5" />
          </button>
          <button
            onClick={() => {
              saveInProgressSession();
              setCurrentView('homepage');
            }}
-           className="w-8 h-8 sm:w-9 sm:h-9 text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors flex items-center justify-center"
+           className="w-7 h-7 sm:w-9 sm:h-9 text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors flex items-center justify-center"
            title="Exit Session"
          >
-           <X className="w-4 h-4 sm:w-5 sm:h-5" />
+           <X className="w-3 h-3 sm:w-5 sm:h-5" />
          </button>
        </div>
         
         {/* Chat Messages Container */}
-        <div ref={chatContainerRef} className="flex-1 bg-[rgba(217,217,217,0.19)] overflow-y-auto relative pb-40">
-          <div className="max-w-[866px] mx-auto px-4 py-8 sm:px-0 sm:py-[76px] flex flex-col gap-6 sm:gap-[46px]">
+        <div ref={chatContainerRef} className="flex-1 bg-[rgba(217,217,217,0.19)] overflow-y-auto relative pb-32 sm:pb-40">
+          <div className="max-w-[866px] mx-auto px-3 py-6 sm:px-0 sm:py-[76px] flex flex-col gap-4 sm:gap-[46px]">
             {messages.length === 0 && (
               <div className="text-center py-8 sm:py-16">
                 <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-[#2C73EB] flex items-end justify-center mx-auto mb-4 sm:mb-6 shadow-lg overflow-hidden">
@@ -1568,10 +1568,10 @@ const JamieAI = () => {
           </div>
           
           {/* Fixed Input Bar at Bottom */}
-          <div className="fixed bottom-0 left-0 right-0 p-3 sm:p-6 z-10">
+          <div className="fixed bottom-0 left-0 right-0 p-2 sm:p-6 z-10">
             <div className="max-w-[866px] mx-auto flex flex-col items-center sm:mr-32">
               {/* Attempts Remaining - Above input, positioned above blue input bar */}
-              <div className="mb-2 sm:mb-0 self-start sm:ml-36">
+              <div className="mb-1 sm:mb-0 self-start sm:ml-36">
                 <div className="bg-[#eff8ff] rounded-[16px] px-2 sm:px-3 py-1 w-fit">
                   <p className="text-xs sm:text-[14px] font-medium text-[#2c73eb] text-center">
                     {attemptsRemaining <= 0 ? "Session ended" : `${attemptsRemaining} attempts remaining`}
@@ -1580,7 +1580,7 @@ const JamieAI = () => {
               </div>
               
               {/* Blue Input Chat */}
-              <div className="bg-[#538ff6] rounded-[45px] w-full max-w-[626px] px-4 sm:px-[29px] py-3 sm:py-[15px] flex items-center justify-between shadow-2xl">
+              <div className="bg-[#538ff6] rounded-[25px] sm:rounded-[45px] w-full max-w-[626px] px-3 sm:px-[29px] py-2 sm:py-[15px] flex items-center justify-between shadow-2xl">
                 <textarea
                   value={currentMessage}
                   onChange={handleMessageChange}

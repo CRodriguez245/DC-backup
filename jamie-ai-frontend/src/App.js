@@ -1351,13 +1351,9 @@ const JamieAI = () => {
       <div className="block sm:hidden fixed bottom-12 right-4 z-40">
         <button
           onClick={() => setShowCharacterInfo(true)}
-          className="w-8 h-8 flex items-center justify-center bg-[#EFF8FF] rounded-full shadow-sm hover:bg-[#E0F2FE] transition-colors overflow-hidden"
+          className="w-8 h-8 flex items-center justify-center bg-[#EFF8FF] rounded-full shadow-sm hover:bg-[#E0F2FE] transition-colors"
         >
-          <img 
-            src="/images/cu-JAMIE.png" 
-            alt={characterData[currentCharacter].name} 
-            className="w-8 h-8 object-cover object-bottom"
-          />
+          <User className="w-4 h-4 text-[#2C73EB]" />
         </button>
       </div>
 

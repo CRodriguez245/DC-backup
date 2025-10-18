@@ -179,16 +179,16 @@ const HomePage = ({ userInfo, gameMode, onStartCoaching, onLogout, onSettings, o
         }
       `}</style>
       {/* Header */}
-      <div className="absolute z-10" style={{ top: '29px', left: '29px' }}>
-        <div className="text-black font-bold text-[25px] leading-[28px]">
+      <div className="absolute z-10 px-6 py-4 sm:px-8 sm:py-8">
+        <div className="text-black font-bold text-[25px] leading-[28px] sm:text-2xl">
           <div>Decision</div>
           <div>Coach</div>
         </div>
       </div>
 
       {/* Welcome Instructions */}
-      <div className="absolute z-10" style={{ top: '250px', left: '29px' }}>
-        <div className="text-gray-700 text-base leading-relaxed max-w-sm">
+      <div className="absolute z-10 px-6 py-4 sm:px-8 sm:py-8" style={{ top: '200px' }}>
+        <div className="text-gray-700 text-sm leading-relaxed max-w-sm sm:text-base sm:max-w-md">
           {displayedText.startsWith('Welcome to Decision Coach!') && (
             <>
               <span style={{ fontFamily: 'Futura, -apple-system, BlinkMacSystemFont, sans-serif', fontSize: '18px' }}>
@@ -213,8 +213,62 @@ const HomePage = ({ userInfo, gameMode, onStartCoaching, onLogout, onSettings, o
       </div>
 
       {/* Main Network Visualization */}
-      <div className="flex-1 overflow-y-auto px-8 pt-8 pb-48" style={{ animation: 'elementFadeIn 0.8s ease-out 0.2s both' }}>
-        <div className="relative w-full max-w-7xl h-[900px]">
+      <div className="flex-1 overflow-y-auto px-4 pt-8 pb-48 sm:px-8" style={{ animation: 'elementFadeIn 0.8s ease-out 0.2s both' }}>
+        {/* Mobile Grid Layout */}
+        <div className="block sm:hidden">
+          <div className="grid grid-cols-2 gap-6 py-8">
+            {coachingLevels.map((level, index) => (
+              <div
+                key={level.id}
+                className="flex flex-col items-center space-y-3"
+                style={{ animation: `elementFadeIn 0.2s cubic-bezier(0.2, 0.8, 0.2, 1) ${index * 0.1}s both` }}
+              >
+                <div 
+                  className="relative"
+                  onMouseEnter={() => setHoveredCharacter(level.id)}
+                  onMouseLeave={() => setHoveredCharacter(null)}
+                >
+                  <div 
+                    className={`w-20 h-20 rounded-full flex items-center justify-center text-xl cursor-pointer overflow-hidden transition-all duration-300 ease-in-out hover:scale-110 hover:shadow-xl ${
+                      level.completed 
+                        ? (level.id === 'jamie' || level.id === 'andres' || level.id === 'kavya') ? 'hover:opacity-90' : 'border-2 border-blue-300 hover:opacity-90'
+                        : level.status === 'Available'
+                        ? 'bg-gray-300 hover:bg-gray-400'
+                        : 'bg-gray-300'
+                    }`}
+                    style={(level.id === 'jamie' || level.id === 'andres' || level.id === 'kavya') && level.completed ? { backgroundColor: '#2C73EB', opacity: 1 } : {}}
+                    onClick={() => handleCharacterClick(level)}
+                  >
+                    {level.status === 'Locked' ? (
+                      ''
+                    ) : level.status === 'Available' ? (
+                      ''
+                    ) : level.avatar.startsWith('/') ? (
+                      <img 
+                        src={level.avatar} 
+                        alt={level.name}
+                        className={`w-full h-full object-cover rounded-full ${level.id === 'andres' ? 'scale-x-[-1]' : level.id === 'kavya' ? 'scale-x-[-1]' : ''}`}
+                      />
+                    ) : (
+                      level.avatar
+                    )}
+                  </div>
+                </div>
+                
+                <div className="text-center">
+                  <h3 className="font-semibold text-gray-800 text-sm">{level.name}</h3>
+                  <p className="text-xs text-gray-600 mt-1">{level.description}</p>
+                  {level.dqScore && (
+                    <p className="text-xs text-blue-600 mt-1">Score: {Math.round(level.dqScore * 100)}%</p>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Desktop Network Layout */}
+        <div className="hidden sm:block relative w-full max-w-7xl h-[900px]">
           {/* Network connections - Curved pattern */}
           <svg className="absolute inset-0 w-full h-full" style={{ zIndex: 0 }}>
             {/* Jamie to Andres - more pronounced curve */}
@@ -323,46 +377,47 @@ const HomePage = ({ userInfo, gameMode, onStartCoaching, onLogout, onSettings, o
             </div>
           ))}
         </div>
+        </div>
       </div>
 
       {/* Navigation Bar */}
-      <div className="absolute bottom-6 left-6">
-        <div className="bg-white rounded-lg shadow-lg p-4 flex items-center space-x-4 border w-fit">
+      <div className="absolute bottom-4 left-4 sm:bottom-6 sm:left-6">
+        <div className="bg-white rounded-lg shadow-lg p-3 flex items-center space-x-3 border w-fit sm:p-4 sm:space-x-4">
           <button 
             onClick={() => onStartCoaching({ id: 'home', name: 'Home' })}
-            className="w-8 h-8 flex items-center justify-center text-blue-600 hover:bg-blue-50 rounded transition-colors"
+            className="w-7 h-7 flex items-center justify-center text-blue-600 hover:bg-blue-50 rounded transition-colors sm:w-8 sm:h-8"
           >
-            <Home className="w-5 h-5" />
+            <Home className="w-4 h-4 sm:w-5 sm:h-5" />
           </button>
           {userInfo?.role === 'teacher' && (
             <>
               <div className="w-px h-6 bg-gray-300"></div>
               <button 
                 onClick={onAdminClick}
-                className={`w-8 h-8 flex items-center justify-center rounded transition-colors ${
+                className={`w-7 h-7 flex items-center justify-center rounded transition-colors sm:w-8 sm:h-8 ${
                   currentView === 'admin' 
                     ? 'text-blue-600 hover:bg-blue-50' 
                     : 'text-gray-600 hover:bg-gray-50'
                 }`}
                 title="Admin Dashboard"
               >
-                <BarChart3 className="w-5 h-5" />
+                <BarChart3 className="w-4 h-4 sm:w-5 sm:h-5" />
               </button>
             </>
           )}
           <div className="w-px h-6 bg-gray-300"></div>
           <button 
             onClick={onSettings}
-            className="w-8 h-8 flex items-center justify-center text-gray-600 hover:bg-gray-50 rounded transition-colors"
+            className="w-7 h-7 flex items-center justify-center text-gray-600 hover:bg-gray-50 rounded transition-colors sm:w-8 sm:h-8"
           >
-            <Settings className="w-5 h-5" />
+            <Settings className="w-4 h-4 sm:w-5 sm:h-5" />
           </button>
           <div className="w-px h-6 bg-gray-300"></div>
           <button 
             onClick={onLogout}
-            className="w-8 h-8 flex items-center justify-center text-gray-600 hover:bg-gray-50 rounded transition-colors"
+            className="w-7 h-7 flex items-center justify-center text-gray-600 hover:bg-gray-50 rounded transition-colors sm:w-8 sm:h-8"
           >
-            <LogOut className="w-5 h-5" />
+            <LogOut className="w-4 h-4 sm:w-5 sm:h-5" />
           </button>
         </div>
       </div>

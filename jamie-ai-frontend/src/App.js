@@ -1223,14 +1223,6 @@ const JamieAI = () => {
       </div>
       
       
-      {/* Header */}
-      <div className="px-6 py-4 sm:px-8 sm:py-8 sm:absolute sm:z-10">
-        <div className="text-black font-bold text-[25px] leading-[28px] sm:text-2xl">
-          <div>Decision</div>
-          <div>Coach</div>
-        </div>
-      </div>
-
       {/* Navigation Bar - positioned outside sidebar for proper click events */}
       <div className="absolute bottom-6 left-6 z-50">
         <div className="bg-white rounded-lg shadow-lg p-4 flex items-center space-x-4 border w-fit">

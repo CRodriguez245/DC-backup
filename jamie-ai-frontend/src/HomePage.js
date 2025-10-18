@@ -410,7 +410,7 @@ const HomePage = ({ userInfo, gameMode, onStartCoaching, onLogout, onSettings, o
       </div>
 
       {/* Navigation Bar */}
-      <div className="absolute top-4 right-4 sm:bottom-6 sm:left-6 z-50">
+      <div className="absolute bottom-4 left-4 sm:bottom-6 sm:left-6">
         <div className="bg-white rounded-lg shadow-lg p-3 flex items-center space-x-3 border w-fit sm:p-4 sm:space-x-4">
           <button 
             onClick={() => onStartCoaching({ id: 'home', name: 'Home' })}

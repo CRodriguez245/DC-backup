@@ -1274,32 +1274,32 @@ const JamieAI = () => {
       {/* Main Chat Area */}
       <div className="flex-1 flex flex-col relative">
         {/* Session Controls - Top Right */}
-       <div className="absolute top-6 right-6 z-10 flex items-center gap-2">
+       <div className="absolute top-4 right-4 sm:top-6 sm:right-6 z-10 flex items-center gap-2">
          <button
            onClick={resetSession}
-           className="w-9 h-9 text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors flex items-center justify-center"
+           className="w-8 h-8 sm:w-9 sm:h-9 text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors flex items-center justify-center"
            title="Reset Session"
          >
-           <RotateCcw className="w-5 h-5" />
+           <RotateCcw className="w-4 h-4 sm:w-5 sm:h-5" />
          </button>
          <button
            onClick={() => {
              saveInProgressSession();
              setCurrentView('homepage');
            }}
-           className="w-9 h-9 text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors flex items-center justify-center"
+           className="w-8 h-8 sm:w-9 sm:h-9 text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors flex items-center justify-center"
            title="Exit Session"
          >
-           <X className="w-5 h-5" />
+           <X className="w-4 h-4 sm:w-5 sm:h-5" />
          </button>
        </div>
         
         {/* Chat Messages Container */}
         <div ref={chatContainerRef} className="flex-1 bg-[rgba(217,217,217,0.19)] overflow-y-auto relative pb-40">
-          <div className="max-w-[866px] mx-auto p-[76px_0] flex flex-col gap-[46px]">
+          <div className="max-w-[866px] mx-auto px-4 py-8 sm:px-0 sm:py-[76px] flex flex-col gap-6 sm:gap-[46px]">
             {messages.length === 0 && (
-              <div className="text-center py-16">
-                <div className="w-20 h-20 rounded-full bg-[#2C73EB] flex items-end justify-center mx-auto mb-6 shadow-lg overflow-hidden">
+              <div className="text-center py-8 sm:py-16">
+                <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-[#2C73EB] flex items-end justify-center mx-auto mb-4 sm:mb-6 shadow-lg overflow-hidden">
                   <img 
                     src={
                       currentCharacter === 'jamie' ? "/images/cu-JAMIE.png" : 
@@ -1307,19 +1307,19 @@ const JamieAI = () => {
                       "/images/cu-GIRL-2.png"
                     } 
                     alt={characterData[currentCharacter].name} 
-                    className={`w-20 h-20 object-cover object-bottom ${currentCharacter === 'andres' || currentCharacter === 'kavya' ? 'scale-x-[-1]' : ''}`}
+                    className={`w-16 h-16 sm:w-20 sm:h-20 object-cover object-bottom ${currentCharacter === 'andres' || currentCharacter === 'kavya' ? 'scale-x-[-1]' : ''}`}
                   />
                 </div>
-                <h2 className="text-2xl font-bold text-gray-800 mb-3" style={{ fontFamily: 'Futura, -apple-system, BlinkMacSystemFont, sans-serif', fontWeight: 400 }}>
-                  Start coaching {characterData[currentCharacter].name} {demoMode && <span className="text-sm font-medium text-blue-600 bg-blue-100 px-3 py-1 rounded-full ml-2">Demo Mode</span>}
+                <h2 className="text-xl sm:text-2xl font-bold text-gray-800 mb-3 px-4" style={{ fontFamily: 'Futura, -apple-system, BlinkMacSystemFont, sans-serif', fontWeight: 400 }}>
+                  Start coaching {characterData[currentCharacter].name} {demoMode && <span className="text-xs sm:text-sm font-medium text-blue-600 bg-blue-100 px-2 sm:px-3 py-1 rounded-full ml-2">Demo Mode</span>}
                 </h2>
-                <p className="text-gray-600 max-w-lg mx-auto mb-8 text-lg leading-relaxed">
+                <p className="text-gray-600 max-w-lg mx-auto mb-6 sm:mb-8 text-base sm:text-lg leading-relaxed px-4">
                   {characterData[currentCharacter].context}
                 </p>
                 
                 {!demoMode && connectionStatus === 'failed' && (
-                  <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 max-w-md mx-auto mb-4">
-                    <p className="text-yellow-800 text-sm mb-3">
+                  <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 sm:p-4 max-w-md mx-auto mb-4 mx-4">
+                    <p className="text-yellow-800 text-xs sm:text-sm mb-3">
                       ⚠️ Can't connect to the backend. This might be because:
                     </p>
                     <ul className="text-yellow-700 text-xs mb-3 list-disc list-inside space-y-1">
@@ -1327,16 +1327,16 @@ const JamieAI = () => {
                       <li>Network connectivity issue</li>
                       <li>Backend configuration problem</li>
                     </ul>
-                    <div className="flex gap-2">
+                    <div className="flex flex-col sm:flex-row gap-2">
                       <button
                         onClick={testConnection}
-                        className="bg-green-600 text-white px-3 py-2 rounded-lg hover:bg-green-700 transition-colors text-sm"
+                        className="bg-green-600 text-white px-3 py-2 rounded-lg hover:bg-green-700 transition-colors text-xs sm:text-sm"
                       >
                         Retry Connection
                       </button>
                       <button
                         onClick={() => setDemoMode(true)}
-                        className="bg-blue-600 text-white px-3 py-2 rounded-lg hover:bg-blue-700 transition-colors text-sm"
+                        className="bg-blue-600 text-white px-3 py-2 rounded-lg hover:bg-blue-700 transition-colors text-xs sm:text-sm"
                       >
                         Use Demo Mode
                       </button>
@@ -1345,8 +1345,8 @@ const JamieAI = () => {
                 )}
                 
                 {demoMode && (
-                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 max-w-md mx-auto mb-4">
-                    <p className="text-blue-800 text-sm mb-3">
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 sm:p-4 max-w-md mx-auto mb-4 mx-4">
+                    <p className="text-blue-800 text-xs sm:text-sm mb-3">
                       🎭 Demo mode active - Jamie will respond with simulated conversations and DQ scores.
                     </p>
                     <button
@@ -1354,7 +1354,7 @@ const JamieAI = () => {
                         setDemoMode(false);
                         testConnection();
                       }}
-                      className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors text-sm"
+                      className="bg-green-600 text-white px-3 sm:px-4 py-2 rounded-lg hover:bg-green-700 transition-colors text-xs sm:text-sm"
                     >
                       Try Real Backend
                     </button>
@@ -1368,17 +1368,17 @@ const JamieAI = () => {
                 {msg.isUser ? (
                   // User messages - blue bubble
                   <div className="flex justify-end message-enter" data-message-id={msg.id}>
-                    <div className="bg-[#e8f1f8] rounded-[5px] shadow-[0px_6px_20px_10px_rgba(200,201,201,0.11)] px-6 py-6 max-w-[605px]">
-                      <p className="text-[16px] text-[#363636] leading-[26px]">
+                    <div className="bg-[#e8f1f8] rounded-[5px] shadow-[0px_6px_20px_10px_rgba(200,201,201,0.11)] px-4 py-4 sm:px-6 sm:py-6 max-w-[605px] mx-4 sm:mx-0">
+                      <p className="text-sm sm:text-[16px] text-[#363636] leading-[22px] sm:leading-[26px]">
                         {msg.message}
                       </p>
                     </div>
                   </div>
                 ) : (
                   // Jamie's messages - white bubble with avatar and DQ scores
-                  <div className="flex gap-[30px] items-start message-enter" data-message-id={msg.id}>
+                  <div className="flex gap-4 sm:gap-[30px] items-start message-enter" data-message-id={msg.id}>
                   {/* Character Avatar */}
-                  <div className="w-[70px] h-[70px] rounded-full bg-[#2C73EB] flex items-end justify-center flex-shrink-0 overflow-hidden">
+                  <div className="w-12 h-12 sm:w-[70px] sm:h-[70px] rounded-full bg-[#2C73EB] flex items-end justify-center flex-shrink-0 overflow-hidden">
                     <img 
                       src={
                         currentCharacter === 'jamie' ? "/images/cu-JAMIE.png" : 
@@ -1386,39 +1386,39 @@ const JamieAI = () => {
                         "/images/cu-GIRL-2.png"
                       } 
                       alt={characterData[currentCharacter].name} 
-                      className={`w-[70px] h-[70px] object-cover object-bottom ${currentCharacter === 'andres' || currentCharacter === 'kavya' ? 'scale-x-[-1]' : ''}`}
+                      className={`w-12 h-12 sm:w-[70px] sm:h-[70px] object-cover object-bottom ${currentCharacter === 'andres' || currentCharacter === 'kavya' ? 'scale-x-[-1]' : ''}`}
                     />
                   </div>
                     
                     {/* Jamie's Message */}
-                    <div className="bg-white rounded-[5px] shadow-[0px_6px_20px_10px_rgba(200,201,201,0.11)] px-[33px] py-6 max-w-[597px]">
+                    <div className="bg-white rounded-[5px] shadow-[0px_6px_20px_10px_rgba(200,201,201,0.11)] px-4 py-4 sm:px-[33px] sm:py-6 max-w-[597px] mx-4 sm:mx-0">
                       <div className="flex flex-col gap-[25px]">
                         {/* Message Text */}
-                        <div className="text-[16px] text-[#333333] leading-[26px]">
+                        <div className="text-sm sm:text-[16px] text-[#333333] leading-[22px] sm:leading-[26px]">
                           <p className="whitespace-pre-wrap">{msg.message}</p>
                           
                           {/* Final DQ Score for Assessment Mode */}
                           {msg.showFinalScore && msg.dqScore && (
-                            <div className="mt-6">
+                            <div className="mt-4 sm:mt-6">
                               {/* Gray Hairline Divider */}
-                              <div className="w-full h-px bg-gray-300 mb-6"></div>
+                              <div className="w-full h-px bg-gray-300 mb-4 sm:mb-6"></div>
                               
-                              <div className="flex flex-col gap-[25px]">
+                              <div className="flex flex-col gap-4 sm:gap-[25px]">
                                 {/* DQ Header */}
                                 <div className="flex flex-col">
-                                  <p className="text-[18px] font-bold text-[#363636] leading-[26px]">
+                                  <p className="text-base sm:text-[18px] font-bold text-[#363636] leading-[22px] sm:leading-[26px]">
                                     Your Final Decision Quality Score
                                   </p>
-                                  <p className="text-[24px] font-bold text-[#2C73EB] leading-[32px] mt-1">
+                                  <p className="text-xl sm:text-[24px] font-bold text-[#2C73EB] leading-[28px] sm:leading-[32px] mt-1">
                                     {Math.min(...Object.values(msg.dqScore)).toFixed(2)}/1.0
                                   </p>
-                                  <p className="text-[14px] text-[#797979] mt-2">
+                                  <p className="text-xs sm:text-[14px] text-[#797979] mt-2">
                                     This score reflects your coaching effectiveness across all six dimensions of decision quality.
                                   </p>
                                 </div>
                                 
                                 {/* DQ Metrics Grid */}
-                                <div className="grid grid-cols-2 gap-[34px]">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-[34px]">
                                   {[
                                     { key: 'framing', label: 'Framing', color: 'bg-[#0385c3]', value: msg.dqScore.framing },
                                     { key: 'alternatives', label: 'Alternatives', color: 'bg-[#53b723]', value: msg.dqScore.alternatives },
@@ -1427,12 +1427,12 @@ const JamieAI = () => {
                                     { key: 'reasoning', label: 'Reasoning', color: 'bg-[#d01102]', value: msg.dqScore.reasoning },
                                     { key: 'commitment', label: 'Commitment', color: 'bg-[#ffb20d]', value: msg.dqScore.commitment }
                                   ].map(metric => (
-                                    <div key={metric.key} className="flex flex-col gap-[6px]">
+                                    <div key={metric.key} className="flex flex-col gap-1 sm:gap-[6px]">
                                       <div className="flex justify-between items-center">
-                                        <p className="text-[14px] font-medium text-[#363636]">{metric.label}</p>
-                                        <p className="text-[14px] font-semibold text-[#363636]">{metric.value.toFixed(2)}</p>
+                                        <p className="text-xs sm:text-[14px] font-medium text-[#363636]">{metric.label}</p>
+                                        <p className="text-xs sm:text-[14px] font-semibold text-[#363636]">{metric.value.toFixed(2)}</p>
                                       </div>
-                                      <div className="relative w-full h-[11px] bg-[rgba(217,217,217,0.44)] rounded-[10px]">
+                                      <div className="relative w-full h-2 sm:h-[11px] bg-[rgba(217,217,217,0.44)] rounded-[10px]">
                                         <div 
                                           className={`absolute top-0 left-0 h-full rounded-[10px] ${metric.color}`}
                                           style={{ width: `${metric.value * 100}%` }}
@@ -1443,14 +1443,14 @@ const JamieAI = () => {
                                 </div>
                                 
                                 {/* Performance Feedback */}
-                                <div className={`p-4 rounded-lg ${
+                                <div className={`p-3 sm:p-4 rounded-lg ${
                                   Math.min(...Object.values(msg.dqScore)) >= 0.8 
                                     ? 'bg-green-50 border border-green-200' 
                                     : Math.min(...Object.values(msg.dqScore)) >= 0.6
                                     ? 'bg-blue-50 border border-blue-200'
                                     : 'bg-yellow-50 border border-yellow-200'
                                 }`}>
-                                  <p className={`text-[14px] font-medium ${
+                                  <p className={`text-xs sm:text-[14px] font-medium ${
                                     Math.min(...Object.values(msg.dqScore)) >= 0.8 
                                       ? 'text-green-800' 
                                       : Math.min(...Object.values(msg.dqScore)) >= 0.6
@@ -1537,8 +1537,8 @@ const JamieAI = () => {
             ))}
             
               {isTyping && (
-                <div className="flex gap-[30px] items-start">
-                  <div className="w-[70px] h-[70px] rounded-full bg-[#2C73EB] flex items-end justify-center flex-shrink-0 overflow-hidden">
+                <div className="flex gap-4 sm:gap-[30px] items-start">
+                  <div className="w-12 h-12 sm:w-[70px] sm:h-[70px] rounded-full bg-[#2C73EB] flex items-end justify-center flex-shrink-0 overflow-hidden">
                     <img 
                       src={
                         currentCharacter === 'jamie' ? "/images/cu-JAMIE.png" : 
@@ -1546,13 +1546,13 @@ const JamieAI = () => {
                         "/images/cu-GIRL-2.png"
                       } 
                       alt={characterData[currentCharacter].name} 
-                      className={`w-[70px] h-[70px] object-cover object-bottom ${currentCharacter === 'andres' || currentCharacter === 'kavya' ? 'scale-x-[-1]' : ''}`}
+                      className={`w-12 h-12 sm:w-[70px] sm:h-[70px] object-cover object-bottom ${currentCharacter === 'andres' || currentCharacter === 'kavya' ? 'scale-x-[-1]' : ''}`}
                     />
                   </div>
-                  <div className="bg-white rounded-[5px] shadow-[0px_6px_20px_10px_rgba(200,201,201,0.11)] px-[33px] py-6">
+                  <div className="bg-white rounded-[5px] shadow-[0px_6px_20px_10px_rgba(200,201,201,0.11)] px-4 py-4 sm:px-[33px] sm:py-6 mx-4 sm:mx-0">
                     <div className="flex items-center">
                       <span 
-                        className="text-[16px] text-[#6B7280] font-medium transition-all duration-200 ease-in-out"
+                        className="text-sm sm:text-[16px] text-[#6B7280] font-medium transition-all duration-200 ease-in-out"
                         style={{
                           opacity: isTextTransitioning ? 0.3 : 1,
                           transform: isTextTransitioning ? 'translateY(2px)' : 'translateY(0px)'
@@ -1568,25 +1568,25 @@ const JamieAI = () => {
           </div>
           
           {/* Fixed Input Bar at Bottom */}
-          <div className="fixed bottom-0 left-0 right-0 p-6 z-10">
-            <div className="max-w-[866px] mx-auto flex flex-col items-center mr-32">
+          <div className="fixed bottom-0 left-0 right-0 p-3 sm:p-6 z-10">
+            <div className="max-w-[866px] mx-auto flex flex-col items-center sm:mr-32">
               {/* Attempts Remaining - Above input, positioned above blue input bar */}
-              <div className="mb-0 self-start ml-36">
-                <div className="bg-[#eff8ff] rounded-[16px] px-3 py-1 w-fit">
-                  <p className="text-[14px] font-medium text-[#2c73eb] text-center">
+              <div className="mb-2 sm:mb-0 self-start sm:ml-36">
+                <div className="bg-[#eff8ff] rounded-[16px] px-2 sm:px-3 py-1 w-fit">
+                  <p className="text-xs sm:text-[14px] font-medium text-[#2c73eb] text-center">
                     {attemptsRemaining <= 0 ? "Session ended" : `${attemptsRemaining} attempts remaining`}
                   </p>
                 </div>
               </div>
               
               {/* Blue Input Chat */}
-              <div className="bg-[#538ff6] rounded-[45px] w-[626px] px-[29px] py-[15px] flex items-center justify-between shadow-2xl">
+              <div className="bg-[#538ff6] rounded-[45px] w-full max-w-[626px] px-4 sm:px-[29px] py-3 sm:py-[15px] flex items-center justify-between shadow-2xl">
                 <textarea
                   value={currentMessage}
                   onChange={handleMessageChange}
                   onKeyPress={handleKeyPress}
                   placeholder={attemptsRemaining <= 0 ? "Session ended - Start new session" : "Start coaching"}
-                  className="bg-transparent text-white placeholder-white flex-1 outline-none text-[14px] font-semibold resize-none min-h-[20px] max-h-[120px] overflow-y-auto"
+                  className="bg-transparent text-white placeholder-white flex-1 outline-none text-xs sm:text-[14px] font-semibold resize-none min-h-[20px] max-h-[120px] overflow-y-auto"
                   disabled={isLoading || attemptsRemaining <= 0}
                   rows={1}
                   style={{
@@ -1602,9 +1602,9 @@ const JamieAI = () => {
                 <button
                   onClick={sendMessage}
                   disabled={isLoading || !currentMessage.trim() || attemptsRemaining <= 0}
-                  className="w-6 h-6 flex items-center justify-center disabled:opacity-50"
+                  className="w-5 h-5 sm:w-6 sm:h-6 flex items-center justify-center disabled:opacity-50"
                 >
-                  <Send className="w-5 h-5 text-white" />
+                  <Send className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
                 </button>
               </div>
             </div>

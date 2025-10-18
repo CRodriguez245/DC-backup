@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Send, User, Bot, Star, Home, Settings, LogOut, BarChart3, RotateCcw, X } from 'lucide-react';
+import { Send, User, Bot, Star, Home, Settings, LogOut, BarChart3, RotateCcw, X, Menu } from 'lucide-react';
 import LandingPage from './LandingPage';
 import HomePage from './HomePage';
 import AdminDashboard from './AdminDashboard';
@@ -117,6 +117,7 @@ const JamieAI = () => {
   const [thinkingText, setThinkingText] = useState('Thinking');
   const [isTextTransitioning, setIsTextTransitioning] = useState(false);
   const [connectionStatus, setConnectionStatus] = useState('untested');
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [demoMode, setDemoMode] = useState(false); // Start with real backend
   const [showDqPanel, setShowDqPanel] = useState(false);
   const [attemptsRemaining, setAttemptsRemaining] = useState(20);
@@ -1271,6 +1272,79 @@ const JamieAI = () => {
         </div>
       </div>
       
+      {/* Header */}
+      <div className="px-6 py-4 sm:px-8 sm:py-8 sm:absolute sm:z-10">
+        <div className="text-black font-bold text-[25px] leading-[28px] sm:text-2xl">
+          <div>Decision</div>
+          <div>Coach</div>
+        </div>
+      </div>
+
+      {/* Mobile Hamburger Menu */}
+      <div className="absolute top-4 right-4 sm:hidden z-50">
+        <button
+          onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+          className="w-10 h-10 flex items-center justify-center bg-white rounded-lg shadow-lg border text-gray-600 hover:bg-gray-50 transition-colors"
+        >
+          {isMobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+        </button>
+        
+        {/* Mobile Menu Dropdown */}
+        {isMobileMenuOpen && (
+          <div className="absolute top-12 right-0 bg-white rounded-lg shadow-lg border p-2 min-w-[200px]">
+            <button 
+              onClick={() => {
+                setCurrentView('homepage');
+                setIsMobileMenuOpen(false);
+              }}
+              className="w-full flex items-center space-x-3 px-3 py-2 text-left text-blue-600 hover:bg-blue-50 rounded transition-colors"
+            >
+              <Home className="w-4 h-4" />
+              <span>Home</span>
+            </button>
+            
+            {userInfo?.role === 'teacher' && (
+              <button 
+                onClick={() => {
+                  setCurrentView('admin');
+                  setIsMobileMenuOpen(false);
+                }}
+                className={`w-full flex items-center space-x-3 px-3 py-2 text-left rounded transition-colors ${
+                  currentView === 'admin' 
+                    ? 'text-blue-600 hover:bg-blue-50' 
+                    : 'text-gray-600 hover:bg-gray-50'
+                }`}
+              >
+                <BarChart3 className="w-4 h-4" />
+                <span>Admin Dashboard</span>
+              </button>
+            )}
+            
+            <button 
+              onClick={() => {
+                setCurrentView('settings');
+                setIsMobileMenuOpen(false);
+              }}
+              className="w-full flex items-center space-x-3 px-3 py-2 text-left text-gray-600 hover:bg-gray-50 rounded transition-colors"
+            >
+              <Settings className="w-4 h-4" />
+              <span>Settings</span>
+            </button>
+            
+            <button 
+              onClick={() => {
+                handleLogout();
+                setIsMobileMenuOpen(false);
+              }}
+              className="w-full flex items-center space-x-3 px-3 py-2 text-left text-gray-600 hover:bg-gray-50 rounded transition-colors"
+            >
+              <LogOut className="w-4 h-4" />
+              <span>Logout</span>
+            </button>
+          </div>
+        )}
+      </div>
+
       {/* Main Chat Area */}
       <div className="flex-1 flex flex-col relative">
         {/* Session Controls - Top Right */}

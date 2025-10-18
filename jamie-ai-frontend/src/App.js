@@ -1382,7 +1382,7 @@ const JamieAI = () => {
         
         {/* Chat Messages Container */}
         <div ref={chatContainerRef} className="flex-1 bg-white sm:bg-[rgba(217,217,217,0.19)] overflow-y-auto relative pb-32 sm:pb-40">
-          <div className="max-w-[866px] mx-auto px-3 py-6 sm:px-0 sm:py-[76px] flex flex-col gap-4 sm:gap-[46px] pt-20 sm:pt-[76px]">
+          <div className="max-w-[866px] mx-auto px-3 py-6 sm:px-0 sm:py-[76px] flex flex-col gap-4 sm:gap-[46px] pt-20 sm:pt-0">
             {messages.length === 0 && (
               <div className="text-center py-8 sm:py-16">
                 <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-[#2C73EB] flex items-end justify-center mx-auto mb-4 sm:mb-6 shadow-lg overflow-hidden">

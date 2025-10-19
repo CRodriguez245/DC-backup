@@ -1348,7 +1348,7 @@ const JamieAI = () => {
       </div>
 
       {/* Mobile Character Info Button - Fixed Position Above Input Bar */}
-      <div className="block sm:hidden fixed bottom-16 right-4 z-40">
+      <div className="block sm:hidden fixed bottom-14 right-4 z-40">
         <button
           onClick={() => setShowCharacterInfo(true)}
           className="w-8 h-8 flex items-center justify-center bg-[#EFF8FF] rounded-full shadow-sm hover:bg-[#E0F2FE] transition-colors"

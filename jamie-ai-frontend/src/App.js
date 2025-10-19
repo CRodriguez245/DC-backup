@@ -1668,7 +1668,7 @@ const JamieAI = () => {
               </div>
               
               {/* Blue Input Chat */}
-              <div className="bg-[#538ff6] rounded-[25px] sm:rounded-[45px] w-full max-w-[626px] px-3 sm:px-[29px] py-2 sm:py-[15px] flex items-center justify-between shadow-2xl">
+                <div className="bg-[#538ff6] rounded-[25px] sm:rounded-[45px] w-full max-w-[400px] sm:max-w-[626px] px-3 sm:px-[29px] py-4 sm:py-[15px] flex items-center justify-between shadow-2xl">
                 <textarea
                   value={currentMessage}
                   onChange={handleMessageChange}

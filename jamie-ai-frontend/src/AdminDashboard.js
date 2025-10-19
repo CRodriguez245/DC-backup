@@ -266,7 +266,7 @@ const AdminDashboard = ({ onBackToHome, onLogout, onSettings, currentView, userI
 
       {/* Mobile Tab Navigation */}
       {userInfo?.role === 'teacher' && (
-        <div className="block sm:hidden fixed top-16 left-0 right-0 z-30 bg-white border-b border-gray-200 px-4 py-2">
+        <div className="block sm:hidden fixed top-20 left-0 right-0 z-30 bg-white border-b border-gray-200 px-4 py-2">
           <div className="flex space-x-1">
             <button
               onClick={() => setActiveTab('overview')}
@@ -299,7 +299,7 @@ const AdminDashboard = ({ onBackToHome, onLogout, onSettings, currentView, userI
       )}
 
       {/* Right Main Content */}
-      <div className="flex-1 flex flex-col pt-48 sm:pt-16 pl-4 sm:pl-8 overflow-y-auto">
+      <div className="flex-1 flex flex-col pt-32 sm:pt-16 pl-4 sm:pl-8 overflow-y-auto">
         {activeTab === 'overview' ? (
           <>
             {/* Header with User Greeting */}

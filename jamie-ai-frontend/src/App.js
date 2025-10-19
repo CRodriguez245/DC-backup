@@ -1347,15 +1347,6 @@ const JamieAI = () => {
         </div>
       </div>
 
-      {/* Mobile Character Info Button - Fixed Position Above Input Bar */}
-      <div className="block sm:hidden fixed bottom-12 right-4 z-40">
-        <button
-          onClick={() => setShowCharacterInfo(true)}
-          className="w-8 h-8 flex items-center justify-center bg-[#EFF8FF] rounded-full shadow-sm hover:bg-[#E0F2FE] transition-colors"
-        >
-          <User className="w-4 h-4 text-[#2C73EB]" />
-        </button>
-      </div>
 
       {/* Main Chat Area */}
       <div className="flex-1 flex flex-col relative w-full sm:w-auto">
@@ -1657,9 +1648,9 @@ const JamieAI = () => {
           
           {/* Fixed Input Bar at Bottom */}
           <div className="fixed bottom-0 left-0 right-0 p-2 sm:p-6 z-10">
-            <div className="max-w-[866px] mx-auto flex flex-col items-center sm:mr-32">
+            <div className="max-w-[866px] mx-auto flex flex-col items-center sm:mr-32 relative">
               {/* Attempts Remaining - Above input, positioned above blue input bar */}
-              <div className="mb-1 sm:mb-0 self-start sm:ml-36">
+              <div className="mb-1 sm:mb-0 self-start sm:ml-36 flex-shrink-0">
                 <div className="bg-[#eff8ff] rounded-[16px] px-2 sm:px-3 py-1 w-fit">
                   <p className="text-xs sm:text-[14px] font-medium text-[#2c73eb] text-center">
                     {attemptsRemaining <= 0 ? "Session ended" : `${attemptsRemaining} attempts remaining`}
@@ -1667,6 +1658,16 @@ const JamieAI = () => {
                 </div>
               </div>
               
+              {/* Mobile Character Info Button - Above Input Bar */}
+              <div className="block sm:hidden absolute bottom-2 right-2 z-40">
+                <button
+                  onClick={() => setShowCharacterInfo(true)}
+                  className="w-8 h-8 flex items-center justify-center bg-[#EFF8FF] rounded-full shadow-sm hover:bg-[#E0F2FE] transition-colors"
+                >
+                  <User className="w-4 h-4 text-[#2C73EB]" />
+                </button>
+              </div>
+
               {/* Blue Input Chat */}
                 <div className="bg-[#538ff6] rounded-[25px] sm:rounded-[45px] w-full max-w-[400px] sm:max-w-[626px] px-3 sm:px-[29px] py-2 sm:py-[15px] flex items-center justify-between shadow-2xl">
                 <textarea

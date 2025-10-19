@@ -147,6 +147,13 @@ const AdminDashboard = ({ onBackToHome, onLogout, onSettings, currentView, userI
             </button>
             
             <button 
+              className="w-full flex items-center space-x-3 px-3 py-2 text-left text-blue-600 hover:bg-blue-50 rounded transition-colors"
+            >
+              <BarChart3 className="w-4 h-4" />
+              <span>Admin Dashboard</span>
+            </button>
+            
+            <button 
               onClick={() => {
                 onSettings();
                 setIsMobileMenuOpen(false);
@@ -292,7 +299,7 @@ const AdminDashboard = ({ onBackToHome, onLogout, onSettings, currentView, userI
       )}
 
       {/* Right Main Content */}
-      <div className="flex-1 flex flex-col pt-32 sm:pt-16 pl-4 sm:pl-8 overflow-y-auto">
+      <div className="flex-1 flex flex-col pt-40 sm:pt-16 pl-4 sm:pl-8 overflow-y-auto">
         {activeTab === 'overview' ? (
           <>
             {/* Header with User Greeting */}

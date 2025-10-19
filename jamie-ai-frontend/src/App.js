@@ -1659,7 +1659,7 @@ const JamieAI = () => {
               </div>
               
               {/* Mobile Character Info Button - Above Input Bar */}
-              <div className="block sm:hidden absolute bottom-2 right-2 z-40">
+              <div className="block sm:hidden mb-1 self-end">
                 <button
                   onClick={() => setShowCharacterInfo(true)}
                   className="w-8 h-8 flex items-center justify-center bg-[#EFF8FF] rounded-full shadow-sm hover:bg-[#E0F2FE] transition-colors"
@@ -1669,15 +1669,13 @@ const JamieAI = () => {
               </div>
 
               {/* Blue Input Chat */}
-                <div className="bg-[#538ff6] rounded-[25px] sm:rounded-[45px] w-full max-w-[400px] sm:max-w-[626px] px-3 sm:px-[29px] py-2 sm:py-[15px] flex items-center justify-between shadow-2xl">
+                <div className="bg-[#538ff6] rounded-[25px] sm:rounded-[45px] w-full max-w-[400px] sm:max-w-[626px] px-3 sm:px-[29px] py-2 sm:py-[15px] flex items-center justify-between shadow-2xl min-h-[48px]">
                 <textarea
                   value={currentMessage}
                   onChange={handleMessageChange}
                   onKeyPress={handleKeyPress}
                   placeholder={attemptsRemaining <= 0 ? "Session ended - Start new session" : "Start coaching"}
                   className="bg-transparent text-white placeholder-white flex-1 outline-none text-xs sm:text-[14px] font-semibold resize-none min-h-[20px] max-h-[120px] overflow-y-auto"
-                  disabled={isLoading || attemptsRemaining <= 0}
-                  rows={1}
                   style={{
                     height: 'auto',
                     minHeight: '20px',
@@ -1687,6 +1685,8 @@ const JamieAI = () => {
                     e.target.style.height = 'auto';
                     e.target.style.height = Math.min(e.target.scrollHeight, 120) + 'px';
                   }}
+                  disabled={isLoading || attemptsRemaining <= 0}
+                  rows={1}
                 />
                 <button
                   onClick={sendMessage}

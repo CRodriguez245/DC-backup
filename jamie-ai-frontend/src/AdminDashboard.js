@@ -299,7 +299,7 @@ const AdminDashboard = ({ onBackToHome, onLogout, onSettings, currentView, userI
       )}
 
       {/* Right Main Content */}
-      <div className="flex-1 flex flex-col pt-40 sm:pt-16 pl-4 sm:pl-8 overflow-y-auto">
+      <div className="flex-1 flex flex-col pt-48 sm:pt-16 pl-4 sm:pl-8 overflow-y-auto">
         {activeTab === 'overview' ? (
           <>
             {/* Header with User Greeting */}

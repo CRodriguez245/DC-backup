@@ -1347,6 +1347,15 @@ const JamieAI = () => {
         </div>
       </div>
 
+      {/* Mobile Character Info Button - Fixed Position Above Input Bar */}
+      <div className="block sm:hidden fixed bottom-12 right-4 z-40">
+        <button
+          onClick={() => setShowCharacterInfo(true)}
+          className="w-8 h-8 flex items-center justify-center bg-[#EFF8FF] rounded-full shadow-sm hover:bg-[#E0F2FE] transition-colors"
+        >
+          <User className="w-4 h-4 text-[#2C73EB]" />
+        </button>
+      </div>
 
       {/* Main Chat Area */}
       <div className="flex-1 flex flex-col relative w-full sm:w-auto">
@@ -1658,33 +1667,14 @@ const JamieAI = () => {
                 </div>
               </div>
               
-              {/* Mobile Character Info Button - Above Input Bar */}
-              <div className="block sm:hidden mb-1 self-end">
-                <button
-                  onClick={() => setShowCharacterInfo(true)}
-                  className="w-8 h-8 flex items-center justify-center bg-[#EFF8FF] rounded-full shadow-sm hover:bg-[#E0F2FE] transition-colors"
-                >
-                  <User className="w-4 h-4 text-[#2C73EB]" />
-                </button>
-              </div>
-
               {/* Blue Input Chat */}
-                <div className="bg-[#538ff6] rounded-[25px] sm:rounded-[45px] w-full max-w-[400px] sm:max-w-[626px] px-3 sm:px-[29px] py-2 sm:py-[15px] flex items-center justify-between shadow-2xl min-h-[48px]">
+                <div className="bg-[#538ff6] rounded-[25px] sm:rounded-[45px] w-full max-w-[500px] px-3 sm:px-[29px] py-3 sm:py-[15px] flex items-center justify-between shadow-2xl">
                 <textarea
                   value={currentMessage}
                   onChange={handleMessageChange}
                   onKeyPress={handleKeyPress}
                   placeholder={attemptsRemaining <= 0 ? "Session ended - Start new session" : "Start coaching"}
                   className="bg-transparent text-white placeholder-white flex-1 outline-none text-xs sm:text-[14px] font-semibold resize-none min-h-[20px] max-h-[120px] overflow-y-auto"
-                  style={{
-                    height: 'auto',
-                    minHeight: '20px',
-                    maxHeight: '120px'
-                  }}
-                  onInput={(e) => {
-                    e.target.style.height = 'auto';
-                    e.target.style.height = Math.min(e.target.scrollHeight, 120) + 'px';
-                  }}
                   disabled={isLoading || attemptsRemaining <= 0}
                   rows={1}
                 />

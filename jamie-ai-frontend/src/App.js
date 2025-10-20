@@ -350,8 +350,17 @@ const JamieAI = () => {
   // Test connection to backend
   const testConnection = async () => {
     setConnectionStatus('testing');
+    
+    // Try local backend first (for development)
+    const localBackend = 'http://localhost:3001/chat';
+    const remoteBackend = 'https://jamie-backend.onrender.com/chat';
+    
+    // Check if we're in development (localhost)
+    const isDevelopment = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+    const backendUrl = isDevelopment ? localBackend : remoteBackend;
+    
     try {
-      const response = await fetch('https://jamie-backend.onrender.com/chat', {
+      const response = await fetch(backendUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -361,13 +370,42 @@ const JamieAI = () => {
       });
       
       if (response.ok) {
-        setConnectionStatus('connected');
-        console.log('✅ Backend connection successful');
-      } else {
-        throw new Error(`HTTP ${response.status}`);
+        const data = await response.json();
+        if (data.jamie_reply) {
+          setConnectionStatus('connected');
+          console.log('✅ Backend connection successful');
+          return;
+        }
       }
+      throw new Error(`HTTP ${response.status}`);
     } catch (error) {
       console.error('❌ Backend connection failed:', error);
+      
+      // If remote backend failed and we're in production, try local as fallback
+      if (!isDevelopment) {
+        try {
+          const localResponse = await fetch(localBackend, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Accept': 'application/json',
+            },
+            body: JSON.stringify({ message: "test connection" }),
+          });
+          
+          if (localResponse.ok) {
+            const data = await localResponse.json();
+            if (data.jamie_reply) {
+              setConnectionStatus('connected');
+              console.log('✅ Local backend fallback successful');
+              return;
+            }
+          }
+        } catch (localError) {
+          console.log('Local backend also unavailable');
+        }
+      }
+      
       setConnectionStatus('failed');
     }
   };
@@ -894,7 +932,11 @@ const JamieAI = () => {
     try {
       console.log('Sending message to API:', messageText);
       
-      const response = await fetch('https://jamie-backend.onrender.com/chat', {
+      // Determine backend URL based on environment
+      const isDevelopment = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+      const backendUrl = isDevelopment ? 'http://localhost:3001/chat' : 'https://jamie-backend.onrender.com/chat';
+      
+      const response = await fetch(backendUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

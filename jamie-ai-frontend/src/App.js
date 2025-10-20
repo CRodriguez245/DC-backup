@@ -384,7 +384,10 @@ const JamieAI = () => {
       // If remote backend failed, automatically switch to demo mode
       console.log('❌ Backend unavailable, switching to demo mode');
       setConnectionStatus('failed');
-      setDemoMode(true);
+      // Use setTimeout to ensure state updates properly
+      setTimeout(() => {
+        setDemoMode(true);
+      }, 100);
     }
   };
 
@@ -1422,25 +1425,14 @@ const JamieAI = () => {
                 {!demoMode && connectionStatus === 'failed' && (
                   <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 sm:p-4 max-w-md mx-auto mb-4 mx-4">
                     <p className="text-yellow-800 text-xs sm:text-sm mb-3">
-                      ⚠️ Can't connect to the backend. This might be because:
+                      ⚠️ Backend is temporarily unavailable. Switching to demo mode...
                     </p>
-                    <ul className="text-yellow-700 text-xs mb-3 list-disc list-inside space-y-1">
-                      <li>Backend is sleeping (Render.com free tier)</li>
-                      <li>Network connectivity issue</li>
-                      <li>Backend configuration problem</li>
-                    </ul>
-                    <div className="flex flex-col sm:flex-row gap-2">
-                      <button
-                        onClick={testConnection}
-                        className="bg-green-600 text-white px-3 py-2 rounded-lg hover:bg-green-700 transition-colors text-xs sm:text-sm"
-                      >
-                        Retry Connection
-                      </button>
+                    <div className="flex justify-center">
                       <button
                         onClick={() => setDemoMode(true)}
-                        className="bg-blue-600 text-white px-3 py-2 rounded-lg hover:bg-blue-700 transition-colors text-xs sm:text-sm"
+                        className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors text-xs sm:text-sm"
                       >
-                        Use Demo Mode
+                        Continue with Demo Mode
                       </button>
                     </div>
                   </div>

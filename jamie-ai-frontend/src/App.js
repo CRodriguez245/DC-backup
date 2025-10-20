@@ -381,32 +381,10 @@ const JamieAI = () => {
     } catch (error) {
       console.error('❌ Backend connection failed:', error);
       
-      // If remote backend failed and we're in production, try local as fallback
-      if (!isDevelopment) {
-        try {
-          const localResponse = await fetch(localBackend, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Accept': 'application/json',
-            },
-            body: JSON.stringify({ message: "test connection" }),
-          });
-          
-          if (localResponse.ok) {
-            const data = await localResponse.json();
-            if (data.jamie_reply) {
-              setConnectionStatus('connected');
-              console.log('✅ Local backend fallback successful');
-              return;
-            }
-          }
-        } catch (localError) {
-          console.log('Local backend also unavailable');
-        }
-      }
-      
+      // If remote backend failed, automatically switch to demo mode
+      console.log('❌ Backend unavailable, switching to demo mode');
       setConnectionStatus('failed');
+      setDemoMode(true);
     }
   };
 
@@ -1061,24 +1039,18 @@ const JamieAI = () => {
       console.error('Detailed error sending message:', error);
       setConnectionStatus('failed');
       
-      // Show error message and offer demo mode
-      let errorText = "I'm having trouble connecting to the backend. ";
+      // Automatically switch to demo mode when backend fails
+      console.log('❌ Backend failed, switching to demo mode');
+      setDemoMode(true);
       
-      if (error.message.includes('fetch')) {
-        errorText += "This might be a network issue or the backend may be sleeping. ";
-      } else if (error.message.includes('500')) {
-        errorText += "The backend returned an error. ";
-      }
-      
-      errorText += "Would you like to try demo mode instead?";
-      
+      // Use demo response instead of showing error
+      const demoResponse = getDemoResponse(messageText);
       const errorMessage = {
         id: Date.now() + 1,
-        message: errorText,
+        message: demoResponse,
         isUser: false,
         timestamp: new Date().toISOString(),
-        isError: true,
-        showDemoButton: true
+        isDemo: true
       };
       // Add small delay before showing error message for smoother transition
       setTimeout(() => {

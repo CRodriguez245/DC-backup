@@ -9,6 +9,7 @@ import TeacherClassrooms from './TeacherClassrooms';
 import ClassroomDetail from './ClassroomDetail';
 import SharedVisual from './SharedVisual';
 import { authService } from './services/AuthService.js';
+import { supabaseAuthService } from './services/SupabaseAuthService.js';
 
 // Jamie's Animated Face Component
 const JamieFace = ({ dqScore, avgDqScore, size = 'small' }) => {
@@ -58,23 +59,36 @@ const JamieFace = ({ dqScore, avgDqScore, size = 'small' }) => {
 };
 
 const JamieAI = () => {
+  // Feature flag to use Supabase authentication
+  const USE_SUPABASE_AUTH = true; // Force Supabase mode for testing
+  
   // User information state - now using auth service
   const [userInfo, setUserInfo] = useState(() => {
     // Initialize auth service and get current user
-    authService.init();
-    // Make authService available in console for demo
-    window.authService = authService;
+    if (USE_SUPABASE_AUTH) {
+      // Initialize Supabase auth service
+      supabaseAuthService.init().then(() => {
+        setUserInfo(supabaseAuthService.getCurrentUser());
+      });
+      // Make authService available in console for demo
+      window.authService = supabaseAuthService;
+    } else {
+      // Use original auth service
+      authService.init();
+      // Make authService available in console for demo
+      window.authService = authService;
+    }
     
     // Debug helper
     window.debugAuth = () => {
       console.log('=== AUTH DEBUG ===');
-      console.log('Current User:', authService.getCurrentUser());
+      console.log('Current User:', window.authService.getCurrentUser());
       console.log('All Users:', localStorage.getItem('decision_coach_all_users'));
       console.log('Classrooms:', localStorage.getItem('decision_coach_classrooms'));
       console.log('Current User Storage:', localStorage.getItem('decision_coach_user'));
     };
     
-    return authService.getCurrentUser();
+    return USE_SUPABASE_AUTH ? null : authService.getCurrentUser();
   });
   const [gameMode, setGameMode] = useState(() => {
     // Load game mode from localStorage on component mount

@@ -1,8 +1,12 @@
 import React, { useState } from 'react';
 import { Eye, EyeOff, GraduationCap, Users } from 'lucide-react';
 import { authService } from './services/AuthService.js';
+import { supabaseAuthService } from './services/SupabaseAuthService.js';
 
 const SignUpPage = ({ onSignUp, onBackToLogin }) => {
+  // Feature flag to use Supabase authentication
+  const USE_SUPABASE_AUTH = true; // Force Supabase mode for testing
+  
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
@@ -17,7 +21,7 @@ const SignUpPage = ({ onSignUp, onBackToLogin }) => {
   const [gameMode, setGameMode] = useState('game'); // 'game' or 'assessment'
 
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     const newErrors = {};
 
@@ -60,17 +64,30 @@ const SignUpPage = ({ onSignUp, onBackToLogin }) => {
     const userData = {
       name: `${formData.firstName} ${formData.lastName}`,
       email: formData.email,
-      role: formData.userType
+      role: formData.userType,
+      password: formData.password
     };
     
-    authService.register(userData).then(result => {
+    try {
+      let result;
+      
+      if (USE_SUPABASE_AUTH) {
+        // Use Supabase authentication
+        result = await supabaseAuthService.register(userData);
+      } else {
+        // Use original authentication service
+        result = await authService.register(userData);
+      }
+      
       if (result.success) {
         // Call onSignUp with the form data to handle the UI transition
         onSignUp({ ...formData, gameMode, user: result.user });
       } else {
         setErrors({ general: result.error });
       }
-    });
+    } catch (error) {
+      setErrors({ general: 'Registration failed. Please try again.' });
+    }
   };
 
   const handleInputChange = (e) => {

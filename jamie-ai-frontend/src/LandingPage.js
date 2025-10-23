@@ -1,8 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { Eye, EyeOff } from 'lucide-react';
 import SignUpPage from './SignUpPage';
+import { authService } from './services/AuthService.js';
+import { supabaseAuthService } from './services/SupabaseAuthService.js';
 
 const LandingPage = ({ onLogin, onSignUp }) => {
+  // Feature flag to use Supabase authentication
+  const USE_SUPABASE_AUTH = true; // Force Supabase mode for testing
+  
   const [showSignUp, setShowSignUp] = useState(false);
   const [formData, setFormData] = useState({
     email: '',
@@ -33,11 +38,22 @@ const LandingPage = ({ onLogin, onSignUp }) => {
       return;
     }
 
-    // Use authentication service for login
-    const result = await onLogin({ ...formData, gameMode: 'assessment' });
-    
-    if (result && !result.success) {
-      setErrors({ general: result.message });
+    try {
+      let result;
+      
+      if (USE_SUPABASE_AUTH) {
+        // Use Supabase authentication
+        result = await supabaseAuthService.login({ ...formData, gameMode: 'assessment' });
+      } else {
+        // Use original authentication service
+        result = await onLogin({ ...formData, gameMode: 'assessment' });
+      }
+      
+      if (result && !result.success) {
+        setErrors({ general: result.error || result.message });
+      }
+    } catch (error) {
+      setErrors({ general: 'Login failed. Please try again.' });
     }
   };
 

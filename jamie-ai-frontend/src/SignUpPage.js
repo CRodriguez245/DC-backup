@@ -5,7 +5,7 @@ import { supabaseAuthService } from './services/SupabaseAuthService.js';
 
 const SignUpPage = ({ onSignUp, onBackToLogin }) => {
   // Feature flag to use Supabase authentication
-  const USE_SUPABASE_AUTH = false; // Temporarily disable Supabase for production
+  const USE_SUPABASE_AUTH = true; // Re-enable Supabase authentication
   
   const [formData, setFormData] = useState({
     firstName: '',

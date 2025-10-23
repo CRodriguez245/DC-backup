@@ -1,5 +1,5 @@
 # JamieAI - AI Coaching Assistant
-<!-- Trigger redeploy -->
+<!-- Trigger redeploy after adding environment variables -->
 
 An AI-powered coaching platform that helps users practice coaching conversations with Jamie, a sophomore mechanical engineering student considering switching to art/design. The system provides real-time Decision Quality (DQ) scoring based on the Six Dimensions of Decision Quality.
 

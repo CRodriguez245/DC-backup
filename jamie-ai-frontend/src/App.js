@@ -60,7 +60,7 @@ const JamieFace = ({ dqScore, avgDqScore, size = 'small' }) => {
 
 const JamieAI = () => {
   // Feature flag to use Supabase authentication
-  const USE_SUPABASE_AUTH = true; // Force Supabase mode for testing
+  const USE_SUPABASE_AUTH = false; // Temporarily disable Supabase for production
   
   // User information state - now using auth service
   const [userInfo, setUserInfo] = useState(() => {

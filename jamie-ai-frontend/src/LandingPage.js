@@ -5,6 +5,9 @@ import { authService } from './services/AuthService.js';
 import { supabaseAuthService } from './services/SupabaseAuthService.js';
 
 const LandingPage = ({ onLogin, onSignUp }) => {
+  console.log('LandingPage rendered with onLogin:', typeof onLogin);
+  console.log('LandingPage props:', { onLogin: !!onLogin, onSignUp: !!onSignUp });
+  
   // Feature flag to use Supabase authentication
   const USE_SUPABASE_AUTH = true; // Re-enable Supabase authentication
   
@@ -20,7 +23,10 @@ const LandingPage = ({ onLogin, onSignUp }) => {
 
 
   const handleSubmit = async (e) => {
+    console.log('Form submitted!', e);
     e.preventDefault();
+    console.log('Form data:', formData);
+    
     const newErrors = {};
 
     if (!formData.email) {
@@ -33,6 +39,8 @@ const LandingPage = ({ onLogin, onSignUp }) => {
       newErrors.password = 'Password is required';
     }
 
+    console.log('Validation errors:', newErrors);
+
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
       return;
@@ -42,8 +50,19 @@ const LandingPage = ({ onLogin, onSignUp }) => {
       let result;
       
       if (USE_SUPABASE_AUTH) {
-        // Use Supabase authentication
+        // Use Supabase authentication but still call onLogin to update React state
+        console.log('Attempting Supabase login with:', formData.email);
         result = await supabaseAuthService.login({ ...formData, gameMode: 'assessment' });
+        console.log('Supabase login result:', result);
+        
+        // If login was successful, call onLogin to update the parent component state
+        if (result && result.success) {
+          console.log('Supabase login successful, calling onLogin to update state');
+          const onLoginResult = await onLogin({ ...formData, gameMode: 'assessment' });
+          console.log('onLogin result:', onLoginResult);
+        } else {
+          console.log('Supabase login failed:', result);
+        }
       } else {
         // Use original authentication service
         result = await onLogin({ ...formData, gameMode: 'assessment' });
@@ -53,6 +72,7 @@ const LandingPage = ({ onLogin, onSignUp }) => {
         setErrors({ general: result.error || result.message });
       }
     } catch (error) {
+      console.error('Login error:', error);
       setErrors({ general: 'Login failed. Please try again.' });
     }
   };

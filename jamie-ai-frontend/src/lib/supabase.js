@@ -9,17 +9,31 @@ if (!supabaseUrl || !supabaseAnonKey) {
   console.error('Please check your .env.local file')
 }
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey)
+export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+  auth: {
+    // Disable email confirmation in development
+    autoRefreshToken: true,
+    persistSession: true,
+    detectSessionInUrl: false
+  }
+})
 
 // Authentication helpers
 export const auth = {
   // Sign up new user
   signUp: async (email, password, userData) => {
+    // Use production URL for email confirmations
+    const isDevelopment = process.env.NODE_ENV === 'development'
+    const redirectUrl = isDevelopment 
+      ? 'http://localhost:3000' 
+      : 'https://decisioncoach.io'
+    
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: {
-        data: userData
+        data: userData,
+        emailRedirectTo: redirectUrl
       }
     })
     return { data, error }

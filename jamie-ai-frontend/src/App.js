@@ -61,35 +61,51 @@ const JamieFace = ({ dqScore, avgDqScore, size = 'small' }) => {
 const JamieAI = () => {
   // Feature flag to use Supabase authentication
   const USE_SUPABASE_AUTH = true; // Re-enable Supabase authentication
-  
+
   // User information state - now using auth service
   const [userInfo, setUserInfo] = useState(() => {
-    // Initialize auth service and get current user
+    // Check if user is already logged in on component mount
     if (USE_SUPABASE_AUTH) {
-      // Initialize Supabase auth service
-      supabaseAuthService.init().then(() => {
-        setUserInfo(supabaseAuthService.getCurrentUser());
-      });
-      // Make authService available in console for demo
-      window.authService = supabaseAuthService;
-    } else {
-      // Use original auth service
-      authService.init();
-      // Make authService available in console for demo
-      window.authService = authService;
+      const currentUser = supabaseAuthService.getCurrentUser();
+      if (currentUser) {
+        console.log('User already logged in on mount:', currentUser);
+        return currentUser;
+      }
     }
-    
-    // Debug helper
-    window.debugAuth = () => {
-      console.log('=== AUTH DEBUG ===');
-      console.log('Current User:', window.authService.getCurrentUser());
-      console.log('All Users:', localStorage.getItem('decision_coach_all_users'));
-      console.log('Classrooms:', localStorage.getItem('decision_coach_classrooms'));
-      console.log('Current User Storage:', localStorage.getItem('decision_coach_user'));
-    };
-    
-    return USE_SUPABASE_AUTH ? null : authService.getCurrentUser();
+    return null;
   });
+  
+  // Initialize authentication on component mount
+  useEffect(() => {
+    let isInitialized = false;
+    
+    const initializeAuth = async () => {
+      if (isInitialized) return;
+      isInitialized = true;
+      
+      if (USE_SUPABASE_AUTH) {
+        // Initialize Supabase auth service
+        await supabaseAuthService.init();
+        
+        // Set up auth state listener
+        supabaseAuthService.addListener((event, user) => {
+          console.log('Auth state changed:', event, user);
+          setUserInfo(user);
+        });
+        
+        // Make authService available in console for demo
+        window.authService = supabaseAuthService;
+      } else {
+        // Use original auth service
+        authService.init();
+        setUserInfo(authService.getCurrentUser());
+        // Make authService available in console for demo
+        window.authService = authService;
+      }
+    };
+
+    initializeAuth();
+  }, []); // Empty dependency array - run once on mount
   const [gameMode, setGameMode] = useState(() => {
     // Load game mode from localStorage on component mount
     return localStorage.getItem('gameMode') || 'game';
@@ -146,6 +162,8 @@ const JamieAI = () => {
   // Handle login from landing page
   const handleLogin = async (loginData) => {
     try {
+      console.log('handleLogin called with:', loginData);
+      
       // Set the game mode from landing page
       if (loginData.gameMode) {
         setGameMode(loginData.gameMode);
@@ -153,19 +171,31 @@ const JamieAI = () => {
       }
       
       // Use authentication service for login
-      const result = await authService.login({
-        email: loginData.email,
-        password: loginData.password || 'demo' // For demo purposes
-      });
+      console.log('Using Supabase auth:', USE_SUPABASE_AUTH);
+      const result = USE_SUPABASE_AUTH 
+        ? await supabaseAuthService.login({
+            email: loginData.email,
+            password: loginData.password || 'demo' // For demo purposes
+          })
+        : await authService.login({
+            email: loginData.email,
+            password: loginData.password || 'demo' // For demo purposes
+          });
+      
+      console.log('Auth service result:', result);
       
       if (result.success) {
+        console.log('Login successful, setting userInfo to:', result.user);
         setUserInfo(result.user);
         setCurrentView('homepage');
+        console.log('State updated - userInfo:', result.user, 'currentView: homepage');
         return { success: true, message: result.message };
       } else {
+        console.log('Login failed:', result.error);
         return { success: false, message: result.error };
       }
     } catch (error) {
+      console.error('Login error:', error);
       return { success: false, message: 'Login failed. Please try again.' };
     }
   };
@@ -215,15 +245,27 @@ const JamieAI = () => {
   };
 
   // Handle logout
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    console.log('Logout initiated');
+    
     // Use authentication service for logout
-    authService.logout();
+    if (USE_SUPABASE_AUTH) {
+      console.log('Calling Supabase logout');
+      const result = await supabaseAuthService.logout();
+      console.log('Supabase logout result:', result);
+    } else {
+      authService.logout();
+    }
+    
+    console.log('Clearing local state');
     setUserInfo(null);
     setCurrentView(null);
     setMessages([]);
     setCurrentMessage('');
     // Clear game mode from localStorage
     localStorage.removeItem('gameMode');
+    
+    console.log('Logout completed');
   };
 
   // Handle settings (placeholder for now)

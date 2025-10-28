@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { Home, Settings, LogOut, BarChart3 } from 'lucide-react';
+import { Home, Settings, LogOut, BarChart3, Menu, X } from 'lucide-react';
 
 const HomePage = ({ userInfo, gameMode, onStartCoaching, onLogout, onSettings, onCharacterClick, onAdminClick, currentView, userProgress }) => {
   const [hoveredCharacter, setHoveredCharacter] = useState(null);
   const [displayedText, setDisplayedText] = useState('');
   const [isTyping, setIsTyping] = useState(true);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const fullText = "Welcome to Decision Coach! Start with Jamie's assessment to evaluate your coaching skills. Complete Jamie's session to unlock the game mode with other characters.";
 
@@ -179,15 +180,15 @@ const HomePage = ({ userInfo, gameMode, onStartCoaching, onLogout, onSettings, o
         }
       `}</style>
       {/* Header */}
-      <div className="absolute z-10" style={{ top: '29px', left: '29px' }}>
-        <div className="text-black font-bold text-[25px] leading-[28px]">
+      <div className="px-6 py-4 sm:px-8 sm:py-8 sm:absolute sm:z-10">
+        <div className="text-black font-bold text-[25px] leading-[28px] sm:text-2xl">
           <div>Decision</div>
           <div>Coach</div>
         </div>
       </div>
 
-      {/* Welcome Instructions */}
-      <div className="absolute z-10" style={{ top: '250px', left: '29px' }}>
+      {/* Welcome Instructions - Desktop */}
+      <div className="hidden sm:block absolute z-10" style={{ top: '250px', left: '32px' }}>
         <div className="text-gray-700 text-base leading-relaxed max-w-sm">
           {displayedText.startsWith('Welcome to Decision Coach!') && (
             <>
@@ -197,7 +198,9 @@ const HomePage = ({ userInfo, gameMode, onStartCoaching, onLogout, onSettings, o
               {displayedText.length > 'Welcome to Decision Coach!'.length && (
                 <>
                   <br />
-                  {displayedText.slice('Welcome to Decision Coach!'.length).trim()}
+                  <span className="text-gray-600">
+                    {displayedText.slice('Welcome to Decision Coach!'.length).trim()}
+                  </span>
                 </>
               )}
               {isTyping && <span className="typing-cursor text-blue-600">|</span>}
@@ -213,8 +216,90 @@ const HomePage = ({ userInfo, gameMode, onStartCoaching, onLogout, onSettings, o
       </div>
 
       {/* Main Network Visualization */}
-      <div className="flex-1 overflow-y-auto px-8 pt-8 pb-48" style={{ animation: 'elementFadeIn 0.8s ease-out 0.2s both' }}>
-        <div className="relative w-full max-w-7xl h-[900px]">
+      <div className="flex-1 overflow-y-auto px-4 pt-4 pb-48 sm:px-8 sm:pt-8" style={{ animation: 'elementFadeIn 0.8s ease-out 0.2s both' }}>
+        {/* Mobile Grid Layout */}
+        <div className="block sm:hidden">
+          {/* Mobile Welcome Instructions */}
+          <div className="px-6 py-4">
+            <div className="text-gray-700 text-sm leading-relaxed">
+              {displayedText.startsWith('Welcome to Decision Coach!') && (
+                <>
+                  <span style={{ fontFamily: 'Futura, -apple-system, BlinkMacSystemFont, sans-serif', fontSize: '18px' }}>
+                    {displayedText.slice(0, 'Welcome to Decision Coach!'.length)}
+                  </span>
+                  {displayedText.length > 'Welcome to Decision Coach!'.length && (
+                    <>
+                      <br />
+                      <span className="text-gray-600">
+                        {displayedText.slice('Welcome to Decision Coach!'.length).trim()}
+                      </span>
+                    </>
+                  )}
+                  {isTyping && <span className="typing-cursor text-blue-600">|</span>}
+                </>
+              )}
+              {!displayedText.startsWith('Welcome to Decision Coach!') && (
+                <>
+                  {displayedText}
+                  {isTyping && <span className="typing-cursor text-blue-600">|</span>}
+                </>
+              )}
+            </div>
+          </div>
+          
+          <div className="grid grid-cols-2 gap-6 py-6 px-4 mt-4">
+            {coachingLevels.map((level, index) => (
+              <div
+                key={level.id}
+                className="flex flex-col items-center space-y-3"
+                style={{ animation: `elementFadeIn 0.2s cubic-bezier(0.2, 0.8, 0.2, 1) ${index * 0.1}s both` }}
+              >
+                <div 
+                  className="relative"
+                  onMouseEnter={() => setHoveredCharacter(level.id)}
+                  onMouseLeave={() => setHoveredCharacter(null)}
+                >
+                  <div 
+                    className={`w-16 h-16 rounded-full flex items-center justify-center text-lg cursor-pointer overflow-hidden transition-all duration-300 ease-in-out hover:scale-110 hover:shadow-xl ${
+                      level.completed 
+                        ? (level.id === 'jamie' || level.id === 'andres' || level.id === 'kavya') ? 'hover:opacity-90' : 'border-2 border-blue-300 hover:opacity-90'
+                        : level.status === 'Available'
+                        ? 'bg-gray-300 hover:bg-gray-400'
+                        : 'bg-gray-300'
+                    }`}
+                    style={(level.id === 'jamie' || level.id === 'andres' || level.id === 'kavya') && level.completed ? { backgroundColor: '#2C73EB', opacity: 1 } : {}}
+                    onClick={() => handleCharacterClick(level)}
+                  >
+                    {level.status === 'Locked' ? (
+                      ''
+                    ) : level.status === 'Available' ? (
+                      ''
+                    ) : level.avatar.startsWith('/') ? (
+                      <img 
+                        src={level.avatar} 
+                        alt={level.name}
+                        className={`w-full h-full object-cover rounded-full ${level.id === 'andres' ? 'scale-x-[-1]' : level.id === 'kavya' ? 'scale-x-[-1]' : ''}`}
+                      />
+                    ) : (
+                      level.avatar
+                    )}
+                  </div>
+                </div>
+                
+                <div className="text-center">
+                  <h3 className="font-semibold text-gray-800 text-xs">{level.name}</h3>
+                  <p className="text-xs text-gray-600 mt-1 leading-tight">{level.description}</p>
+                  {level.dqScore && (
+                    <p className="text-xs text-blue-600 mt-1">Score: {Math.round(level.dqScore * 100)}%</p>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Desktop Network Layout */}
+        <div className="hidden sm:block relative w-full max-w-7xl h-[900px]">
           {/* Network connections - Curved pattern */}
           <svg className="absolute inset-0 w-full h-full" style={{ zIndex: 0 }}>
             {/* Jamie to Andres - more pronounced curve */}
@@ -325,8 +410,73 @@ const HomePage = ({ userInfo, gameMode, onStartCoaching, onLogout, onSettings, o
         </div>
       </div>
 
-      {/* Navigation Bar */}
-      <div className="absolute bottom-6 left-6">
+      {/* Mobile Hamburger Menu */}
+      <div className="absolute top-4 right-4 sm:hidden z-50">
+        <button
+          onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+          className="w-10 h-10 flex items-center justify-center bg-white rounded-lg shadow-lg border text-gray-600 hover:bg-gray-50 transition-colors"
+        >
+          {isMobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+        </button>
+        
+        {/* Mobile Menu Dropdown */}
+        {isMobileMenuOpen && (
+          <div className="absolute top-12 right-0 bg-white rounded-lg shadow-lg border p-2 min-w-[200px]">
+            <button 
+              onClick={() => {
+                onStartCoaching({ id: 'home', name: 'Home' });
+                setIsMobileMenuOpen(false);
+              }}
+              className="w-full flex items-center space-x-3 px-3 py-2 text-left text-blue-600 hover:bg-blue-50 rounded transition-colors"
+            >
+              <Home className="w-4 h-4" />
+              <span>Home</span>
+            </button>
+            
+            {userInfo?.role === 'teacher' && (
+              <button 
+                onClick={() => {
+                  onAdminClick();
+                  setIsMobileMenuOpen(false);
+                }}
+                className={`w-full flex items-center space-x-3 px-3 py-2 text-left rounded transition-colors ${
+                  currentView === 'admin' 
+                    ? 'text-blue-600 hover:bg-blue-50' 
+                    : 'text-gray-600 hover:bg-gray-50'
+                }`}
+              >
+                <BarChart3 className="w-4 h-4" />
+                <span>Admin Dashboard</span>
+              </button>
+            )}
+            
+            <button 
+              onClick={() => {
+                onSettings();
+                setIsMobileMenuOpen(false);
+              }}
+              className="w-full flex items-center space-x-3 px-3 py-2 text-left text-gray-600 hover:bg-gray-50 rounded transition-colors"
+            >
+              <Settings className="w-4 h-4" />
+              <span>Settings</span>
+            </button>
+            
+            <button 
+              onClick={() => {
+                onLogout();
+                setIsMobileMenuOpen(false);
+              }}
+              className="w-full flex items-center space-x-3 px-3 py-2 text-left text-gray-600 hover:bg-gray-50 rounded transition-colors"
+            >
+              <LogOut className="w-4 h-4" />
+              <span>Logout</span>
+            </button>
+          </div>
+        )}
+      </div>
+
+      {/* Desktop Navigation Bar */}
+      <div className="hidden sm:block absolute bottom-6 left-6">
         <div className="bg-white rounded-lg shadow-lg p-4 flex items-center space-x-4 border w-fit">
           <button 
             onClick={() => onStartCoaching({ id: 'home', name: 'Home' })}
@@ -348,9 +498,9 @@ const HomePage = ({ userInfo, gameMode, onStartCoaching, onLogout, onSettings, o
               >
                 <BarChart3 className="w-5 h-5" />
               </button>
-              <div className="w-px h-6 bg-gray-300"></div>
             </>
           )}
+          <div className="w-px h-6 bg-gray-300"></div>
           <button 
             onClick={onSettings}
             className="w-8 h-8 flex items-center justify-center text-gray-600 hover:bg-gray-50 rounded transition-colors"

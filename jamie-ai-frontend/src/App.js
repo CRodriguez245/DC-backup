@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Send, User, Bot, Star, Home, Settings, LogOut, BarChart3, RotateCcw, X } from 'lucide-react';
+import { Send, User, Bot, Star, Home, Settings, LogOut, BarChart3, RotateCcw, X, Menu } from 'lucide-react';
 import LandingPage from './LandingPage';
 import HomePage from './HomePage';
 import AdminDashboard from './AdminDashboard';
@@ -9,6 +9,7 @@ import TeacherClassrooms from './TeacherClassrooms';
 import ClassroomDetail from './ClassroomDetail';
 import SharedVisual from './SharedVisual';
 import { authService } from './services/AuthService.js';
+import { supabaseAuthService } from './services/SupabaseAuthService.js';
 
 // Jamie's Animated Face Component
 const JamieFace = ({ dqScore, avgDqScore, size = 'small' }) => {
@@ -58,24 +59,53 @@ const JamieFace = ({ dqScore, avgDqScore, size = 'small' }) => {
 };
 
 const JamieAI = () => {
+  // Feature flag to use Supabase authentication
+  const USE_SUPABASE_AUTH = true; // Re-enable Supabase authentication
+
   // User information state - now using auth service
   const [userInfo, setUserInfo] = useState(() => {
-    // Initialize auth service and get current user
-    authService.init();
-    // Make authService available in console for demo
-    window.authService = authService;
-    
-    // Debug helper
-    window.debugAuth = () => {
-      console.log('=== AUTH DEBUG ===');
-      console.log('Current User:', authService.getCurrentUser());
-      console.log('All Users:', localStorage.getItem('decision_coach_all_users'));
-      console.log('Classrooms:', localStorage.getItem('decision_coach_classrooms'));
-      console.log('Current User Storage:', localStorage.getItem('decision_coach_user'));
-    };
-    
-    return authService.getCurrentUser();
+    // Check if user is already logged in on component mount
+    if (USE_SUPABASE_AUTH) {
+      const currentUser = supabaseAuthService.getCurrentUser();
+      if (currentUser) {
+        console.log('User already logged in on mount:', currentUser);
+        return currentUser;
+      }
+    }
+    return null;
   });
+  
+  // Initialize authentication on component mount
+  useEffect(() => {
+    let isInitialized = false;
+    
+    const initializeAuth = async () => {
+      if (isInitialized) return;
+      isInitialized = true;
+      
+      if (USE_SUPABASE_AUTH) {
+        // Initialize Supabase auth service
+        await supabaseAuthService.init();
+        
+        // Set up auth state listener
+        supabaseAuthService.addListener((event, user) => {
+          console.log('Auth state changed:', event, user);
+          setUserInfo(user);
+        });
+        
+        // Make authService available in console for demo
+        window.authService = supabaseAuthService;
+      } else {
+        // Use original auth service
+        authService.init();
+        setUserInfo(authService.getCurrentUser());
+        // Make authService available in console for demo
+        window.authService = authService;
+      }
+    };
+
+    initializeAuth();
+  }, []); // Empty dependency array - run once on mount
   const [gameMode, setGameMode] = useState(() => {
     // Load game mode from localStorage on component mount
     return localStorage.getItem('gameMode') || 'game';
@@ -117,6 +147,8 @@ const JamieAI = () => {
   const [thinkingText, setThinkingText] = useState('Thinking');
   const [isTextTransitioning, setIsTextTransitioning] = useState(false);
   const [connectionStatus, setConnectionStatus] = useState('untested');
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [showCharacterInfo, setShowCharacterInfo] = useState(false);
   const [demoMode, setDemoMode] = useState(false); // Start with real backend
   const [showDqPanel, setShowDqPanel] = useState(false);
   const [attemptsRemaining, setAttemptsRemaining] = useState(20);
@@ -130,6 +162,8 @@ const JamieAI = () => {
   // Handle login from landing page
   const handleLogin = async (loginData) => {
     try {
+      console.log('handleLogin called with:', loginData);
+      
       // Set the game mode from landing page
       if (loginData.gameMode) {
         setGameMode(loginData.gameMode);
@@ -137,19 +171,31 @@ const JamieAI = () => {
       }
       
       // Use authentication service for login
-      const result = await authService.login({
-        email: loginData.email,
-        password: loginData.password || 'demo' // For demo purposes
-      });
+      console.log('Using Supabase auth:', USE_SUPABASE_AUTH);
+      const result = USE_SUPABASE_AUTH 
+        ? await supabaseAuthService.login({
+            email: loginData.email,
+            password: loginData.password || 'demo' // For demo purposes
+          })
+        : await authService.login({
+            email: loginData.email,
+            password: loginData.password || 'demo' // For demo purposes
+          });
+      
+      console.log('Auth service result:', result);
       
       if (result.success) {
+        console.log('Login successful, setting userInfo to:', result.user);
         setUserInfo(result.user);
         setCurrentView('homepage');
+        console.log('State updated - userInfo:', result.user, 'currentView: homepage');
         return { success: true, message: result.message };
       } else {
+        console.log('Login failed:', result.error);
         return { success: false, message: result.error };
       }
     } catch (error) {
+      console.error('Login error:', error);
       return { success: false, message: 'Login failed. Please try again.' };
     }
   };
@@ -199,15 +245,27 @@ const JamieAI = () => {
   };
 
   // Handle logout
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    console.log('Logout initiated');
+    
     // Use authentication service for logout
-    authService.logout();
+    if (USE_SUPABASE_AUTH) {
+      console.log('Calling Supabase logout');
+      const result = await supabaseAuthService.logout();
+      console.log('Supabase logout result:', result);
+    } else {
+      authService.logout();
+    }
+    
+    console.log('Clearing local state');
     setUserInfo(null);
     setCurrentView(null);
     setMessages([]);
     setCurrentMessage('');
     // Clear game mode from localStorage
     localStorage.removeItem('gameMode');
+    
+    console.log('Logout completed');
   };
 
   // Handle settings (placeholder for now)
@@ -348,8 +406,17 @@ const JamieAI = () => {
   // Test connection to backend
   const testConnection = async () => {
     setConnectionStatus('testing');
+    
+    // Try local backend first (for development)
+    const localBackend = 'http://localhost:3001/chat';
+    const remoteBackend = 'https://jamie-backend.onrender.com/chat';
+    
+    // Check if we're in development (localhost)
+    const isDevelopment = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+    const backendUrl = isDevelopment ? localBackend : remoteBackend;
+    
     try {
-      const response = await fetch('https://jamie-backend.onrender.com/chat', {
+      const response = await fetch(backendUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -359,14 +426,24 @@ const JamieAI = () => {
       });
       
       if (response.ok) {
-        setConnectionStatus('connected');
-        console.log('✅ Backend connection successful');
-      } else {
-        throw new Error(`HTTP ${response.status}`);
+        const data = await response.json();
+        if (data.jamie_reply) {
+          setConnectionStatus('connected');
+          console.log('✅ Backend connection successful');
+          return;
+        }
       }
+      throw new Error(`HTTP ${response.status}`);
     } catch (error) {
       console.error('❌ Backend connection failed:', error);
+      
+      // If remote backend failed, automatically switch to demo mode
+      console.log('❌ Backend unavailable, switching to demo mode');
       setConnectionStatus('failed');
+      // Use setTimeout to ensure state updates properly
+      setTimeout(() => {
+        setDemoMode(true);
+      }, 100);
     }
   };
 
@@ -892,7 +969,11 @@ const JamieAI = () => {
     try {
       console.log('Sending message to API:', messageText);
       
-      const response = await fetch('https://jamie-backend.onrender.com/chat', {
+      // Determine backend URL based on environment
+      const isDevelopment = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+      const backendUrl = isDevelopment ? 'http://localhost:3001/chat' : 'https://jamie-backend.onrender.com/chat';
+      
+      const response = await fetch(backendUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -1017,24 +1098,18 @@ const JamieAI = () => {
       console.error('Detailed error sending message:', error);
       setConnectionStatus('failed');
       
-      // Show error message and offer demo mode
-      let errorText = "I'm having trouble connecting to the backend. ";
+      // Automatically switch to demo mode when backend fails
+      console.log('❌ Backend failed, switching to demo mode');
+      setDemoMode(true);
       
-      if (error.message.includes('fetch')) {
-        errorText += "This might be a network issue or the backend may be sleeping. ";
-      } else if (error.message.includes('500')) {
-        errorText += "The backend returned an error. ";
-      }
-      
-      errorText += "Would you like to try demo mode instead?";
-      
+      // Use demo response instead of showing error
+      const demoResponse = getDemoResponse(messageText);
       const errorMessage = {
         id: Date.now() + 1,
-        message: errorText,
+        message: demoResponse,
         isUser: false,
         timestamp: new Date().toISOString(),
-        isError: true,
-        showDemoButton: true
+        isDemo: true
       };
       // Add small delay before showing error message for smoother transition
       setTimeout(() => {
@@ -1123,7 +1198,7 @@ const JamieAI = () => {
           onBack={() => setCurrentView('classrooms')}
         />
       ) : (
-        <div className="bg-white h-screen w-full flex">
+        <div className="bg-white h-screen w-full flex flex-col sm:flex-row">
       <style jsx>{`
         @keyframes slideInUp {
           from {
@@ -1166,8 +1241,8 @@ const JamieAI = () => {
         }
       `}</style>
       
-      {/* Left Sidebar */}
-      <div className="w-[320px] flex flex-col" style={{ padding: '29px' }}>
+      {/* Left Sidebar - Hidden on mobile */}
+      <div className="hidden sm:flex w-[320px] flex-col" style={{ padding: '29px' }}>
         {/* Page Title */}
         <div className="mb-[100px]">
           <h1 className="text-[25px] font-bold text-black leading-[28px]">
@@ -1221,8 +1296,82 @@ const JamieAI = () => {
         <div className="flex-1"></div>
       </div>
       
-      {/* Navigation Bar - positioned outside sidebar for proper click events */}
-      <div className="absolute bottom-6 left-6 z-50">
+      
+      {/* Mobile Title - Fixed Position */}
+      <div className="block sm:hidden fixed top-0 left-0 right-0 z-40 bg-white px-6 py-4">
+        <div className="text-black font-bold text-[25px] leading-[28px]">
+          <div>Decision</div>
+          <div>Coach</div>
+        </div>
+      </div>
+
+      {/* Mobile Hamburger Menu - Fixed Position */}
+      <div className="fixed top-4 right-4 sm:hidden z-50">
+        <button
+          onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+          className="w-10 h-10 flex items-center justify-center bg-white rounded-lg shadow-lg border text-gray-600 hover:bg-gray-50 transition-colors"
+        >
+          {isMobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+        </button>
+        
+        {/* Mobile Menu Dropdown */}
+        {isMobileMenuOpen && (
+          <div className="absolute top-12 right-0 bg-white rounded-lg shadow-lg border p-2 min-w-[200px]">
+            <button 
+              onClick={() => {
+                setCurrentView('homepage');
+                setIsMobileMenuOpen(false);
+              }}
+              className="w-full flex items-center space-x-3 px-3 py-2 text-left text-blue-600 hover:bg-blue-50 rounded transition-colors"
+            >
+              <Home className="w-4 h-4" />
+              <span>Home</span>
+            </button>
+            
+            {userInfo?.role === 'teacher' && (
+              <button 
+                onClick={() => {
+                  setCurrentView('admin');
+                  setIsMobileMenuOpen(false);
+                }}
+                className={`w-full flex items-center space-x-3 px-3 py-2 text-left rounded transition-colors ${
+                  currentView === 'admin' 
+                    ? 'text-blue-600 hover:bg-blue-50' 
+                    : 'text-gray-600 hover:bg-gray-50'
+                }`}
+              >
+                <BarChart3 className="w-4 h-4" />
+                <span>Admin Dashboard</span>
+              </button>
+            )}
+            
+            <button 
+              onClick={() => {
+                handleSettings();
+                setIsMobileMenuOpen(false);
+              }}
+              className="w-full flex items-center space-x-3 px-3 py-2 text-left text-gray-600 hover:bg-gray-50 rounded transition-colors"
+            >
+              <Settings className="w-4 h-4" />
+              <span>Settings</span>
+            </button>
+            
+            <button 
+              onClick={() => {
+                handleLogout();
+                setIsMobileMenuOpen(false);
+              }}
+              className="w-full flex items-center space-x-3 px-3 py-2 text-left text-gray-600 hover:bg-gray-50 rounded transition-colors"
+            >
+              <LogOut className="w-4 h-4" />
+              <span>Logout</span>
+            </button>
+          </div>
+        )}
+      </div>
+
+      {/* Desktop Navigation Bar - positioned outside sidebar for proper click events */}
+      <div className="hidden sm:block absolute bottom-6 left-6 z-50">
         <div className="bg-white rounded-lg shadow-lg p-4 flex items-center space-x-4 border w-fit">
           <button 
             onClick={() => setCurrentView('homepage')}
@@ -1238,22 +1387,6 @@ const JamieAI = () => {
             <>
               <div className="w-px h-6 bg-gray-300"></div>
               <button 
-                onClick={() => setCurrentView('dashboard')}
-                className={`w-8 h-8 flex items-center justify-center rounded transition-colors ${
-                  currentView === 'dashboard' 
-                    ? 'text-blue-600 hover:bg-blue-50' 
-                    : 'text-gray-600 hover:bg-gray-50'
-                }`}
-                title="My Progress"
-              >
-                <User className="w-5 h-5" />
-              </button>
-            </>
-          )}
-          {userInfo?.role === 'teacher' && (
-            <>
-              <div className="w-px h-6 bg-gray-300"></div>
-              <button 
                 onClick={() => setCurrentView('admin')}
                 className={`w-8 h-8 flex items-center justify-center rounded transition-colors ${
                   currentView === 'admin' 
@@ -1264,9 +1397,9 @@ const JamieAI = () => {
               >
                 <BarChart3 className="w-5 h-5" />
               </button>
-              <div className="w-px h-6 bg-gray-300"></div>
             </>
           )}
+          <div className="w-px h-6 bg-gray-300"></div>
           <button 
             onClick={handleSettings}
             className={`w-8 h-8 flex items-center justify-center rounded transition-colors ${
@@ -1286,36 +1419,46 @@ const JamieAI = () => {
           </button>
         </div>
       </div>
-      
+
+      {/* Mobile Character Info Button - Fixed Position Above Input Bar */}
+      <div className="block sm:hidden fixed bottom-14 right-4 z-40">
+        <button
+          onClick={() => setShowCharacterInfo(true)}
+          className="w-8 h-8 flex items-center justify-center bg-[#EFF8FF] rounded-full shadow-sm hover:bg-[#E0F2FE] transition-colors"
+        >
+          <User className="w-4 h-4 text-[#2C73EB]" />
+        </button>
+      </div>
+
       {/* Main Chat Area */}
-      <div className="flex-1 flex flex-col relative">
-        {/* Session Controls - Top Right */}
-       <div className="absolute top-6 right-6 z-10 flex items-center gap-2">
+      <div className="flex-1 flex flex-col relative w-full sm:w-auto">
+        {/* Session Controls - Top Right - Hidden on Mobile */}
+       <div className="hidden sm:flex absolute top-6 right-6 z-10 items-center gap-2">
          <button
            onClick={resetSession}
-           className="w-9 h-9 text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors flex items-center justify-center"
+           className="w-7 h-7 sm:w-9 sm:h-9 text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors flex items-center justify-center"
            title="Reset Session"
          >
-           <RotateCcw className="w-5 h-5" />
+           <RotateCcw className="w-3 h-3 sm:w-5 sm:h-5" />
          </button>
          <button
            onClick={() => {
              saveInProgressSession();
              setCurrentView('homepage');
            }}
-           className="w-9 h-9 text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors flex items-center justify-center"
+           className="w-7 h-7 sm:w-9 sm:h-9 text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors flex items-center justify-center"
            title="Exit Session"
          >
-           <X className="w-5 h-5" />
+           <X className="w-3 h-3 sm:w-5 sm:h-5" />
          </button>
        </div>
         
         {/* Chat Messages Container */}
-        <div ref={chatContainerRef} className="flex-1 bg-[rgba(217,217,217,0.19)] overflow-y-auto relative pb-40">
-          <div className="max-w-[866px] mx-auto p-[76px_0] flex flex-col gap-[46px]">
+        <div ref={chatContainerRef} className="flex-1 bg-white sm:bg-[rgba(217,217,217,0.19)] overflow-y-auto relative pb-32 sm:pb-40">
+          <div className="max-w-[866px] mx-auto px-3 py-6 sm:px-0 sm:py-[76px] flex flex-col gap-4 sm:gap-[46px] pt-20">
             {messages.length === 0 && (
-              <div className="text-center py-16">
-                <div className="w-20 h-20 rounded-full bg-[#2C73EB] flex items-end justify-center mx-auto mb-6 shadow-lg overflow-hidden">
+              <div className="text-center py-8 sm:py-16">
+                <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-[#2C73EB] flex items-end justify-center mx-auto mb-4 sm:mb-6 shadow-lg overflow-hidden">
                   <img 
                     src={
                       currentCharacter === 'jamie' ? "/images/cu-JAMIE.png" : 
@@ -1323,46 +1466,37 @@ const JamieAI = () => {
                       "/images/cu-GIRL-2.png"
                     } 
                     alt={characterData[currentCharacter].name} 
-                    className={`w-20 h-20 object-cover object-bottom ${currentCharacter === 'andres' || currentCharacter === 'kavya' ? 'scale-x-[-1]' : ''}`}
+                    className={`w-16 h-16 sm:w-20 sm:h-20 object-cover object-bottom ${currentCharacter === 'andres' || currentCharacter === 'kavya' ? 'scale-x-[-1]' : ''}`}
                   />
                 </div>
-                <h2 className="text-2xl font-bold text-gray-800 mb-3" style={{ fontFamily: 'Futura, -apple-system, BlinkMacSystemFont, sans-serif', fontWeight: 400 }}>
-                  Start coaching {characterData[currentCharacter].name} {demoMode && <span className="text-sm font-medium text-blue-600 bg-blue-100 px-3 py-1 rounded-full ml-2">Demo Mode</span>}
-                </h2>
-                <p className="text-gray-600 max-w-lg mx-auto mb-8 text-lg leading-relaxed">
+                <div className="absolute top-6 left-6 sm:top-8 sm:left-8 z-10">
+                  <h2 className="text-xl sm:text-2xl font-bold text-gray-800" style={{ fontFamily: 'Futura, -apple-system, BlinkMacSystemFont, sans-serif', fontWeight: 400 }}>
+                    Start coaching {characterData[currentCharacter].name} {demoMode && <span className="text-xs sm:text-sm font-medium text-blue-600 bg-blue-100 px-2 sm:px-3 py-1 rounded-full ml-2">Demo Mode</span>}
+                  </h2>
+                </div>
+                <p className="text-gray-600 max-w-lg mx-auto mb-6 sm:mb-8 text-base sm:text-lg leading-relaxed px-4">
                   {characterData[currentCharacter].context}
                 </p>
                 
                 {!demoMode && connectionStatus === 'failed' && (
-                  <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 max-w-md mx-auto mb-4">
-                    <p className="text-yellow-800 text-sm mb-3">
-                      ⚠️ Can't connect to the backend. This might be because:
+                  <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 sm:p-4 max-w-md mx-auto mb-4 mx-4">
+                    <p className="text-yellow-800 text-xs sm:text-sm mb-3">
+                      ⚠️ Backend is temporarily unavailable. Switching to demo mode...
                     </p>
-                    <ul className="text-yellow-700 text-xs mb-3 list-disc list-inside space-y-1">
-                      <li>Backend is sleeping (Render.com free tier)</li>
-                      <li>Network connectivity issue</li>
-                      <li>Backend configuration problem</li>
-                    </ul>
-                    <div className="flex gap-2">
-                      <button
-                        onClick={testConnection}
-                        className="bg-green-600 text-white px-3 py-2 rounded-lg hover:bg-green-700 transition-colors text-sm"
-                      >
-                        Retry Connection
-                      </button>
+                    <div className="flex justify-center">
                       <button
                         onClick={() => setDemoMode(true)}
-                        className="bg-blue-600 text-white px-3 py-2 rounded-lg hover:bg-blue-700 transition-colors text-sm"
+                        className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors text-xs sm:text-sm"
                       >
-                        Use Demo Mode
+                        Continue with Demo Mode
                       </button>
                     </div>
                   </div>
                 )}
                 
                 {demoMode && (
-                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 max-w-md mx-auto mb-4">
-                    <p className="text-blue-800 text-sm mb-3">
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 sm:p-4 max-w-md mx-auto mb-4 mx-4">
+                    <p className="text-blue-800 text-xs sm:text-sm mb-3">
                       🎭 Demo mode active - Jamie will respond with simulated conversations and DQ scores.
                     </p>
                     <button
@@ -1370,7 +1504,7 @@ const JamieAI = () => {
                         setDemoMode(false);
                         testConnection();
                       }}
-                      className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors text-sm"
+                      className="bg-green-600 text-white px-3 sm:px-4 py-2 rounded-lg hover:bg-green-700 transition-colors text-xs sm:text-sm"
                     >
                       Try Real Backend
                     </button>
@@ -1384,17 +1518,17 @@ const JamieAI = () => {
                 {msg.isUser ? (
                   // User messages - blue bubble
                   <div className="flex justify-end message-enter" data-message-id={msg.id}>
-                    <div className="bg-[#e8f1f8] rounded-[5px] shadow-[0px_6px_20px_10px_rgba(200,201,201,0.11)] px-6 py-6 max-w-[605px]">
-                      <p className="text-[16px] text-[#363636] leading-[26px]">
+                    <div className="bg-[#e8f1f8] rounded-[5px] shadow-[0px_6px_20px_10px_rgba(200,201,201,0.11)] px-4 py-4 sm:px-6 sm:py-6 max-w-[605px] mx-4 sm:mx-0">
+                      <p className="text-sm sm:text-[16px] text-[#363636] leading-[22px] sm:leading-[26px]">
                         {msg.message}
                       </p>
                     </div>
                   </div>
                 ) : (
                   // Jamie's messages - white bubble with avatar and DQ scores
-                  <div className="flex gap-[30px] items-start message-enter" data-message-id={msg.id}>
+                  <div className="flex gap-2 sm:gap-[30px] items-start message-enter" data-message-id={msg.id}>
                   {/* Character Avatar */}
-                  <div className="w-[70px] h-[70px] rounded-full bg-[#2C73EB] flex items-end justify-center flex-shrink-0 overflow-hidden">
+                  <div className="w-8 h-8 sm:w-[70px] sm:h-[70px] rounded-full bg-[#2C73EB] flex items-end justify-center flex-shrink-0 overflow-hidden">
                     <img 
                       src={
                         currentCharacter === 'jamie' ? "/images/cu-JAMIE.png" : 
@@ -1402,39 +1536,39 @@ const JamieAI = () => {
                         "/images/cu-GIRL-2.png"
                       } 
                       alt={characterData[currentCharacter].name} 
-                      className={`w-[70px] h-[70px] object-cover object-bottom ${currentCharacter === 'andres' || currentCharacter === 'kavya' ? 'scale-x-[-1]' : ''}`}
+                      className={`w-8 h-8 sm:w-[70px] sm:h-[70px] object-cover object-bottom ${currentCharacter === 'andres' || currentCharacter === 'kavya' ? 'scale-x-[-1]' : ''}`}
                     />
                   </div>
                     
                     {/* Jamie's Message */}
-                    <div className="bg-white rounded-[5px] shadow-[0px_6px_20px_10px_rgba(200,201,201,0.11)] px-[33px] py-6 max-w-[597px]">
+                    <div className="bg-white rounded-[5px] shadow-[0px_6px_20px_10px_rgba(200,201,201,0.11)] px-4 py-4 sm:px-[33px] sm:py-6 max-w-[597px] mx-4 sm:mx-0">
                       <div className="flex flex-col gap-[25px]">
                         {/* Message Text */}
-                        <div className="text-[16px] text-[#333333] leading-[26px]">
+                        <div className="text-sm sm:text-[16px] text-[#333333] leading-[22px] sm:leading-[26px]">
                           <p className="whitespace-pre-wrap">{msg.message}</p>
                           
                           {/* Final DQ Score for Assessment Mode */}
                           {msg.showFinalScore && msg.dqScore && (
-                            <div className="mt-6">
+                            <div className="mt-4 sm:mt-6">
                               {/* Gray Hairline Divider */}
-                              <div className="w-full h-px bg-gray-300 mb-6"></div>
+                              <div className="w-full h-px bg-gray-300 mb-4 sm:mb-6"></div>
                               
-                              <div className="flex flex-col gap-[25px]">
+                              <div className="flex flex-col gap-4 sm:gap-[25px]">
                                 {/* DQ Header */}
                                 <div className="flex flex-col">
-                                  <p className="text-[18px] font-bold text-[#363636] leading-[26px]">
+                                  <p className="text-base sm:text-[18px] font-bold text-[#363636] leading-[22px] sm:leading-[26px]">
                                     Your Final Decision Quality Score
                                   </p>
-                                  <p className="text-[24px] font-bold text-[#2C73EB] leading-[32px] mt-1">
+                                  <p className="text-xl sm:text-[24px] font-bold text-[#2C73EB] leading-[28px] sm:leading-[32px] mt-1">
                                     {Math.min(...Object.values(msg.dqScore)).toFixed(2)}/1.0
                                   </p>
-                                  <p className="text-[14px] text-[#797979] mt-2">
+                                  <p className="text-xs sm:text-[14px] text-[#797979] mt-2">
                                     This score reflects your coaching effectiveness across all six dimensions of decision quality.
                                   </p>
                                 </div>
                                 
                                 {/* DQ Metrics Grid */}
-                                <div className="grid grid-cols-2 gap-[34px]">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-[34px]">
                                   {[
                                     { key: 'framing', label: 'Framing', color: 'bg-[#0385c3]', value: msg.dqScore.framing },
                                     { key: 'alternatives', label: 'Alternatives', color: 'bg-[#53b723]', value: msg.dqScore.alternatives },
@@ -1443,12 +1577,12 @@ const JamieAI = () => {
                                     { key: 'reasoning', label: 'Reasoning', color: 'bg-[#d01102]', value: msg.dqScore.reasoning },
                                     { key: 'commitment', label: 'Commitment', color: 'bg-[#ffb20d]', value: msg.dqScore.commitment }
                                   ].map(metric => (
-                                    <div key={metric.key} className="flex flex-col gap-[6px]">
+                                    <div key={metric.key} className="flex flex-col gap-1 sm:gap-[6px]">
                                       <div className="flex justify-between items-center">
-                                        <p className="text-[14px] font-medium text-[#363636]">{metric.label}</p>
-                                        <p className="text-[14px] font-semibold text-[#363636]">{metric.value.toFixed(2)}</p>
+                                        <p className="text-xs sm:text-[14px] font-medium text-[#363636]">{metric.label}</p>
+                                        <p className="text-xs sm:text-[14px] font-semibold text-[#363636]">{metric.value.toFixed(2)}</p>
                                       </div>
-                                      <div className="relative w-full h-[11px] bg-[rgba(217,217,217,0.44)] rounded-[10px]">
+                                      <div className="relative w-full h-2 sm:h-[11px] bg-[rgba(217,217,217,0.44)] rounded-[10px]">
                                         <div 
                                           className={`absolute top-0 left-0 h-full rounded-[10px] ${metric.color}`}
                                           style={{ width: `${metric.value * 100}%` }}
@@ -1459,14 +1593,14 @@ const JamieAI = () => {
                                 </div>
                                 
                                 {/* Performance Feedback */}
-                                <div className={`p-4 rounded-lg ${
+                                <div className={`p-3 sm:p-4 rounded-lg ${
                                   Math.min(...Object.values(msg.dqScore)) >= 0.8 
                                     ? 'bg-green-50 border border-green-200' 
                                     : Math.min(...Object.values(msg.dqScore)) >= 0.6
                                     ? 'bg-blue-50 border border-blue-200'
                                     : 'bg-yellow-50 border border-yellow-200'
                                 }`}>
-                                  <p className={`text-[14px] font-medium ${
+                                  <p className={`text-xs sm:text-[14px] font-medium ${
                                     Math.min(...Object.values(msg.dqScore)) >= 0.8 
                                       ? 'text-green-800' 
                                       : Math.min(...Object.values(msg.dqScore)) >= 0.6
@@ -1553,8 +1687,8 @@ const JamieAI = () => {
             ))}
             
               {isTyping && (
-                <div className="flex gap-[30px] items-start">
-                  <div className="w-[70px] h-[70px] rounded-full bg-[#2C73EB] flex items-end justify-center flex-shrink-0 overflow-hidden">
+                <div className="flex gap-2 sm:gap-[30px] items-start">
+                  <div className="w-8 h-8 sm:w-[70px] sm:h-[70px] rounded-full bg-[#2C73EB] flex items-end justify-center flex-shrink-0 overflow-hidden">
                     <img 
                       src={
                         currentCharacter === 'jamie' ? "/images/cu-JAMIE.png" : 
@@ -1562,13 +1696,13 @@ const JamieAI = () => {
                         "/images/cu-GIRL-2.png"
                       } 
                       alt={characterData[currentCharacter].name} 
-                      className={`w-[70px] h-[70px] object-cover object-bottom ${currentCharacter === 'andres' || currentCharacter === 'kavya' ? 'scale-x-[-1]' : ''}`}
+                      className={`w-8 h-8 sm:w-[70px] sm:h-[70px] object-cover object-bottom ${currentCharacter === 'andres' || currentCharacter === 'kavya' ? 'scale-x-[-1]' : ''}`}
                     />
                   </div>
-                  <div className="bg-white rounded-[5px] shadow-[0px_6px_20px_10px_rgba(200,201,201,0.11)] px-[33px] py-6">
+                  <div className="bg-white rounded-[5px] shadow-[0px_6px_20px_10px_rgba(200,201,201,0.11)] px-4 py-4 sm:px-[33px] sm:py-6 mx-4 sm:mx-0">
                     <div className="flex items-center">
                       <span 
-                        className="text-[16px] text-[#6B7280] font-medium transition-all duration-200 ease-in-out"
+                        className="text-sm sm:text-[16px] text-[#6B7280] font-medium transition-all duration-200 ease-in-out"
                         style={{
                           opacity: isTextTransitioning ? 0.3 : 1,
                           transform: isTextTransitioning ? 'translateY(2px)' : 'translateY(0px)'
@@ -1584,49 +1718,91 @@ const JamieAI = () => {
           </div>
           
           {/* Fixed Input Bar at Bottom */}
-          <div className="fixed bottom-0 left-0 right-0 p-6 z-10">
-            <div className="max-w-[866px] mx-auto flex flex-col items-center mr-32">
+          <div className="fixed bottom-0 left-0 right-0 p-2 sm:p-6 z-10">
+            <div className="max-w-[866px] mx-auto flex flex-col items-center sm:mr-32 relative">
               {/* Attempts Remaining - Above input, positioned above blue input bar */}
-              <div className="mb-0 self-start ml-36">
-                <div className="bg-[#eff8ff] rounded-[16px] px-3 py-1 w-fit">
-                  <p className="text-[14px] font-medium text-[#2c73eb] text-center">
+              <div className="mb-1 sm:mb-0 self-start sm:ml-36 flex-shrink-0">
+                <div className="bg-[#eff8ff] rounded-[16px] px-2 sm:px-3 py-1 w-fit">
+                  <p className="text-xs sm:text-[14px] font-medium text-[#2c73eb] text-center">
                     {attemptsRemaining <= 0 ? "Session ended" : `${attemptsRemaining} attempts remaining`}
                   </p>
                 </div>
               </div>
               
               {/* Blue Input Chat */}
-              <div className="bg-[#538ff6] rounded-[45px] w-[626px] px-[29px] py-[15px] flex items-center justify-between shadow-2xl">
+                <div className="bg-[#538ff6] rounded-[25px] sm:rounded-[45px] w-full max-w-[400px] sm:max-w-[626px] px-3 sm:px-[29px] py-2 sm:py-[15px] flex items-center justify-between shadow-2xl">
                 <textarea
                   value={currentMessage}
                   onChange={handleMessageChange}
                   onKeyPress={handleKeyPress}
                   placeholder={attemptsRemaining <= 0 ? "Session ended - Start new session" : "Start coaching"}
-                  className="bg-transparent text-white placeholder-white flex-1 outline-none text-[14px] font-semibold resize-none min-h-[20px] max-h-[120px] overflow-y-auto"
+                  className="bg-transparent text-white placeholder-white flex-1 outline-none text-xs sm:text-[14px] font-semibold resize-none min-h-[20px] max-h-[120px] overflow-y-auto"
                   disabled={isLoading || attemptsRemaining <= 0}
                   rows={1}
-                  style={{
-                    height: 'auto',
-                    minHeight: '20px',
-                    maxHeight: '120px'
-                  }}
-                  onInput={(e) => {
-                    e.target.style.height = 'auto';
-                    e.target.style.height = Math.min(e.target.scrollHeight, 120) + 'px';
-                  }}
                 />
                 <button
                   onClick={sendMessage}
                   disabled={isLoading || !currentMessage.trim() || attemptsRemaining <= 0}
-                  className="w-6 h-6 flex items-center justify-center disabled:opacity-50"
+                  className="w-5 h-5 sm:w-6 sm:h-6 flex items-center justify-center disabled:opacity-50"
                 >
-                  <Send className="w-5 h-5 text-white" />
+                  <Send className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
                 </button>
               </div>
             </div>
           </div>
         </div>
       </div>
+
+      {/* Mobile Character Info Popup */}
+      {showCharacterInfo && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50 sm:hidden">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 border border-gray-100">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-bold text-gray-800">{characterData[currentCharacter].name}</h2>
+              <button
+                onClick={() => setShowCharacterInfo(false)}
+                className="w-8 h-8 flex items-center justify-center text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            
+            <div className="mb-4">
+              <p className="text-gray-600 text-sm">{characterData[currentCharacter].title}</p>
+            </div>
+            
+            <div className="mb-4">
+              <h3 className="text-sm font-semibold text-gray-800 mb-2">Scenario</h3>
+              <p className="text-sm text-gray-600 leading-relaxed">
+                {characterData[currentCharacter].context}
+              </p>
+            </div>
+            
+            {characterData[currentCharacter].gameMode === 'game' && (
+              <div className="mb-4">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-sm font-medium text-gray-600">{characterData[currentCharacter].progressLabel}</span>
+                  <span className="text-sm font-semibold text-gray-800">{animatedProgress}%</span>
+                </div>
+                <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
+                  <div 
+                    className={`h-full bg-gradient-to-r from-orange-400 to-orange-500 rounded-full transition-all duration-1000 ease-out ${isProgressAnimating ? 'progress-animate' : ''}`}
+                    style={{ width: `${animatedProgress}%` }}
+                  ></div>
+                </div>
+              </div>
+            )}
+            
+            {characterData[currentCharacter].gameMode === 'game' && (
+              <div className="mb-4">
+                <p className="text-sm text-gray-600">
+                  {getCharacterState()}
+                </p>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
       )}
     </div>

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Home, Settings, LogOut, BarChart3, Users, Plus, Copy, Check, Eye, CheckCircle } from 'lucide-react';
+import { Search, Home, Settings, LogOut, BarChart3, Users, Plus, Copy, Check, Eye, CheckCircle, Menu, X } from 'lucide-react';
 import { authService } from './services/AuthService.js';
 
 const AdminDashboard = ({ onBackToHome, onLogout, onSettings, currentView, userInfo }) => {
@@ -11,6 +11,7 @@ const AdminDashboard = ({ onBackToHome, onLogout, onSettings, currentView, userI
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [newClassroom, setNewClassroom] = useState({ name: '', description: '' });
   const [copiedCode, setCopiedCode] = useState(null);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   useEffect(() => {
     if (activeTab === 'classrooms') {
@@ -114,8 +115,71 @@ const AdminDashboard = ({ onBackToHome, onLogout, onSettings, currentView, userI
 
   return (
     <div className="h-screen bg-white flex overflow-hidden">
-      {/* Left Sidebar */}
-      <div className="w-80 bg-white flex flex-col flex-shrink-0 border-r border-gray-100">
+      {/* Mobile Title - Fixed Position */}
+      <div className="block sm:hidden fixed top-0 left-0 right-0 z-40 bg-white px-6 py-4">
+        <div className="text-black font-bold text-[25px] leading-[28px]">
+          <div>Decision</div>
+          <div>Coach</div>
+        </div>
+      </div>
+
+      {/* Mobile Hamburger Menu - Fixed Position */}
+      <div className="fixed top-4 right-4 sm:hidden z-50">
+        <button
+          onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+          className="w-10 h-10 flex items-center justify-center bg-white rounded-lg shadow-lg border text-gray-600 hover:bg-gray-50 transition-colors"
+        >
+          {isMobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+        </button>
+        
+        {/* Mobile Menu Dropdown */}
+        {isMobileMenuOpen && (
+          <div className="absolute top-12 right-0 bg-white rounded-lg shadow-lg border p-2 min-w-[200px]">
+            <button 
+              onClick={() => {
+                onBackToHome();
+                setIsMobileMenuOpen(false);
+              }}
+              className="w-full flex items-center space-x-3 px-3 py-2 text-left text-gray-600 hover:bg-gray-50 rounded transition-colors"
+            >
+              <Home className="w-4 h-4" />
+              <span>Home</span>
+            </button>
+            
+            <button 
+              className="w-full flex items-center space-x-3 px-3 py-2 text-left text-blue-600 hover:bg-blue-50 rounded transition-colors"
+            >
+              <BarChart3 className="w-4 h-4" />
+              <span>Admin Dashboard</span>
+            </button>
+            
+            <button 
+              onClick={() => {
+                onSettings();
+                setIsMobileMenuOpen(false);
+              }}
+              className="w-full flex items-center space-x-3 px-3 py-2 text-left text-gray-600 hover:bg-gray-50 rounded transition-colors"
+            >
+              <Settings className="w-4 h-4" />
+              <span>Settings</span>
+            </button>
+            
+            <button 
+              onClick={() => {
+                onLogout();
+                setIsMobileMenuOpen(false);
+              }}
+              className="w-full flex items-center space-x-3 px-3 py-2 text-left text-gray-600 hover:bg-gray-50 rounded transition-colors"
+            >
+              <LogOut className="w-4 h-4" />
+              <span>Logout</span>
+            </button>
+          </div>
+        )}
+      </div>
+
+      {/* Left Sidebar - Hidden on Mobile */}
+      <div className="hidden sm:flex w-80 bg-white flex-col flex-shrink-0 border-r border-gray-100">
         {/* Decision Coach Title */}
         <div style={{ padding: '29px' }}>
           <div className="text-black font-bold text-[25px] leading-[28px]">
@@ -156,7 +220,7 @@ const AdminDashboard = ({ onBackToHome, onLogout, onSettings, currentView, userI
         
         {/* Navigation Icons */}
         <div className="flex-1 flex items-end p-6">
-          <div className="bg-white rounded-lg shadow-lg p-4 flex items-center space-x-4 border w-full">
+          <div className="bg-white rounded-lg shadow-lg p-4 flex items-center space-x-4 border w-fit">
             <button 
               onClick={onBackToHome}
               className={`w-8 h-8 flex items-center justify-center rounded transition-colors ${
@@ -200,14 +264,48 @@ const AdminDashboard = ({ onBackToHome, onLogout, onSettings, currentView, userI
         </div>
       </div>
 
+      {/* Mobile Tab Navigation */}
+      {userInfo?.role === 'teacher' && (
+        <div className="block sm:hidden fixed top-20 left-0 right-0 z-30 bg-white border-b border-gray-200 px-4 py-2">
+          <div className="flex space-x-1">
+            <button
+              onClick={() => setActiveTab('overview')}
+              className={`flex-1 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                activeTab === 'overview' 
+                  ? 'bg-blue-50 text-blue-600' 
+                  : 'text-gray-700 hover:bg-gray-50'
+              }`}
+            >
+              <div className="flex items-center justify-center gap-2">
+                <BarChart3 className="w-4 h-4" />
+                <span>Overview</span>
+              </div>
+            </button>
+            <button
+              onClick={() => setActiveTab('classrooms')}
+              className={`flex-1 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                activeTab === 'classrooms' 
+                  ? 'bg-blue-50 text-blue-600' 
+                  : 'text-gray-700 hover:bg-gray-50'
+              }`}
+            >
+              <div className="flex items-center justify-center gap-2">
+                <Users className="w-4 h-4" />
+                <span>Classrooms</span>
+              </div>
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Right Main Content */}
-      <div className="flex-1 flex flex-col pt-16 pl-8 overflow-y-auto">
+      <div className="flex-1 flex flex-col pt-32 sm:pt-16 pl-4 sm:pl-8 overflow-y-auto">
         {activeTab === 'overview' ? (
           <>
             {/* Header with User Greeting */}
-            <div className="p-6">
+            <div className="p-4 sm:p-6">
               <h1 
-                className="text-3xl text-black mb-2" 
+                className="text-xl sm:text-3xl text-black mb-2" 
                 style={{ fontFamily: 'Futura, -apple-system, BlinkMacSystemFont, sans-serif', fontWeight: 400 }}
               >
                 Welcome back, {userInfo?.name || 'Carlos'}!
@@ -218,26 +316,28 @@ const AdminDashboard = ({ onBackToHome, onLogout, onSettings, currentView, userI
             </div>
 
         {/* Search Bar */}
-        <div className="p-6">
+        <div className="p-4 sm:p-6">
           <div className="relative max-w-2xl">
             <input
               type="text"
               placeholder="Search students by name or email"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full px-4 py-3 bg-white border border-gray-200 rounded-lg focus:outline-none focus:border-gray-400 transition-colors text-gray-900"
+              className="w-full px-4 py-2 sm:py-3 bg-white border border-gray-200 rounded-lg focus:outline-none focus:border-gray-400 transition-colors text-gray-900 text-sm sm:text-base"
             />
             <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
           </div>
         </div>
 
         {/* Student Table */}
-        <div className="flex-1 px-6 pb-6">
+        <div className="flex-1 px-4 sm:px-6 pb-6">
           {/* Table Headers */}
-          <div className="grid grid-cols-3 gap-4 py-4 px-4 border-b border-gray-200 text-sm font-medium text-gray-700">
+          <div className="grid grid-cols-3 gap-2 sm:gap-4 py-4 px-4 border-b border-gray-200 text-xs sm:text-sm font-medium text-gray-700">
             <div>Name</div>
-            <div>DQ Assessment Score</div>
-            <div>Actions</div>
+            <div className="hidden sm:block">DQ Assessment Score</div>
+            <div className="hidden sm:block">Actions</div>
+            <div className="sm:hidden">Score</div>
+            <div className="sm:hidden">Actions</div>
           </div>
 
           {/* Student Rows */}
@@ -273,18 +373,18 @@ const AdminDashboard = ({ onBackToHome, onLogout, onSettings, currentView, userI
                 });
                 
                 return (
-                  <div key={student.id} className="grid grid-cols-3 gap-4 py-5 px-4 border-b border-gray-100 hover:bg-gray-50 transition-colors duration-150">
+                  <div key={student.id} className="grid grid-cols-3 gap-2 sm:gap-4 py-3 sm:py-5 px-4 border-b border-gray-100 hover:bg-gray-50 transition-colors duration-150">
                     <div className="flex flex-col justify-center">
-                      <div className="text-gray-900 font-medium text-base mb-1">{student.name}</div>
-                      <div className="text-blue-600 text-sm hover:underline cursor-pointer">{student.email}</div>
+                      <div className="text-gray-900 font-medium text-sm sm:text-base mb-1">{student.name}</div>
+                      <div className="text-blue-600 text-xs sm:text-sm hover:underline cursor-pointer">{student.email}</div>
                     </div>
                     <div className="flex items-center">
-                      <span className="text-gray-900 font-semibold text-lg">{assessmentScore.toFixed(2)}</span>
+                      <span className="text-gray-900 font-semibold text-sm sm:text-lg">{assessmentScore.toFixed(2)}</span>
                     </div>
                     <div className="flex items-center">
                       <button 
                         onClick={() => handleViewAssessment(student)}
-                        className="px-4 py-2 bg-white border border-gray-200 text-gray-700 rounded-lg hover:border-gray-400 transition-colors text-sm font-medium"
+                        className="px-2 sm:px-4 py-1 sm:py-2 bg-white border border-gray-200 text-gray-700 rounded-lg hover:border-gray-400 transition-colors text-xs sm:text-sm font-medium"
                       >
                         View Session
                       </button>

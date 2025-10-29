@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { ArrowLeft, Users, TrendingUp, Trophy, Eye, CheckCircle, Clock } from 'lucide-react';
-import { authService } from './services/AuthService.js';
-import { UserManager } from './models/User.js';
+import { supabaseAuthService as authService } from './services/SupabaseAuthService.js';
 
 const ClassroomDetail = ({ classroomId, onBack }) => {
   const [classroomData, setClassroomData] = useState(null);
@@ -9,14 +8,38 @@ const ClassroomDetail = ({ classroomId, onBack }) => {
   const [selectedStudent, setSelectedStudent] = useState(null);
 
   useEffect(() => {
+    console.log('ClassroomDetail useEffect triggered, classroomId:', classroomId);
     loadClassroomData();
   }, [classroomId]);
 
-  const loadClassroomData = () => {
-    const result = authService.getClassroomStudents(classroomId);
-    if (result.success) {
-      setClassroomData(result.classroom);
-      setStudents(result.students);
+  const loadClassroomData = async () => {
+    try {
+      console.log('ClassroomDetail: Loading data for classroomId:', classroomId);
+      
+      // First, refresh the user's classroom data to ensure classroomIds is up to date
+      console.log('ClassroomDetail: Refreshing user classrooms...');
+      await authService.getUserClassrooms();
+      console.log('ClassroomDetail: User classrooms refreshed');
+      
+      console.log('ClassroomDetail: Calling getClassroomStudents...');
+      const result = await authService.getClassroomStudents(classroomId);
+      console.log('ClassroomDetail: getClassroomStudents result:', result);
+      console.log('ClassroomDetail: result.success:', result.success);
+      console.log('ClassroomDetail: result.classroom:', result.classroom);
+      console.log('ClassroomDetail: result.students:', result.students);
+      console.log('ClassroomDetail: result.students.length:', result.students?.length);
+      
+      if (result.success) {
+        console.log('ClassroomDetail: Setting classroom data and students...');
+        setClassroomData(result.classroom);
+        setStudents(result.students);
+        console.log('ClassroomDetail: Set students:', result.students);
+        console.log('ClassroomDetail: Set classroom:', result.classroom);
+      } else {
+        console.error('ClassroomDetail: Failed to load classroom data:', result.error);
+      }
+    } catch (error) {
+      console.error('Error loading classroom data:', error);
     }
   };
 
@@ -193,22 +216,22 @@ const ClassroomDetail = ({ classroomId, onBack }) => {
                         <td className="px-6 py-4 whitespace-nowrap">
                           <StatusBadge
                             completed={jamieProgress.completed}
-                            score={jamieProgress.bestScore}
-                            attempts={jamieProgress.attempts}
+                            score={jamieProgress.sessions?.length > 0 ? jamieProgress.sessions[jamieProgress.sessions.length - 1].score : 0}
+                            attempts={jamieProgress.sessions?.length || 0}
                           />
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <StatusBadge
                             completed={andresProgress.completed}
-                            score={andresProgress.bestScore}
-                            attempts={andresProgress.attempts}
+                            score={andresProgress.sessions?.length > 0 ? andresProgress.sessions[andresProgress.sessions.length - 1].score : 0}
+                            attempts={andresProgress.sessions?.length || 0}
                           />
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <StatusBadge
                             completed={kavyaProgress.completed}
-                            score={kavyaProgress.bestScore}
-                            attempts={kavyaProgress.attempts}
+                            score={kavyaProgress.sessions?.length > 0 ? kavyaProgress.sessions[kavyaProgress.sessions.length - 1].score : 0}
+                            attempts={kavyaProgress.sessions?.length || 0}
                           />
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm">
@@ -334,22 +357,22 @@ const StudentDetailModal = ({ student, onClose }) => {
                     </div>
                     <StatusBadge
                       completed={progress.completed}
-                      score={progress.bestScore}
-                      attempts={progress.attempts}
+                      score={progress.sessions?.length > 0 ? progress.sessions[progress.sessions.length - 1].score : 0}
+                      attempts={progress.sessions?.length || 0}
                     />
                   </div>
 
-                  {progress.attempts > 0 && (
+                  {(progress.sessions?.length || 0) > 0 && (
                     <>
                       <div className="mb-3">
                         <div className="flex justify-between text-sm text-gray-600 mb-1">
-                          <span>Best Score</span>
-                          <span>{(progress.bestScore * 100).toFixed(0)}%</span>
+                          <span>Latest Score</span>
+                          <span>{((progress.sessions[progress.sessions.length - 1]?.score || 0) * 100).toFixed(0)}%</span>
                         </div>
                         <div className="w-full bg-gray-200 rounded-full h-2">
                           <div
                             className={`h-2 rounded-full ${progress.completed ? 'bg-green-500' : 'bg-blue-500'}`}
-                            style={{ width: `${progress.bestScore * 100}%` }}
+                            style={{ width: `${(progress.sessions[progress.sessions.length - 1]?.score || 0) * 100}%` }}
                           ></div>
                         </div>
                       </div>
@@ -359,13 +382,13 @@ const StudentDetailModal = ({ student, onClose }) => {
                         <div className="mt-3">
                           <p className="text-sm font-medium text-gray-700 mb-2">Recent Sessions</p>
                           <div className="space-y-2">
-                            {progress.sessions.slice(-3).reverse().map((session) => (
-                              <div key={session.id} className="flex items-center justify-between text-sm bg-gray-50 p-2 rounded">
+                            {progress.sessions.slice(-3).reverse().map((session, index) => (
+                              <div key={session.id || index} className="flex items-center justify-between text-sm bg-gray-50 p-2 rounded">
                                 <span className="text-gray-600">
                                   {new Date(session.date).toLocaleDateString()}
                                 </span>
                                 <span className="font-medium text-gray-900">
-                                  {(session.score * 100).toFixed(0)}% ({session.attempts} attempts)
+                                  {(session.score * 100).toFixed(0)}%
                                 </span>
                               </div>
                             ))}

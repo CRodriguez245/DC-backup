@@ -1,16 +1,19 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Home, Settings, LogOut, BarChart3, Menu, X } from 'lucide-react';
 
-const HomePage = ({ userInfo, gameMode, onStartCoaching, onLogout, onSettings, onCharacterClick, onAdminClick, currentView, userProgress }) => {
+const HomePage = ({ userInfo, gameMode, onStartCoaching, onLogout, onSettings, onCharacterClick, onAdminClick, currentView, userProgress, isLoadingProgress, onResetLoading }) => {
   const [hoveredCharacter, setHoveredCharacter] = useState(null);
   const [displayedText, setDisplayedText] = useState('');
   const [isTyping, setIsTyping] = useState(true);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
+  // Debug logging for userProgress prop (reduced to prevent infinite loop)
+  // console.log('HomePage rendered with userProgress:', userProgress, 'isLoadingProgress:', isLoadingProgress);
+
   const fullText = "Welcome to Decision Coach! Start with Jamie's assessment to evaluate your coaching skills. Complete Jamie's session to unlock the game mode with other characters.";
 
   // Get character status and score from user progress
-  const getCharacterStatus = (characterId) => {
+  const getCharacterStatus = useCallback((characterId) => {
     if (!userProgress || !userProgress[characterId]) {
       return { status: 'Not Started', score: null };
     }
@@ -38,7 +41,7 @@ const HomePage = ({ userInfo, gameMode, onStartCoaching, onLogout, onSettings, o
     }
 
     return { status: 'Not Started', score: null };
-  };
+  }, [userProgress]);
 
   useEffect(() => {
     let index = 0;
@@ -56,6 +59,12 @@ const HomePage = ({ userInfo, gameMode, onStartCoaching, onLogout, onSettings, o
   }, []);
 
   const handleCharacterClick = (character) => {
+    // Prevent clicking if progress is still loading
+    if (isLoadingProgress) {
+      console.log('Progress is still loading, preventing character click');
+      return;
+    }
+    
     if (character.id === 'jamie') {
       onCharacterClick('jamie');
     } else if (character.id === 'andres') {
@@ -260,7 +269,11 @@ const HomePage = ({ userInfo, gameMode, onStartCoaching, onLogout, onSettings, o
                   onMouseLeave={() => setHoveredCharacter(null)}
                 >
                   <div 
-                    className={`w-16 h-16 rounded-full flex items-center justify-center text-lg cursor-pointer overflow-hidden transition-all duration-300 ease-in-out hover:scale-110 hover:shadow-xl ${
+                    className={`w-16 h-16 rounded-full flex items-center justify-center text-lg overflow-hidden transition-all duration-300 ease-in-out ${
+                      isLoadingProgress 
+                        ? 'cursor-not-allowed opacity-50' 
+                        : 'cursor-pointer hover:scale-110 hover:shadow-xl'
+                    } ${
                       level.completed 
                         ? (level.id === 'jamie' || level.id === 'andres' || level.id === 'kavya') ? 'hover:opacity-90' : 'border-2 border-blue-300 hover:opacity-90'
                         : level.status === 'Available'
@@ -270,7 +283,9 @@ const HomePage = ({ userInfo, gameMode, onStartCoaching, onLogout, onSettings, o
                     style={(level.id === 'jamie' || level.id === 'andres' || level.id === 'kavya') && level.completed ? { backgroundColor: '#2C73EB', opacity: 1 } : {}}
                     onClick={() => handleCharacterClick(level)}
                   >
-                    {level.status === 'Locked' ? (
+                    {isLoadingProgress ? (
+                      <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-white"></div>
+                    ) : level.status === 'Locked' ? (
                       ''
                     ) : level.status === 'Available' ? (
                       ''
@@ -288,9 +303,23 @@ const HomePage = ({ userInfo, gameMode, onStartCoaching, onLogout, onSettings, o
                 
                 <div className="text-center">
                   <h3 className="font-semibold text-gray-800 text-xs">{level.name}</h3>
-                  <p className="text-xs text-gray-600 mt-1 leading-tight">{level.description}</p>
-                  {level.dqScore && (
-                    <p className="text-xs text-blue-600 mt-1">Score: {Math.round(level.dqScore * 100)}%</p>
+                  {isLoadingProgress ? (
+                    <div className="mt-1">
+                      <p className="text-xs text-gray-500">Loading progress...</p>
+                      <button 
+                        onClick={onResetLoading}
+                        className="text-xs text-red-500 hover:text-red-700 underline mt-1"
+                      >
+                        Reset Loading
+                      </button>
+                    </div>
+                  ) : (
+                    <>
+                      <p className="text-xs text-gray-600 mt-1 leading-tight">{level.description}</p>
+                      {level.dqScore && (
+                        <p className="text-xs text-blue-600 mt-1">Score: {Math.round(level.dqScore * 100)}%</p>
+                      )}
+                    </>
                   )}
                 </div>
               </div>
@@ -353,7 +382,9 @@ const HomePage = ({ userInfo, gameMode, onStartCoaching, onLogout, onSettings, o
                     style={(level.id === 'jamie' || level.id === 'andres' || level.id === 'kavya') && level.completed ? { backgroundColor: '#2C73EB', opacity: 1 } : {}}
                     onClick={() => handleCharacterClick(level)}
                   >
-                    {level.status === 'Locked' ? (
+                    {isLoadingProgress ? (
+                      <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-white"></div>
+                    ) : level.status === 'Locked' ? (
                       ''
                     ) : level.status === 'Available' ? (
                       ''
@@ -396,9 +427,9 @@ const HomePage = ({ userInfo, gameMode, onStartCoaching, onLogout, onSettings, o
                     <h3 className="font-semibold text-gray-900 mb-2">{level.name}</h3>
                     <div className="flex justify-between items-center">
                       <span className="text-sm text-gray-600">{getCharacterStatus(level.id).status}</span>
-                      {getCharacterStatus(level.id).score !== null && (
+                      {typeof getCharacterStatus(level.id).score === 'number' && (
                         <span className="text-sm font-medium text-blue-600">
-                          DQ Score: {getCharacterStatus(level.id).score?.toFixed(2) || 'N/A'}
+                          DQ Score: {getCharacterStatus(level.id).score.toFixed(2)}
                         </span>
                       )}
                     </div>

@@ -106,6 +106,8 @@ export const db = {
   // Create classroom
   createClassroom: async (teacherId, name, description) => {
     const classroomCode = Math.random().toString(36).substring(2, 8).toUpperCase()
+    console.log('Creating classroom with code:', classroomCode);
+    
     const { data, error } = await supabase
       .from('classrooms')
       .insert({
@@ -116,28 +118,74 @@ export const db = {
       })
       .select()
       .single()
+    
+    console.log('Classroom creation result:', { data, error });
     return { data, error }
   },
 
   // Join classroom (student)
   joinClassroom: async (studentId, classroomCode) => {
-    // First get classroom by code
-    const { data: classroom, error: classroomError } = await supabase
-      .from('classrooms')
-      .select('id')
-      .eq('classroom_code', classroomCode)
-      .single()
+    try {
+      console.log('joinClassroom called with:', { studentId, classroomCode });
+      
+      // First get classroom by code
+      const { data: classrooms, error: classroomError } = await supabase
+        .from('classrooms')
+        .select('id, classroom_code, name')
+        .eq('classroom_code', classroomCode)
 
-    if (classroomError) return { data: null, error: classroomError }
+      console.log('Classroom search result:', { classrooms, classroomError });
 
-    // Then enroll student
-    const { data, error } = await supabase
-      .from('enrollments')
-      .insert({
-        student_id: studentId,
-        classroom_id: classroom.id
-      })
-    return { data, error }
+      if (classroomError) {
+        return { data: null, error: classroomError }
+      }
+
+      if (!classrooms || classrooms.length === 0) {
+        // Let's also try to see what classrooms exist
+        const { data: allClassrooms } = await supabase
+          .from('classrooms')
+          .select('classroom_code, name')
+          .limit(10);
+        console.log('Available classrooms:', allClassrooms);
+        return { data: null, error: { message: 'Classroom not found with that code' } }
+      }
+
+      if (classrooms.length > 1) {
+        return { data: null, error: { message: 'Multiple classrooms found with that code' } }
+      }
+
+      const classroom = classrooms[0]
+
+      // Check if student is already enrolled
+      const { data: existingEnrollment, error: checkError } = await supabase
+        .from('enrollments')
+        .select('id')
+        .eq('student_id', studentId)
+        .eq('classroom_id', classroom.id)
+        .single()
+
+      if (checkError && checkError.code !== 'PGRST116') { // PGRST116 is "not found" error
+        return { data: null, error: checkError }
+      }
+
+      if (existingEnrollment) {
+        return { data: null, error: { message: 'You are already enrolled in this classroom' } }
+      }
+
+      // Then enroll student
+      const { data, error } = await supabase
+        .from('enrollments')
+        .insert({
+          student_id: studentId,
+          classroom_id: classroom.id
+        })
+        .select()
+        .single()
+
+      return { data, error }
+    } catch (error) {
+      return { data: null, error: { message: error.message } }
+    }
   },
 
   // Get teacher's students
@@ -154,6 +202,42 @@ export const db = {
         )
       `)
       .eq('classrooms.teacher_id', teacherId)
+    return { data, error }
+  },
+
+  // Get teacher's classrooms
+  getTeacherClassrooms: async (teacherId) => {
+    const { data, error } = await supabase
+      .from('classrooms')
+      .select(`
+        *,
+        enrollments (
+          student_id
+        )
+      `)
+      .eq('teacher_id', teacherId)
+      .order('created_at', { ascending: false })
+    return { data, error }
+  },
+
+  // Get student's enrolled classrooms
+  getStudentClassrooms: async (studentId) => {
+    const { data, error } = await supabase
+      .from('enrollments')
+      .select(`
+        classrooms!enrollments_classroom_id_fkey (
+          id,
+          name,
+          description,
+          classroom_code,
+          teacher_id,
+          created_at,
+          enrollments (
+            student_id
+          )
+        )
+      `)
+      .eq('student_id', studentId)
     return { data, error }
   },
 
@@ -187,6 +271,14 @@ export const db = {
 
   // Update student progress
   updateProgress: async (studentId, characterName, level, dqScores) => {
+    console.log('db.updateProgress called with:', {
+      studentId,
+      characterName,
+      level,
+      dqScores,
+      averageScore: dqScores ? Math.min(...Object.values(dqScores)) : null
+    });
+
     const { data, error } = await supabase
       .from('student_progress')
       .upsert({
@@ -196,6 +288,8 @@ export const db = {
         average_dq_score: dqScores ? Math.min(...Object.values(dqScores)) : null,
         completed_at: new Date().toISOString()
       })
+    
+    console.log('db.updateProgress result:', { data, error });
     return { data, error }
   },
 

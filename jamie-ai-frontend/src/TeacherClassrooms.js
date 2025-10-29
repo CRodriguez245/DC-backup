@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, Users, Copy, Check, Eye, Trash2, ChevronRight } from 'lucide-react';
-import { authService } from './services/AuthService.js';
+import { supabaseAuthService as authService } from './services/SupabaseAuthService.js';
 
 const TeacherClassrooms = ({ onBackToHome, onViewClassroom }) => {
   const [classrooms, setClassrooms] = useState([]);
@@ -12,21 +12,31 @@ const TeacherClassrooms = ({ onBackToHome, onViewClassroom }) => {
     loadClassrooms();
   }, []);
 
-  const loadClassrooms = () => {
-    const userClassrooms = authService.getUserClassrooms();
-    setClassrooms(userClassrooms);
+  const loadClassrooms = async () => {
+    try {
+      const result = await authService.getUserClassrooms();
+      if (result.success) {
+        setClassrooms(result.classrooms);
+      }
+    } catch (error) {
+      console.error('Error loading classrooms:', error);
+    }
   };
 
-  const handleCreateClassroom = () => {
+  const handleCreateClassroom = async () => {
     if (!newClassroom.name.trim()) {
       return;
     }
 
-    const result = authService.createClassroom(newClassroom);
-    if (result.success) {
-      setClassrooms([...classrooms, result.classroom]);
-      setShowCreateModal(false);
-      setNewClassroom({ name: '', description: '' });
+    try {
+      const result = await authService.createClassroom(newClassroom);
+      if (result.success) {
+        setClassrooms([...classrooms, result.classroom]);
+        setShowCreateModal(false);
+        setNewClassroom({ name: '', description: '' });
+      }
+    } catch (error) {
+      console.error('Error creating classroom:', error);
     }
   };
 
@@ -130,7 +140,10 @@ const TeacherClassrooms = ({ onBackToHome, onViewClassroom }) => {
                   {/* Actions */}
                   <div className="flex gap-2">
                     <button
-                      onClick={() => onViewClassroom(classroom.id)}
+                      onClick={() => {
+                        console.log('TeacherClassrooms: View Students clicked for classroom:', classroom.id, classroom.name);
+                        onViewClassroom(classroom.id);
+                      }}
                       className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
                     >
                       <Eye className="w-4 h-4" />

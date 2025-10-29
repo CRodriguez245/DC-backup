@@ -1,6 +1,6 @@
 import React from 'react';
 import { BarChart3, TrendingUp, Trophy, Clock, Target, CheckCircle } from 'lucide-react';
-import { authService } from './services/AuthService.js';
+import { supabaseAuthService as authService } from './services/SupabaseAuthService.js';
 
 const UserDashboard = ({ userInfo, onBackToHome }) => {
   const progressSummary = authService.getProgressSummary();

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Home, Settings, LogOut, BarChart3, Users, CheckCircle, X } from 'lucide-react';
-import { authService } from './services/AuthService.js';
+import { supabaseAuthService as authService } from './services/SupabaseAuthService.js';
 
 const SettingsPage = ({ onBackToHome, onLogout, onAdminClick, currentView, userInfo }) => {
   const [notifications, setNotifications] = useState({
@@ -37,31 +37,50 @@ const SettingsPage = ({ onBackToHome, onLogout, onAdminClick, currentView, userI
     loadJoinedClassrooms();
   }, []);
 
-  const loadJoinedClassrooms = () => {
-    const classrooms = authService.getUserClassrooms();
-    setJoinedClassrooms(classrooms);
+  const loadJoinedClassrooms = async () => {
+    try {
+      const result = await authService.getUserClassrooms();
+      if (result.success) {
+        setJoinedClassrooms(result.classrooms);
+      } else {
+        console.error('Failed to load classrooms:', result.error);
+        setJoinedClassrooms([]);
+      }
+    } catch (error) {
+      console.error('Error loading classrooms:', error);
+      setJoinedClassrooms([]);
+    }
   };
 
-  const handleJoinClassroom = () => {
+  const handleJoinClassroom = async () => {
+    console.log('handleJoinClassroom called with classCodeInput:', classCodeInput);
+    
     if (!classCodeInput.trim()) {
       setJoinMessage({ text: 'Please enter a class code', type: 'error' });
       return;
     }
 
     setIsJoining(true);
-    const result = authService.joinClassroom(classCodeInput.toUpperCase());
-    
-    if (result.success) {
-      setJoinMessage({ text: result.message, type: 'success' });
-      setClassCodeInput('');
-      loadJoinedClassrooms();
+    try {
+      console.log('Calling authService.joinClassroom with code:', classCodeInput.toUpperCase());
+      const result = await authService.joinClassroom(classCodeInput.toUpperCase());
+      console.log('joinClassroom result:', result);
       
-      // Clear success message after 3 seconds
-      setTimeout(() => {
-        setJoinMessage({ text: '', type: '' });
-      }, 3000);
-    } else {
-      setJoinMessage({ text: result.error, type: 'error' });
+      if (result.success) {
+        setJoinMessage({ text: result.message, type: 'success' });
+        setClassCodeInput('');
+        loadJoinedClassrooms();
+        
+        // Clear success message after 3 seconds
+        setTimeout(() => {
+          setJoinMessage({ text: '', type: '' });
+        }, 3000);
+      } else {
+        setJoinMessage({ text: result.error, type: 'error' });
+      }
+    } catch (error) {
+      console.error('Error in handleJoinClassroom:', error);
+      setJoinMessage({ text: 'Error joining classroom: ' + error.message, type: 'error' });
     }
     
     setIsJoining(false);
@@ -249,7 +268,7 @@ const SettingsPage = ({ onBackToHome, onLogout, onAdminClick, currentView, userI
                 {/* Joined Classrooms List */}
                 <div>
                   <h4 className="text-sm font-medium text-gray-700 mb-3">Enrolled Classrooms</h4>
-                  {joinedClassrooms.length === 0 ? (
+                  {!joinedClassrooms || joinedClassrooms.length === 0 ? (
                     <div className="text-center py-8 bg-gray-50 rounded-lg border-2 border-dashed border-gray-200">
                       <Users className="w-12 h-12 text-gray-400 mx-auto mb-3" />
                       <p className="text-gray-600 mb-1">Not enrolled in any classrooms yet</p>
@@ -270,7 +289,7 @@ const SettingsPage = ({ onBackToHome, onLogout, onAdminClick, currentView, userI
                                 <span>•</span>
                                 <span>{classroom.teacherName}</span>
                                 <span>•</span>
-                                <span>{classroom.studentIds.length} students</span>
+                                <span>{classroom.studentIds?.length || 0} students</span>
                               </div>
                             </div>
                             <div className="flex items-center gap-2">

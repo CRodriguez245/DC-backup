@@ -69,6 +69,10 @@ const JamieAI = () => {
       const currentUser = supabaseAuthService.getCurrentUser();
       if (currentUser) {
         console.log('User already logged in on mount:', currentUser);
+        // If it's a student or teacher, ensure progress is loaded
+        if (currentUser.role === 'student' || currentUser.role === 'teacher') {
+          console.log('User logged in, will load progress in useEffect for role:', currentUser.role);
+        }
         return currentUser;
       }
     }
@@ -87,14 +91,81 @@ const JamieAI = () => {
         // Initialize Supabase auth service
         await supabaseAuthService.init();
         
+        // Clear any existing listeners first (for hot reloading)
+        supabaseAuthService.clearAllListeners();
+        
         // Set up auth state listener
         supabaseAuthService.addListener((event, user) => {
-          console.log('Auth state changed:', event, user);
-          setUserInfo(user);
-        });
+            console.log('Auth state changed:', event, user);
+            console.log('Current view when auth state changes:', currentView);
+            console.log('Current isLoadingProgress state:', isLoadingProgress);
+            console.log('Current hasStartedLoading state:', hasStartedLoading);
+            
+            if (event === 'progress_loaded' || event === 'progress_updated') {
+              // Update userInfo when progress is loaded/updated
+              console.log('Updating userInfo due to progress event:', event);
+              console.log('Setting isLoadingProgress to false');
+              console.log('User progress data:', user?.progress);
+              console.log('Full user object:', JSON.stringify(user, null, 2));
+              // Clear any existing timeout
+              if (loadingTimeoutId) {
+                clearTimeout(loadingTimeoutId);
+                setLoadingTimeoutId(null);
+              }
+              setUserInfo(user);
+              setIsLoadingProgress(false);
+              setHasStartedLoading(false);
+            } else if (event === 'progress_loading_started') {
+              // Progress loading has started
+              console.log('Progress loading started, setting loading state');
+              setIsLoadingProgress(true);
+            } else if (event === 'progress_loading_failed') {
+              // Progress loading failed
+              console.log('Progress loading failed, resetting loading state');
+              // Clear any existing timeout
+              if (loadingTimeoutId) {
+                clearTimeout(loadingTimeoutId);
+                setLoadingTimeoutId(null);
+              }
+              setIsLoadingProgress(false);
+              setHasStartedLoading(false);
+            } else if (event === 'login' && user) {
+              // When user logs in, ensure we're on homepage
+              console.log('User logged in via auth listener, setting currentView to homepage');
+              console.log('User role:', user.role);
+              setUserInfo(user);
+              setCurrentView('homepage');
+              // Don't set loading state here - let the useEffect handle it
+              console.log('Login event processed, useEffect will handle progress loading');
+            } else if (event === 'logout') {
+              // When user logs out, clear all state
+              console.log('User logged out via auth listener, clearing state');
+              // Clear any existing timeout
+              if (loadingTimeoutId) {
+                clearTimeout(loadingTimeoutId);
+                setLoadingTimeoutId(null);
+              }
+              setUserInfo(null);
+              setCurrentView(null);
+              setMessages([]);
+              setIsLoadingProgress(false);
+              setHasStartedLoading(false);
+              setLoadedUserIds(new Set()); // Clear loaded user IDs
+            } else {
+              console.log('Updating userInfo due to auth event:', event);
+              setUserInfo(user);
+            }
+          });
         
         // Make authService available in console for demo
         window.authService = supabaseAuthService;
+        
+        // Add debugging helper
+        window.debugAuth = () => {
+          console.log('Current user:', supabaseAuthService.getCurrentUser());
+          console.log('Is loading progress:', supabaseAuthService.isLoadingProgress);
+          console.log('Listeners count:', supabaseAuthService.listeners.length);
+        };
       } else {
         // Use original auth service
         authService.init();
@@ -106,6 +177,95 @@ const JamieAI = () => {
 
     initializeAuth();
   }, []); // Empty dependency array - run once on mount
+
+  // Loading state for progress
+  const [isLoadingProgress, setIsLoadingProgress] = useState(false);
+  const [loadingTimeoutId, setLoadingTimeoutId] = useState(null);
+  const [hasStartedLoading, setHasStartedLoading] = useState(false);
+  const [loadedUserIds, setLoadedUserIds] = useState(new Set()); // Track which users we've loaded progress for
+
+  // Ensure progress is loaded for students who are already logged in
+  useEffect(() => {
+    console.log('Progress loading useEffect triggered:', {
+      USE_SUPABASE_AUTH,
+      userInfo: !!userInfo,
+      userRole: userInfo?.role,
+      userId: userInfo?.id,
+      isLoadingProgress,
+      hasProgress: !!userInfo?.progress,
+      jamieProgress: userInfo?.progress?.jamie,
+      jamieSessions: userInfo?.progress?.jamie?.sessions?.length
+    });
+    
+    if (USE_SUPABASE_AUTH && userInfo && (userInfo.role === 'student' || userInfo.role === 'teacher')) {
+      console.log('User userInfo detected, ensuring progress is loaded for role:', userInfo.role);
+      
+      // Check if we've already loaded progress for this user
+      const hasLoadedForUser = loadedUserIds.has(userInfo.id);
+      
+      // Only start loading if we haven't already started, not currently loading, and haven't loaded for this user
+      if (!hasStartedLoading && !isLoadingProgress && !hasLoadedForUser) {
+        console.log('Starting to load progress for user with role:', userInfo.role);
+        setHasStartedLoading(true);
+        setIsLoadingProgress(true);
+        
+        // Mark this user as having progress loaded
+        setLoadedUserIds(prev => new Set(prev).add(userInfo.id));
+        
+        // Set a timeout to prevent infinite loading
+        const timeoutId = setTimeout(() => {
+          console.log('Progress loading timeout reached, resetting loading state');
+          setIsLoadingProgress(false);
+          setHasStartedLoading(false);
+        }, 10000); // 10 second timeout
+        setLoadingTimeoutId(timeoutId);
+        
+        // Also set a shorter timeout to check if progress_loaded event is received
+        const checkTimeoutId = setTimeout(() => {
+          console.log('Checking if progress_loaded event was received...');
+          if (isLoadingProgress) {
+            console.log('Progress still loading after 5 seconds, this might indicate an issue');
+            // Don't reset here, let the main timeout handle it
+          }
+        }, 5000); // 5 second check
+        
+        supabaseAuthService.loadProgressFromSupabase();
+      } else {
+        console.log('Progress loading already started, in progress, or already loaded for this user');
+      }
+    } else if (userInfo && userInfo.role !== 'student' && userInfo.role !== 'teacher') {
+      console.log('Non-student/teacher user, not loading progress');
+      // Clear any existing timeout
+      if (loadingTimeoutId) {
+        clearTimeout(loadingTimeoutId);
+        setLoadingTimeoutId(null);
+      }
+      // Ensure loading state is false for non-students
+      if (isLoadingProgress) {
+        console.log('Resetting isLoadingProgress to false for non-student');
+        setIsLoadingProgress(false);
+      }
+      setHasStartedLoading(false);
+    } else if (!userInfo) {
+      console.log('No userInfo, resetting loading state');
+      // Clear any existing timeout
+      if (loadingTimeoutId) {
+        clearTimeout(loadingTimeoutId);
+        setLoadingTimeoutId(null);
+      }
+      setIsLoadingProgress(false);
+      setHasStartedLoading(false);
+    }
+  }, [userInfo?.id, userInfo?.role]); // Only depend on user ID and role, not loading states
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (loadingTimeoutId) {
+        clearTimeout(loadingTimeoutId);
+      }
+    };
+  }, [loadingTimeoutId]);
   const [gameMode, setGameMode] = useState(() => {
     // Load game mode from localStorage on component mount
     return localStorage.getItem('gameMode') || 'game';
@@ -113,6 +273,9 @@ const JamieAI = () => {
   const [currentView, setCurrentView] = useState('homepage'); // 'homepage', 'chat', 'dashboard', 'admin', 'settings', 'classrooms', 'classroom-detail'
   const [currentCharacter, setCurrentCharacter] = useState('jamie'); // 'jamie', 'andres', or 'kavya'
   const [selectedClassroomId, setSelectedClassroomId] = useState(null);
+  
+  // Debug current view
+  console.log('App.js: Current view:', currentView, 'Selected classroom ID:', selectedClassroomId);
   
   // Character data
   const characterData = {
@@ -164,6 +327,24 @@ const JamieAI = () => {
     try {
       console.log('handleLogin called with:', loginData);
       
+      // Check if user is already logged in
+      if (userInfo && userInfo.id) {
+        console.log('User already logged in, skipping login');
+        console.log('Current view before setting currentView:', currentView);
+        setCurrentView('homepage');
+        console.log('State updated - keeping existing userInfo, currentView: homepage');
+        return { success: true, message: 'Already logged in' };
+      }
+      
+      // Check if user is already authenticated at Supabase level
+      if (USE_SUPABASE_AUTH && supabaseAuthService.currentUser) {
+        console.log('User already authenticated at Supabase level, skipping login');
+        console.log('Current view before setting currentView:', currentView);
+        setCurrentView('homepage');
+        console.log('State updated - keeping existing userInfo, currentView: homepage');
+        return { success: true, message: 'Already logged in' };
+      }
+      
       // Set the game mode from landing page
       if (loginData.gameMode) {
         setGameMode(loginData.gameMode);
@@ -186,7 +367,9 @@ const JamieAI = () => {
       
       if (result.success) {
         console.log('Login successful, setting userInfo to:', result.user);
+        console.log('Current view before setting userInfo:', currentView);
         setUserInfo(result.user);
+        console.log('Setting currentView to homepage');
         setCurrentView('homepage');
         console.log('State updated - userInfo:', result.user, 'currentView: homepage');
         return { success: true, message: result.message };
@@ -225,6 +408,9 @@ const JamieAI = () => {
 
   // Handle character selection
   const handleCharacterClick = (characterId) => {
+    console.log('Character clicked:', characterId, 'Setting currentView to chat');
+    console.log('Current isLoadingProgress:', isLoadingProgress);
+    
     // Save current session before switching
     if (messages.length > 0) {
       saveInProgressSession();
@@ -244,28 +430,96 @@ const JamieAI = () => {
     }
   };
 
+  // Manual reset for stuck loading state
+  const resetLoadingState = () => {
+    console.log('Manually resetting loading state');
+    if (loadingTimeoutId) {
+      clearTimeout(loadingTimeoutId);
+      setLoadingTimeoutId(null);
+    }
+    setIsLoadingProgress(false);
+    setHasStartedLoading(false);
+  };
+
+  // Global debug function for testing
+  window.debugLoadingState = () => {
+    console.log('Current loading state:', {
+      isLoadingProgress,
+      hasStartedLoading,
+      userInfo: !!userInfo,
+      userRole: userInfo?.role,
+      loadingTimeoutId
+    });
+  };
+
+  // Global function to force reset loading
+  window.forceResetLoading = resetLoadingState;
+
   // Handle logout
   const handleLogout = async () => {
     console.log('Logout initiated');
     
-    // Use authentication service for logout
-    if (USE_SUPABASE_AUTH) {
-      console.log('Calling Supabase logout');
-      const result = await supabaseAuthService.logout();
-      console.log('Supabase logout result:', result);
-    } else {
-      authService.logout();
+    try {
+      // Use authentication service for logout
+      if (USE_SUPABASE_AUTH) {
+        console.log('Calling Supabase logout');
+        const result = await supabaseAuthService.logout();
+        console.log('Supabase logout result:', result);
+        
+        // The auth listener will handle clearing state when it receives the 'logout' event
+        // But we'll also clear it here as a backup
+        if (result.success) {
+          console.log('Logout successful, clearing local state');
+          setUserInfo(null);
+          setCurrentView(null);
+          setMessages([]);
+          setCurrentMessage('');
+          setCurrentCharacter('jamie');
+          setGameMode('game');
+          setAttemptsRemaining(20);
+          setAnimatedProgress(0);
+          setIsProgressAnimating(false);
+          setIsLoadingProgress(false);
+          setHasStartedLoading(false);
+          setLoadedUserIds(new Set()); // Clear loaded user IDs
+          
+          // Clear localStorage
+          localStorage.removeItem('gameMode');
+          localStorage.removeItem('currentCharacter');
+          localStorage.removeItem('messages');
+          localStorage.removeItem('currentSession');
+        }
+      } else {
+        authService.logout();
+        // Clear state for non-Supabase auth
+        setUserInfo(null);
+        setCurrentView(null);
+        setMessages([]);
+        setCurrentMessage('');
+        setCurrentCharacter('jamie');
+        setGameMode('game');
+        setAttemptsRemaining(20);
+        setAnimatedProgress(0);
+        setIsProgressAnimating(false);
+        setIsLoadingProgress(false);
+        
+        // Clear localStorage
+        localStorage.removeItem('gameMode');
+        localStorage.removeItem('currentCharacter');
+        localStorage.removeItem('messages');
+        localStorage.removeItem('currentSession');
+      }
+      
+      console.log('Logout completed');
+    } catch (error) {
+      console.error('Logout error:', error);
+      // Even if logout fails, clear local state
+      setUserInfo(null);
+      setCurrentView(null);
+      setMessages([]);
+      setCurrentMessage('');
+      setIsLoadingProgress(false);
     }
-    
-    console.log('Clearing local state');
-    setUserInfo(null);
-    setCurrentView(null);
-    setMessages([]);
-    setCurrentMessage('');
-    // Clear game mode from localStorage
-    localStorage.removeItem('gameMode');
-    
-    console.log('Logout completed');
   };
 
   // Handle settings (placeholder for now)
@@ -953,7 +1207,12 @@ const JamieAI = () => {
                 completed: characterData[currentCharacter].gameMode === 'assessment' ? true : (finalDqScore ? Math.min(...Object.values(finalDqScore)) >= 0.8 : false),
                 messages: [...messages, sessionEndMessage] // Include the full chat transcript with end message
               };
-              authService.updateProgress(currentCharacter, progressData);
+              // Use the correct auth service based on USE_SUPABASE_AUTH flag
+              if (USE_SUPABASE_AUTH) {
+                supabaseAuthService.updateProgress(currentCharacter, progressData);
+              } else {
+                authService.updateProgress(currentCharacter, progressData);
+              }
               
               // Clear in-progress session since it's complete
               clearInProgressSession(currentCharacter);
@@ -973,13 +1232,22 @@ const JamieAI = () => {
       const isDevelopment = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
       const backendUrl = isDevelopment ? 'http://localhost:3001/chat' : 'https://jamie-backend.onrender.com/chat';
       
+      // Prepare request body with user information
+      const requestBody = {
+        message: messageText,
+        session_id: userInfo ? `session-${userInfo.id}` : 'anon-session',
+        user_id: userInfo ? userInfo.id : 'anon-user'
+      };
+      
+      console.log('Request body:', requestBody);
+      
       const response = await fetch(backendUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json',
         },
-        body: JSON.stringify({ message: messageText }),
+        body: JSON.stringify(requestBody),
       });
 
       console.log('Response status:', response.status);
@@ -1018,6 +1286,12 @@ const JamieAI = () => {
         setConnectionStatus('connected');
         setIsLoading(false);
         setIsTyping(false);
+        
+        // Reset demo mode since backend is working
+        if (demoMode) {
+          console.log('✅ Backend is working, resetting demo mode');
+          setDemoMode(false);
+        }
         
         // Scroll the AI response to the top of the view
         setTimeout(() => {
@@ -1083,7 +1357,12 @@ const JamieAI = () => {
                 completed: characterData[currentCharacter].gameMode === 'assessment' ? true : (finalDqScore ? Math.min(...Object.values(finalDqScore)) >= 0.8 : false),
                 messages: [...messages, sessionEndMessage] // Include the full chat transcript with end message
               };
-              authService.updateProgress(currentCharacter, progressData);
+              // Use the correct auth service based on USE_SUPABASE_AUTH flag
+              if (USE_SUPABASE_AUTH) {
+                supabaseAuthService.updateProgress(currentCharacter, progressData);
+              } else {
+                authService.updateProgress(currentCharacter, progressData);
+              }
               
               // Clear in-progress session since it's complete
               clearInProgressSession(currentCharacter);
@@ -1140,8 +1419,19 @@ const JamieAI = () => {
     // Allow Shift+Enter for new lines
   };
 
+  // Safety check: if userInfo exists but currentView is null, default to homepage
+  // But preserve chat view if user is in a chat session
+  const safeCurrentView = userInfo && !currentView ? 'homepage' : currentView;
+  
+  // Additional safety: preserve chat view during progress loading
+  // Always preserve chat view if user is in a chat session, regardless of loading state
+  const finalCurrentView = (currentView === 'chat') ? 'chat' : safeCurrentView;
+
   // Determine if we should show the shared visual
-  const showSharedVisual = !userInfo || currentView === 'homepage';
+  const showSharedVisual = !userInfo || finalCurrentView === 'homepage';
+
+  // Debug logging for routing
+  console.log('App.js render - userInfo:', !!userInfo, 'currentView:', currentView, 'safeCurrentView:', safeCurrentView, 'finalCurrentView:', finalCurrentView, 'isLoadingProgress:', isLoadingProgress);
 
   return (
     <div className="min-h-screen bg-white">
@@ -1151,7 +1441,7 @@ const JamieAI = () => {
       {/* Page Content */}
       {!userInfo ? (
         <LandingPage onLogin={handleLogin} onSignUp={handleLogin} />
-      ) : currentView === 'homepage' ? (
+      ) : finalCurrentView === 'homepage' ? (
         <HomePage 
           userInfo={userInfo}
           gameMode={gameMode}
@@ -1162,13 +1452,15 @@ const JamieAI = () => {
           onAdminClick={() => setCurrentView('admin')}
           currentView={currentView}
           userProgress={userInfo?.progress}
+          isLoadingProgress={isLoadingProgress}
+          onResetLoading={resetLoadingState}
         />
-      ) : currentView === 'dashboard' ? (
+      ) : finalCurrentView === 'dashboard' ? (
         <UserDashboard 
           userInfo={userInfo}
           onBackToHome={() => setCurrentView('homepage')}
         />
-      ) : currentView === 'admin' ? (
+      ) : finalCurrentView === 'admin' ? (
         <AdminDashboard 
           userInfo={userInfo}
           onBackToHome={() => setCurrentView('homepage')}
@@ -1176,7 +1468,7 @@ const JamieAI = () => {
           onSettings={() => setCurrentView('settings')}
           currentView={currentView}
         />
-      ) : currentView === 'settings' ? (
+      ) : finalCurrentView === 'settings' ? (
         <SettingsPage 
           userInfo={userInfo}
           onBackToHome={() => setCurrentView('homepage')}
@@ -1184,20 +1476,27 @@ const JamieAI = () => {
           onAdminClick={() => setCurrentView('admin')}
           currentView={currentView}
         />
-      ) : currentView === 'classrooms' ? (
+      ) : finalCurrentView === 'classrooms' ? (
         <TeacherClassrooms 
           onBackToHome={() => setCurrentView('homepage')}
           onViewClassroom={(classroomId) => {
+            console.log('App.js: onViewClassroom called with classroomId:', classroomId);
             setSelectedClassroomId(classroomId);
             setCurrentView('classroom-detail');
+            console.log('App.js: Set currentView to classroom-detail');
           }}
         />
-      ) : currentView === 'classroom-detail' ? (
-        <ClassroomDetail 
-          classroomId={selectedClassroomId}
-          onBack={() => setCurrentView('classrooms')}
-        />
-      ) : (
+      ) : finalCurrentView === 'classroom-detail' ? (
+        (() => {
+          console.log('App.js: Rendering ClassroomDetail, classroomId:', selectedClassroomId);
+          return (
+            <ClassroomDetail 
+              classroomId={selectedClassroomId}
+              onBack={() => setCurrentView('classrooms')}
+            />
+          );
+        })()
+      ) : finalCurrentView === 'chat' ? (
         <div className="bg-white h-screen w-full flex flex-col sm:flex-row">
       <style jsx>{`
         @keyframes slideInUp {
@@ -1804,6 +2103,10 @@ const JamieAI = () => {
         </div>
       )}
     </div>
+      ) : (
+        <div className="bg-white h-screen w-full flex items-center justify-center">
+          <p className="text-gray-500">Unknown view: {finalCurrentView}</p>
+        </div>
       )}
     </div>
   );

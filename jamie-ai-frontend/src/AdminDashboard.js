@@ -1,9 +1,12 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Search, Home, Settings, LogOut, BarChart3, Users, Plus, Copy, Check, Eye, CheckCircle, Menu, X } from 'lucide-react';
-import { authService } from './services/AuthService.js';
+import { supabaseAuthService as authService } from './services/SupabaseAuthService.js';
 
 const AdminDashboard = ({ onBackToHome, onLogout, onSettings, currentView, userInfo }) => {
+  console.log('AdminDashboard component rendering, userInfo:', userInfo);
+  
   const [activeTab, setActiveTab] = useState('overview'); // 'overview' or 'classrooms'
+  console.log('AdminDashboard activeTab:', activeTab);
   const [selectedStudent, setSelectedStudent] = useState(null);
   const [showAssessmentModal, setShowAssessmentModal] = useState(false);
   const [classrooms, setClassrooms] = useState([]);
@@ -13,27 +16,97 @@ const AdminDashboard = ({ onBackToHome, onLogout, onSettings, currentView, userI
   const [copiedCode, setCopiedCode] = useState(null);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
-  useEffect(() => {
-    if (activeTab === 'classrooms') {
-      loadClassrooms();
+  const loadClassrooms = useCallback(async () => {
+    console.log('loadClassrooms called');
+    try {
+      console.log('Calling authService.getUserClassrooms()...');
+      const result = await authService.getUserClassrooms();
+      console.log('getUserClassrooms result:', result);
+      
+      if (result.success) {
+        console.log('Setting classrooms:', result.classrooms);
+        setClassrooms(result.classrooms);
+      } else {
+        console.error('Failed to load classrooms:', result.error);
+      }
+    } catch (error) {
+      console.error('Error loading classrooms:', error);
     }
-  }, [activeTab]);
+  }, []);
 
-  const loadClassrooms = () => {
-    const userClassrooms = authService.getUserClassrooms();
-    setClassrooms(userClassrooms);
-  };
+  // Load classrooms on component mount
+  useEffect(() => {
+    console.log('Component mounted, loading classrooms');
+    console.log('loadClassrooms function:', loadClassrooms);
+    console.log('userInfo:', userInfo);
+    console.log('About to call loadClassrooms...');
+    loadClassrooms().catch(error => {
+      console.error('Error loading classrooms on mount:', error);
+    });
+  }, [loadClassrooms, userInfo]);
 
-  const handleCreateClassroom = () => {
+  // Force load classrooms on mount - direct approach
+  useEffect(() => {
+    console.log('Force loading classrooms on mount');
+    const loadClassroomsDirectly = async () => {
+      try {
+        console.log('Calling authService.getUserClassrooms() directly...');
+        const result = await authService.getUserClassrooms();
+        console.log('Direct getUserClassrooms result:', result);
+        
+        if (result.success) {
+          console.log('Direct setting classrooms:', result.classrooms);
+          setClassrooms(result.classrooms);
+        } else {
+          console.error('Direct failed to load classrooms:', result.error);
+        }
+      } catch (error) {
+        console.error('Direct error loading classrooms:', error);
+      }
+    };
+    
+    loadClassroomsDirectly();
+  }, []);
+
+  useEffect(() => {
+    console.log('useEffect triggered, activeTab:', activeTab);
+    if (activeTab === 'classrooms') {
+      console.log('activeTab is classrooms, calling loadClassrooms');
+      loadClassrooms().catch(error => {
+        console.error('Error loading classrooms:', error);
+      });
+    } else {
+      console.log('activeTab is not classrooms, not calling loadClassrooms');
+    }
+  }, [activeTab, loadClassrooms]);
+
+  const handleCreateClassroom = async () => {
+    console.log('handleCreateClassroom called with:', newClassroom);
+    
     if (!newClassroom.name.trim()) {
+      console.log('Classroom name is empty, returning');
       return;
     }
 
-    const result = authService.createClassroom(newClassroom);
-    if (result.success) {
-      setClassrooms([...classrooms, result.classroom]);
-      setShowCreateModal(false);
-      setNewClassroom({ name: '', description: '' });
+    console.log('Attempting to create classroom...');
+    try {
+      const result = await authService.createClassroom(newClassroom);
+      console.log('Create classroom result:', result);
+      
+      if (result.success) {
+        console.log('Classroom created successfully:', result.classroom);
+        setClassrooms([...classrooms, result.classroom]);
+        setShowCreateModal(false);
+        setNewClassroom({ name: '', description: '' });
+        // Reload classrooms after creation
+        await loadClassrooms();
+      } else {
+        console.error('Failed to create classroom:', result.error);
+        alert('Failed to create classroom: ' + result.error);
+      }
+    } catch (error) {
+      console.error('Error creating classroom:', error);
+      alert('Error creating classroom: ' + error.message);
     }
   };
 
@@ -45,57 +118,81 @@ const AdminDashboard = ({ onBackToHome, onLogout, onSettings, currentView, userI
 
   // Get real students from all classrooms
   const [students, setStudents] = useState([]);
+  const [isLoadingStudents, setIsLoadingStudents] = useState(false);
 
+  const loadAllStudents = useCallback(async () => {
+    if (userInfo?.role !== 'teacher') {
+      return;
+    }
+
+    // Prevent duplicate loading
+    if (isLoadingStudents) {
+      return;
+    }
+
+    setIsLoadingStudents(true);
+    
+    try {
+      // Get all classrooms for this teacher
+      const classroomsResult = await authService.getUserClassrooms();
+      if (!classroomsResult.success) {
+        console.error('Failed to load classrooms:', classroomsResult.error);
+        return;
+      }
+      
+      const teacherClassrooms = classroomsResult.classrooms;
+      
+      // Load students from all classrooms
+      const allStudents = [];
+      for (const classroom of teacherClassrooms) {
+        const studentResult = await authService.getClassroomStudents(classroom.id);
+        if (studentResult.success && studentResult.students) {
+          studentResult.students.forEach(s => {
+            if (s && !allStudents.find(existing => existing.id === s.id)) {
+              allStudents.push(s);
+            }
+          });
+        }
+      }
+      
+      setStudents(allStudents);
+    } catch (error) {
+      console.error('Error loading students:', error);
+    } finally {
+      setIsLoadingStudents(false);
+    }
+  }, [userInfo]);
+
+  // Load students when component mounts or when activeTab changes
   useEffect(() => {
     loadAllStudents();
-  }, [activeTab]);
-
-  const loadAllStudents = () => {
-    if (userInfo?.role !== 'teacher') return;
-    
-    console.log('Loading students for teacher:', userInfo);
-    
-    // Get all classrooms for this teacher
-    const teacherClassrooms = authService.getUserClassrooms();
-    console.log('Teacher classrooms:', teacherClassrooms);
-    
-    // Collect all unique student IDs across all classrooms
-    const studentIds = new Set();
-    teacherClassrooms.forEach(classroom => {
-      classroom.studentIds.forEach(id => studentIds.add(id));
-    });
-    console.log('Student IDs to load:', Array.from(studentIds));
-    
-    // Load each student's data using UserManager directly
-    const allStudents = [];
-    studentIds.forEach(studentId => {
-      const student = authService.getClassroomStudents(teacherClassrooms.find(c => c.studentIds.includes(studentId))?.id);
-      if (student.success && student.students) {
-        student.students.forEach(s => {
-          if (s && !allStudents.find(existing => existing.id === s.id)) {
-            allStudents.push(s);
-          }
-        });
-      }
-    });
-    
-    console.log('Loaded students:', allStudents);
-    setStudents(allStudents);
-  };
+  }, [activeTab, loadAllStudents]);
 
   const [searchTerm, setSearchTerm] = useState('');
 
   const [selectedSession, setSelectedSession] = useState(null);
 
   const handleViewAssessment = (student) => {
+    console.log('AdminDashboard: handleViewAssessment called for student:', student.name);
+    console.log('AdminDashboard: Student progress:', student.progress);
+    
     setSelectedStudent(student);
     // Find the most recent Jamie assessment session (or first available)
     const jamieSession = student.progress?.jamie?.sessions?.[student.progress.jamie.sessions.length - 1];
     const andresSession = student.progress?.andres?.sessions?.[student.progress.andres.sessions.length - 1];
     const kavyaSession = student.progress?.kavya?.sessions?.[student.progress.kavya.sessions.length - 1];
     
+    console.log('AdminDashboard: jamieSession:', jamieSession);
+    console.log('AdminDashboard: andresSession:', andresSession);
+    console.log('AdminDashboard: kavyaSession:', kavyaSession);
+    
     // Use the most recent session
     const recentSession = jamieSession || andresSession || kavyaSession;
+    
+    console.log('AdminDashboard: recentSession selected:', recentSession);
+    console.log('AdminDashboard: recentSession messages:', recentSession?.messages);
+    console.log('AdminDashboard: recentSession messages length:', recentSession?.messages?.length);
+    
     setSelectedSession(recentSession);
     setShowAssessmentModal(true);
   };
@@ -342,7 +439,12 @@ const AdminDashboard = ({ onBackToHome, onLogout, onSettings, currentView, userI
 
           {/* Student Rows */}
           <div className="space-y-1">
-            {students.length === 0 ? (
+            {isLoadingStudents ? (
+              <div className="py-12 text-center">
+                <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-blue-600 mx-auto mb-4"></div>
+                <p className="text-gray-500 text-lg">Loading students...</p>
+              </div>
+            ) : students.length === 0 ? (
               <div className="py-12 text-center">
                 <Users className="w-16 h-16 text-gray-400 mx-auto mb-4" />
                 <p className="text-gray-500 text-lg">No students enrolled yet</p>
@@ -424,8 +526,15 @@ const AdminDashboard = ({ onBackToHome, onLogout, onSettings, currentView, userI
             </div>
 
             {/* Modal Content - Chat Session Transcript */}
-            <div className="flex-1 overflow-y-auto p-6 bg-[rgba(217,217,217,0.19)]">
-              {selectedSession && selectedSession.messages && selectedSession.messages.length > 0 ? (
+      <div className="flex-1 overflow-y-auto p-6 bg-[rgba(217,217,217,0.19)]">
+        {(() => {
+          console.log('AdminDashboard Modal: selectedSession:', selectedSession);
+          console.log('AdminDashboard Modal: selectedSession.messages:', selectedSession?.messages);
+          console.log('AdminDashboard Modal: selectedSession.messages.length:', selectedSession?.messages?.length);
+          console.log('AdminDashboard Modal: Condition check:', selectedSession && selectedSession.messages && selectedSession.messages.length > 0);
+          return null;
+        })()}
+        {selectedSession && selectedSession.messages && selectedSession.messages.length > 0 ? (
                 <>
                   {/* Session Info Bar */}
                   <div className="bg-white rounded-lg p-4 mb-4 shadow-sm">
@@ -510,12 +619,12 @@ const AdminDashboard = ({ onBackToHome, onLogout, onSettings, currentView, userI
                   </div>
                 </>
               ) : (
-                <div className="text-center py-12">
-                  <p className="text-gray-500 text-lg">No session data available</p>
-                  <p className="text-gray-400 text-sm mt-2">This student hasn't completed any coaching sessions yet</p>
-                </div>
-              )}
+            <div className="text-center py-12">
+              <p className="text-gray-500 text-lg">No session data available</p>
+              <p className="text-gray-400 text-sm mt-2">This student hasn't completed any coaching sessions yet</p>
             </div>
+          )}
+        </div>
           </div>
         </div>
         )}
@@ -576,7 +685,10 @@ const ClassroomsTabContent = ({
             </p>
           </div>
           <button
-            onClick={() => setShowCreateModal(true)}
+            onClick={() => {
+              console.log('Create Classroom button clicked');
+              setShowCreateModal(true);
+            }}
             className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
           >
             <Plus className="w-5 h-5" />
@@ -729,16 +841,26 @@ const ClassroomDetailView = ({ classroom, onBack }) => {
   const [students, setStudents] = useState([]);
   const [selectedStudent, setSelectedStudent] = useState(null);
 
+  // Load students for this classroom
   useEffect(() => {
+    const loadClassroomStudents = async () => {
+      try {
+        console.log('ClassroomDetailView: Loading students for classroom:', classroom.id);
+        const result = await authService.getClassroomStudents(classroom.id);
+        console.log('ClassroomDetailView: getClassroomStudents result:', result);
+        if (result.success) {
+          setStudents(result.students);
+          console.log('ClassroomDetailView: Set students:', result.students);
+        } else {
+          console.error('ClassroomDetailView: Failed to load students:', result.error);
+        }
+      } catch (error) {
+        console.error('ClassroomDetailView: Error loading students:', error);
+      }
+    };
+
     loadClassroomStudents();
   }, [classroom.id]);
-
-  const loadClassroomStudents = () => {
-    const result = authService.getClassroomStudents(classroom.id);
-    if (result.success) {
-      setStudents(result.students);
-    }
-  };
 
   const calculateClassStats = () => {
     if (students.length === 0) return { avgScore: 0, totalSessions: 0, completionRate: 0 };

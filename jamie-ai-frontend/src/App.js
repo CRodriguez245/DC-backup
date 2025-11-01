@@ -151,9 +151,16 @@ const JamieAI = () => {
               setIsLoadingProgress(false);
               setHasStartedLoading(false);
               setLoadedUserIds(new Set()); // Clear loaded user IDs
-            } else {
+            } else if (event === 'classroom_joined' || event === 'classroom_created') {
+              // Don't update userInfo for classroom events - these pass classroom objects, not user objects
+              console.log('Classroom event received, not updating userInfo:', event);
+              // The userInfo should remain as the User object, not be replaced with classroom
+            } else if (user && typeof user === 'object' && user.role) {
+              // Only update userInfo if user is actually a User object (has a role property)
               console.log('Updating userInfo due to auth event:', event);
               setUserInfo(user);
+            } else {
+              console.log('Ignoring auth event that doesn\'t contain valid user data:', event, user);
             }
           });
         

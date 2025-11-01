@@ -37,18 +37,30 @@ const SettingsPage = ({ onBackToHome, onLogout, onAdminClick, currentView, userI
     loadJoinedClassrooms();
   }, []);
 
+  // Debug: Log when userInfo changes
+  useEffect(() => {
+    console.log('SettingsPage: userInfo changed:', userInfo);
+    console.log('SettingsPage: userInfo?.role:', userInfo?.role);
+    console.log('SettingsPage: Will show classroom panel?', userInfo?.role === 'student');
+  }, [userInfo]);
+
   const loadJoinedClassrooms = async () => {
     try {
+      console.log('Loading joined classrooms, userInfo:', userInfo);
       const result = await authService.getUserClassrooms();
+      console.log('getUserClassrooms result:', result);
       if (result.success) {
-        setJoinedClassrooms(result.classrooms);
+        console.log('Setting joinedClassrooms to:', result.classrooms);
+        setJoinedClassrooms(result.classrooms || []);
       } else {
         console.error('Failed to load classrooms:', result.error);
-        setJoinedClassrooms([]);
+        // Don't clear existing classrooms if there's an error, just log it
+        console.warn('Keeping existing classrooms due to error');
       }
     } catch (error) {
       console.error('Error loading classrooms:', error);
-      setJoinedClassrooms([]);
+      // Don't clear existing classrooms on error
+      console.warn('Keeping existing classrooms due to exception');
     }
   };
 
@@ -69,7 +81,12 @@ const SettingsPage = ({ onBackToHome, onLogout, onAdminClick, currentView, userI
       if (result.success) {
         setJoinMessage({ text: result.message, type: 'success' });
         setClassCodeInput('');
-        loadJoinedClassrooms();
+        
+        // Reload classrooms after a short delay to ensure the enrollment is saved
+        setTimeout(async () => {
+          console.log('Reloading classrooms after successful join');
+          await loadJoinedClassrooms();
+        }, 500);
         
         // Clear success message after 3 seconds
         setTimeout(() => {
@@ -288,8 +305,6 @@ const SettingsPage = ({ onBackToHome, onLogout, onAdminClick, currentView, userI
                                 <span className="font-mono font-semibold text-blue-600">{classroom.code}</span>
                                 <span>•</span>
                                 <span>{classroom.teacherName}</span>
-                                <span>•</span>
-                                <span>{classroom.studentIds?.length || 0} students</span>
                               </div>
                             </div>
                             <div className="flex items-center gap-2">

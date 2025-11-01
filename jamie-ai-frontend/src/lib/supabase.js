@@ -157,15 +157,22 @@ export const db = {
       const classroom = classrooms[0]
 
       // Check if student is already enrolled
+      // Use .maybeSingle() instead of .single() to handle cases where no enrollment exists
       const { data: existingEnrollment, error: checkError } = await supabase
         .from('enrollments')
         .select('id')
         .eq('student_id', studentId)
         .eq('classroom_id', classroom.id)
-        .single()
+        .maybeSingle()
 
-      if (checkError && checkError.code !== 'PGRST116') { // PGRST116 is "not found" error
-        return { data: null, error: checkError }
+      // Handle errors - ignore "not found" (PGRST116) and 406 (Not Acceptable) which can occur with RLS
+      // Also handle 406 which might occur due to RLS policy evaluation
+      if (checkError && 
+          checkError.code !== 'PGRST116' && 
+          checkError.status !== 406 && 
+          checkError.code !== '406') {
+        console.warn('Error checking existing enrollment (non-critical):', checkError);
+        // Continue anyway - worst case we'll get a unique constraint error on insert
       }
 
       if (existingEnrollment) {
@@ -238,6 +245,40 @@ export const db = {
         )
       `)
       .eq('student_id', studentId)
+    
+    // If we got classrooms, fetch teacher names separately
+    if (data && !error) {
+      const teacherIds = [...new Set(data.map(e => e.classrooms?.teacher_id).filter(Boolean))];
+      console.log('Fetching teacher names for teacherIds:', teacherIds);
+      
+      if (teacherIds.length > 0) {
+        const { data: teachersData, error: teachersError } = await supabase
+          .from('users')
+          .select('id, name')
+          .in('id', teacherIds);
+        
+        if (teachersError) {
+          console.error('Error fetching teacher names:', teachersError);
+        } else {
+          console.log('Fetched teacher data:', teachersData);
+        }
+        
+        // Add teacher names to classrooms
+        if (teachersData && teachersData.length > 0) {
+          const teacherMap = new Map(teachersData.map(t => [t.id, t.name]));
+          data.forEach(enrollment => {
+            if (enrollment.classrooms?.teacher_id) {
+              const teacherName = teacherMap.get(enrollment.classrooms.teacher_id);
+              enrollment.classrooms.teacher_name = teacherName;
+              console.log(`Set teacher_name for classroom ${enrollment.classrooms.id}: ${teacherName}`);
+            }
+          });
+        } else {
+          console.warn('No teacher data returned, teacherIds were:', teacherIds);
+        }
+      }
+    }
+    
     return { data, error }
   },
 

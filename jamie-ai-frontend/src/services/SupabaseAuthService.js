@@ -799,13 +799,70 @@ export class SupabaseAuthService {
     }
 
     try {
-      const { error } = await db.joinClassroom(this.currentUser.id, classCode);
+      const { data, error } = await db.joinClassroom(this.currentUser.id, classCode);
       
       if (error) {
-        return { success: false, error: error.message };
+        // Check if user is already enrolled - this is actually a success case
+        if (error.message && error.message.includes('already enrolled')) {
+          // User is already enrolled, so this is actually success
+          // Get the classroom info to return
+          const { data: classroomsData } = await db.getStudentClassrooms(this.currentUser.id);
+          const classroom = classroomsData?.find(c => 
+            c.classrooms?.classroom_code === classCode
+          );
+          
+          if (classroom) {
+            return {
+              success: true,
+              classroom: {
+                id: classroom.classrooms.id,
+                name: classroom.classrooms.name,
+                code: classroom.classrooms.classroom_code
+              },
+              message: 'You are already enrolled in this classroom'
+            };
+          }
+        }
+        return { success: false, error: error.message || error };
       }
 
-      // Also update local classroom manager for compatibility
+      // Enrollment succeeded - get classroom details
+      if (data) {
+        // Get full classroom info
+        const { data: classroomsData } = await db.getStudentClassrooms(this.currentUser.id);
+        const classroom = classroomsData?.find(c => 
+          c.classrooms?.classroom_code === classCode
+        );
+        
+        if (classroom) {
+          const classroomInfo = {
+            id: classroom.classrooms.id,
+            name: classroom.classrooms.name,
+            description: classroom.classrooms.description,
+            code: classroom.classrooms.classroom_code,
+            teacherId: classroom.classrooms.teacher_id,
+            createdAt: classroom.classrooms.created_at
+          };
+          
+          // Add classroom ID to user's classroomIds
+          if (!this.currentUser.classroomIds.includes(classroomInfo.id)) {
+            this.currentUser.classroomIds.push(classroomInfo.id);
+            UserManager.saveUser(this.currentUser);
+          }
+          
+          // Also update local classroom manager for compatibility
+          ClassroomManager.addStudentToClassroom(classCode, this.currentUser.id);
+          
+          this.notifyListeners('classroom_joined', classroomInfo);
+          return {
+            success: true,
+            classroom: classroomInfo,
+            message: `Successfully joined ${classroomInfo.name}!`
+          };
+        }
+      }
+      
+      // Fallback: try local classroom manager
       const result = ClassroomManager.addStudentToClassroom(classCode, this.currentUser.id);
       
       if (result.success) {
@@ -821,9 +878,9 @@ export class SupabaseAuthService {
           classroom: result.classroom,
           message: `Successfully joined ${result.classroom.name}!`
         };
-      } else {
-        return result;
       }
+      
+      return { success: false, error: 'Failed to join classroom' };
     } catch (error) {
       return {
         success: false,
@@ -885,13 +942,21 @@ export class SupabaseAuthService {
         // Transform database format to frontend format
         const classrooms = (data || []).map(enrollment => {
           const classroom = enrollment.classrooms;
+          
+          // Extract teacher's first name from teacher_name (added in query)
+          let teacherFirstName = 'Teacher'; // Default fallback
+          if (classroom.teacher_name) {
+            const fullName = classroom.teacher_name;
+            teacherFirstName = fullName.split(' ')[0] || fullName;
+          }
+          
           return {
             id: classroom.id,
             name: classroom.name,
             description: classroom.description,
             code: classroom.classroom_code, // Transform classroom_code to code
             teacherId: classroom.teacher_id,
-            teacherName: 'Teacher', // Placeholder for now - will fix teacher name later
+            teacherName: teacherFirstName,
             createdAt: classroom.created_at,
             studentIds: classroom.enrollments?.map(enrollment => enrollment.student_id) || []
           };
@@ -1011,8 +1076,20 @@ export class SupabaseAuthService {
       }
 
       // Transform the data to match expected format and load progress for each student
-      const students = await Promise.all((enrollments || []).map(async (enrollment) => {
+      // Filter out enrollments where user is null (RLS might block access)
+      const validEnrollments = (enrollments || []).filter(enrollment => enrollment.users !== null);
+      
+      if (validEnrollments.length === 0 && enrollments?.length > 0) {
+        console.warn('All enrollments have null user data - this may indicate an RLS policy issue');
+      }
+      
+      const students = await Promise.all(validEnrollments.map(async (enrollment) => {
         const user = enrollment.users;
+        
+        if (!user || !user.id) {
+          console.warn('Skipping enrollment with null or invalid user:', enrollment);
+          return null;
+        }
         
         // Load progress data for this student
         const { data: progressData, error: progressError } = await supabase
@@ -1170,9 +1247,14 @@ export class SupabaseAuthService {
         createdAt: classroomData.created_at
       };
 
-      console.log('getClassroomStudents returning:', { success: true, classroom, students });
-      console.log('Number of students being returned:', students.length);
-      return { success: true, classroom: classroom, students: students };
+      // Filter out null students (enrollments where user data was blocked by RLS)
+      const validStudents = students.filter(student => student !== null);
+      
+      console.log('getClassroomStudents returning:', { success: true, classroom, students: validStudents });
+      console.log('Number of students being returned:', validStudents.length);
+      console.log('Number of enrollments filtered out:', students.length - validStudents.length);
+      
+      return { success: true, classroom: classroom, students: validStudents };
     } catch (error) {
       console.error('Error in getClassroomStudents:', error);
       return { success: false, error: error.message };

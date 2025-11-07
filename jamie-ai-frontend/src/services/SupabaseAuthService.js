@@ -9,6 +9,9 @@ export class SupabaseAuthService {
     this.listeners = [];
     this.isInitialized = false;
     this.isLoadingProgress = false; // Prevent duplicate progress loading
+    this._processingLogin = null; // Track if login is being processed to prevent duplicates
+    this._lastLoginTime = null; // Track last login event time for debouncing
+    this._lastLoginUserId = null; // Track last login user ID for debouncing
   }
 
   // Initialize auth service with Supabase
@@ -318,16 +321,56 @@ export class SupabaseAuthService {
     console.log('handleAuthStateChange called:', { event, hasSession: !!session, userId: session?.user?.id });
     
     if (event === 'SIGNED_IN' && session?.user) {
-      // Prevent duplicate processing
+      // Prevent duplicate processing - check both currentUser and if we just processed this
       if (this.currentUser && this.currentUser.id === session.user.id) {
         console.log('User already signed in, skipping duplicate SIGNED_IN event');
         return;
       }
       
-      // User signed in
-      const { data: profile, error } = await db.getUserProfile(session.user.id);
+      // Additional check: if we're in the middle of processing login, don't process again
+      if (this._processingLogin === session.user.id) {
+        console.log('Login already being processed for this user, skipping duplicate SIGNED_IN event');
+        return;
+      }
       
-      if (profile && !error) {
+      this._processingLogin = session.user.id; // Mark as processing
+      
+      // User signed in - load or create profile
+      let profile = null;
+      let profileError = null;
+      const profileResult = await db.getUserProfile(session.user.id);
+      profile = profileResult.data;
+      profileError = profileResult.error;
+      
+      // If profile doesn't exist, create it (user confirmed email but profile wasn't created during signup)
+      if (profileError || !profile) {
+        console.log('User profile not found in handleAuthStateChange, creating it from auth metadata');
+        
+        // Get user metadata from auth (stored during signup)
+        const userMetadata = session.user.user_metadata || {};
+        const role = userMetadata.role || 'student';
+        const name = userMetadata.name || session.user.email?.split('@')[0] || 'User';
+        
+        // Create user profile
+        const { error: createError } = await db.createUserProfile(
+          session.user.id,
+          session.user.email,
+          name,
+          role
+        );
+        
+        if (createError) {
+          console.error('Failed to create user profile in handleAuthStateChange:', createError);
+          // Don't throw - just log and continue
+        } else {
+          // Reload the profile
+          const reloadResult = await db.getUserProfile(session.user.id);
+          profile = reloadResult.data;
+          profileError = reloadResult.error;
+        }
+      }
+      
+      if (profile && !profileError) {
         this.currentUser = User.fromJSON({
           id: profile.id,
           email: profile.email,
@@ -345,10 +388,17 @@ export class SupabaseAuthService {
         // Save to local storage for offline access
         UserManager.saveUser(this.currentUser);
         this.notifyListeners('login', this.currentUser);
+        this._processingLogin = null; // Clear processing flag
+      } else {
+        console.error('Failed to load or create user profile in handleAuthStateChange');
+        this._processingLogin = null; // Clear processing flag even on error
       }
     } else if (event === 'SIGNED_OUT') {
       // User signed out
       this.currentUser = null;
+      this._processingLogin = null; // Clear processing flag
+      this._lastLoginTime = null; // Clear login debounce
+      this._lastLoginUserId = null; // Clear login debounce
       UserManager.clearUser();
       this.notifyListeners('logout', null);
     }
@@ -420,6 +470,22 @@ export class SupabaseAuthService {
       }
 
       if (data.user) {
+        // Check if session was created (if not, email confirmation is required)
+        const { data: sessionData } = await supabase.auth.getSession();
+        
+        // If no session, email confirmation is required
+        if (!sessionData.session) {
+          // User profile will be created when they confirm their email and sign in
+          // For now, just return success with a message about email confirmation
+          return {
+            success: true,
+            requiresEmailConfirmation: true,
+            email: userData.email,
+            message: 'Account created! Please check your email to confirm your account before signing in.'
+          };
+        }
+
+        // Session exists - user is automatically logged in (email confirmations disabled)
         // Create user profile in database
         const { error: profileError } = await db.createUserProfile(
           data.user.id,
@@ -433,18 +499,10 @@ export class SupabaseAuthService {
           // Continue anyway - profile might be created by trigger
         }
 
-        // Create teacher profile if needed
-        if (userData.role === 'teacher') {
-          const { error: teacherError } = await db.createTeacher(
-            data.user.id,
-            userData.school || '',
-            userData.department || ''
-          );
-
-          if (teacherError) {
-            console.error('Teacher profile creation error:', teacherError);
-          }
-        }
+        // Note: Teacher profile is automatically created by database trigger
+        // when a user with role='teacher' is inserted into users table
+        // No need to manually create it here - the trigger handles it with SECURITY DEFINER
+        // which bypasses RLS policies
 
         // Create local user instance
         const newUser = new User({
@@ -462,6 +520,7 @@ export class SupabaseAuthService {
         return {
           success: true,
           user: newUser,
+          requiresEmailConfirmation: false,
           message: 'Account created successfully!'
         };
       } else {
@@ -490,11 +549,67 @@ export class SupabaseAuthService {
       }
 
       if (data.user) {
-        // Load user profile from database
-        const { data: profile, error: profileError } = await db.getUserProfile(data.user.id);
+        // Wait a moment for session to be fully established before querying profile
+        // This ensures RLS policies recognize the session
+        await new Promise(resolve => setTimeout(resolve, 100));
         
-        if (profileError) {
-          throw new Error('Failed to load user profile');
+        // Verify session is established
+        const { data: { session: verifySession }, error: sessionError } = await supabase.auth.getSession();
+        if (sessionError || !verifySession) {
+          console.warn('Login: Session not fully established, retrying...');
+          // Wait a bit longer and retry
+          await new Promise(resolve => setTimeout(resolve, 200));
+        }
+        
+        // Load user profile from database with retry logic
+        let profile = null;
+        let profileError = null;
+        let profileResult = await db.getUserProfile(data.user.id);
+        profile = profileResult.data;
+        profileError = profileResult.error;
+        
+        // If we got an RLS error (406), retry once more after a short delay
+        if (profileError && (profileError.code === 'RLS_BLOCKED' || profileError.message?.includes('RLS'))) {
+          console.log('Login: RLS blocking detected, retrying profile fetch...');
+          await new Promise(resolve => setTimeout(resolve, 300));
+          profileResult = await db.getUserProfile(data.user.id);
+          profile = profileResult.data;
+          profileError = profileResult.error;
+        }
+        
+        // If profile doesn't exist, create it (user confirmed email but profile wasn't created during signup)
+        if (profileError || !profile) {
+          console.log('User profile not found, creating it from auth metadata');
+          
+          // Get user metadata from auth (stored during signup)
+          const userMetadata = data.user.user_metadata || {};
+          const role = userMetadata.role || 'student';
+          const name = userMetadata.name || data.user.email?.split('@')[0] || 'User';
+          
+          // Create user profile
+          const { error: createError } = await db.createUserProfile(
+            data.user.id,
+            data.user.email,
+            name,
+            role
+          );
+          
+          if (createError) {
+            console.error('Failed to create user profile:', createError);
+            throw new Error('Failed to create user profile');
+          }
+          
+          // Wait a moment for the profile to be committed
+          await new Promise(resolve => setTimeout(resolve, 200));
+          
+          // Reload the profile
+          const reloadResult = await db.getUserProfile(data.user.id);
+          profile = reloadResult.data;
+          profileError = reloadResult.error;
+          
+          if (profileError || !profile) {
+            throw new Error('Failed to load user profile after creation');
+          }
         }
 
         // Create User instance
@@ -755,7 +870,7 @@ export class SupabaseAuthService {
   addListener(callback) {
     // Prevent duplicate listeners by checking if callback already exists
     if (!this.listeners.includes(callback)) {
-      this.listeners.push(callback);
+    this.listeners.push(callback);
       console.log('Added listener, total listeners:', this.listeners.length);
     } else {
       console.log('Listener already exists, skipping duplicate');
@@ -772,6 +887,22 @@ export class SupabaseAuthService {
   }
 
   notifyListeners(event, data) {
+    // Prevent duplicate login events within a short time window
+    if (event === 'login' && data) {
+      const now = Date.now();
+      const lastLoginTime = this._lastLoginTime || 0;
+      const timeSinceLastLogin = now - lastLoginTime;
+      
+      // If login event fired within 1 second of previous, skip it
+      if (timeSinceLastLogin < 1000 && this._lastLoginUserId === data.id) {
+        console.log('Skipping duplicate login event (fired within 1 second)');
+        return;
+      }
+      
+      this._lastLoginTime = now;
+      this._lastLoginUserId = data.id;
+    }
+    
     console.log('notifyListeners called:', { event, data: !!data, listenerCount: this.listeners.length });
     this.listeners.forEach((listener, index) => {
       try {
@@ -848,9 +979,9 @@ export class SupabaseAuthService {
           if (!this.currentUser.classroomIds.includes(classroomInfo.id)) {
             this.currentUser.classroomIds.push(classroomInfo.id);
             UserManager.saveUser(this.currentUser);
-          }
-          
-          // Also update local classroom manager for compatibility
+      }
+
+      // Also update local classroom manager for compatibility
           ClassroomManager.addStudentToClassroom(classCode, this.currentUser.id);
           
           this.notifyListeners('classroom_joined', classroomInfo);
@@ -898,7 +1029,7 @@ export class SupabaseAuthService {
     }
 
     try {
-      if (this.currentUser.role === 'teacher') {
+    if (this.currentUser.role === 'teacher') {
         console.log('Getting teacher classrooms for user:', this.currentUser.id);
         // Get classrooms created by this teacher
         const { data, error } = await db.getTeacherClassrooms(this.currentUser.id);
@@ -928,7 +1059,7 @@ export class SupabaseAuthService {
         console.log('Updated user classroomIds:', this.currentUser.classroomIds);
         
         return { success: true, classrooms };
-      } else {
+    } else {
         console.log('Getting student classrooms for user:', this.currentUser.id);
         // Get classrooms where this student is enrolled
         const { data, error } = await db.getStudentClassrooms(this.currentUser.id);
@@ -982,6 +1113,16 @@ export class SupabaseAuthService {
       await this.init();
     }
     
+    // Verify Supabase session exists
+    const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+    if (!sessionData.session || sessionError) {
+      console.error('No Supabase session found:', sessionError);
+      return { 
+        success: false, 
+        error: 'Not authenticated. Please log out and log back in.' 
+      };
+    }
+    
     // Check if user is logged in, try to refresh if not
     if (!this.currentUser) {
       const refreshed = await this.refreshCurrentUser();
@@ -992,6 +1133,19 @@ export class SupabaseAuthService {
 
     if (this.currentUser.role !== 'teacher') {
       return { success: false, error: 'Only teachers can create classrooms' };
+    }
+
+    // Verify the session user ID matches current user ID
+    if (sessionData.session.user.id !== this.currentUser.id) {
+      console.warn('Session user ID does not match current user ID');
+      // Try to refresh
+      const refreshed = await this.refreshCurrentUser();
+      if (!refreshed || sessionData.session.user.id !== this.currentUser.id) {
+        return { 
+          success: false, 
+          error: 'Session mismatch. Please log out and log back in.' 
+        };
+      }
     }
 
     try {

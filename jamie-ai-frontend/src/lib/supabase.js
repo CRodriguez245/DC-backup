@@ -70,12 +70,128 @@ export const auth = {
 export const db = {
   // Get user profile
   getUserProfile: async (userId) => {
-    const { data, error } = await supabase
-      .from('users')
-      .select('*')
-      .eq('id', userId)
-      .single()
-    return { data, error }
+    // First verify we have a valid session
+    const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+    if (sessionError || !session) {
+      console.warn('getUserProfile: No active session, cannot query profile');
+      return { data: null, error: { message: 'No active session' } };
+    }
+    
+    // Verify the userId matches the session user
+    if (session.user.id !== userId) {
+      console.warn('getUserProfile: userId does not match session user', { 
+        userId, 
+        sessionUserId: session.user.id 
+      });
+    }
+    
+    // Use maybeSingle() instead of single() to avoid 406 errors when RLS blocks
+    // However, 406 errors can still occur if RLS blocks the query entirely
+    let { data, error } = null;
+    try {
+      const result = await supabase
+        .from('users')
+        .select('*')
+        .eq('id', userId)
+        .maybeSingle();
+      data = result.data;
+      error = result.error;
+    } catch (httpError) {
+      // Catch HTTP errors that might not be converted by Supabase client
+      console.warn('getUserProfile: Caught HTTP error:', httpError);
+      if (httpError.status === 406 || httpError.message?.includes('406')) {
+        error = { 
+          status: 406, 
+          code: '406', 
+          message: httpError.message || 'Not Acceptable',
+          originalError: httpError
+        };
+      } else {
+        throw httpError; // Re-throw if it's not a 406
+      }
+    }
+    
+    // Handle 406 errors (Not Acceptable) - usually means RLS is blocking
+    if (error && (error.code === 'PGRST116' || error.status === 406 || error.code === '406' || error.message?.includes('406'))) {
+      console.warn('getUserProfile: Got 406 error, trying SECURITY DEFINER function as fallback...', {
+        userId,
+        sessionUserId: session.user.id,
+        error: error.message || error
+      });
+      
+      // Try using the SECURITY DEFINER function as a fallback
+      // This bypasses RLS and should work even if the policy is blocking
+      try {
+        const { data: functionData, error: functionError } = await supabase
+          .rpc('get_user_profile', { user_uuid: userId });
+        
+        if (functionData && functionData.length > 0) {
+          // Function returned data - convert to single object format
+          const profileData = functionData[0];
+          console.log('getUserProfile: Successfully retrieved profile via SECURITY DEFINER function');
+          return { 
+            data: {
+              id: profileData.id,
+              email: profileData.email,
+              name: profileData.name,
+              role: profileData.role,
+              created_at: profileData.created_at,
+              last_login: profileData.last_login
+            }, 
+            error: null 
+          };
+        }
+        
+        if (functionError) {
+          console.warn('getUserProfile: SECURITY DEFINER function also failed:', functionError);
+        }
+      } catch (rpcError) {
+        console.warn('getUserProfile: Error calling SECURITY DEFINER function:', rpcError);
+      }
+      
+      // If function doesn't exist or also fails, try a simpler query to see if profile exists
+      const { data: checkData, error: checkError } = await supabase
+        .from('users')
+        .select('id')
+        .eq('id', userId)
+        .maybeSingle();
+      
+      if (checkData) {
+        // Profile exists but RLS blocked the read - this indicates an RLS policy issue
+        console.error('getUserProfile: Profile exists in database but RLS is blocking access', {
+          userId,
+          sessionUserId: session.user.id,
+          error: error.message || error,
+          checkError: checkError?.message || checkError
+        });
+        return { 
+          data: null, 
+          error: { 
+            message: 'RLS policy is blocking access to your profile. Please check RLS policies in Supabase.',
+            code: 'RLS_BLOCKED',
+            originalError: error
+          } 
+        };
+      }
+      
+      // Profile doesn't exist - this is expected for new users
+      // Return null data, no error (will trigger profile creation)
+      return { data: null, error: null };
+    }
+    
+    // If we got data, return it
+    if (data) {
+      return { data, error: null };
+    }
+    
+    // If error (but not 406), return the error
+    if (error) {
+      console.error('getUserProfile: Unexpected error:', error);
+      return { data: null, error };
+    }
+    
+    // No error but no data either - profile doesn't exist
+    return { data: null, error: null };
   },
 
   // Create user profile
@@ -108,6 +224,23 @@ export const db = {
     const classroomCode = Math.random().toString(36).substring(2, 8).toUpperCase()
     console.log('Creating classroom with code:', classroomCode);
     
+    // Debug: Check authentication
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    console.log('Auth check - Current user ID:', user?.id);
+    console.log('Auth check - Teacher ID being used:', teacherId);
+    console.log('Auth check - IDs match?', user?.id === teacherId);
+    console.log('Auth error:', authError);
+    
+    // Debug: Check if teacher record exists
+    if (user?.id) {
+      const { data: teacherData, error: teacherError } = await supabase
+        .from('teachers')
+        .select('id')
+        .eq('id', user.id)
+        .single();
+      console.log('Teacher record exists?', !!teacherData, teacherError);
+    }
+    
     const { data, error } = await supabase
       .from('classrooms')
       .insert({
@@ -120,6 +253,9 @@ export const db = {
       .single()
     
     console.log('Classroom creation result:', { data, error });
+    if (error) {
+      console.error('Full error details:', JSON.stringify(error, null, 2));
+    }
     return { data, error }
   },
 

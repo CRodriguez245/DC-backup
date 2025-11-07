@@ -475,12 +475,15 @@ export class SupabaseAuthService {
 
       if (data.user) {
         // Check if session was created (if not, email confirmation is required)
-        const { data: sessionData } = await supabase.auth.getSession();
+        // When email confirmations are enabled, signUp() returns { user, session: null }
+        // When email confirmations are disabled, signUp() returns { user, session: {...} }
+        const hasSession = data.session !== null && data.session !== undefined;
         
         // If no session, email confirmation is required
-        if (!sessionData.session) {
+        if (!hasSession) {
           // User profile will be created when they confirm their email and sign in
           // For now, just return success with a message about email confirmation
+          console.log('Email confirmation required - no session created during signup');
           return {
             success: true,
             requiresEmailConfirmation: true,
@@ -488,6 +491,8 @@ export class SupabaseAuthService {
             message: 'Account created! Please check your email to confirm your account before signing in.'
           };
         }
+        
+        console.log('Email confirmation not required - session created during signup');
 
         // Session exists - user is automatically logged in (email confirmations disabled)
         // Create user profile in database

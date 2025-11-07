@@ -95,6 +95,13 @@ export const db = {
         .select('*')
         .eq('id', userId)
         .maybeSingle();
+      if (!result) {
+        console.warn('getUserProfile: Supabase query returned null result');
+        return {
+          data: null,
+          error: { message: 'Supabase query returned null result', code: 'NO_RESULT' }
+        };
+      }
       data = result.data;
       error = result.error;
     } catch (httpError) {

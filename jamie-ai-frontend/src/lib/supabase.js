@@ -197,7 +197,8 @@ export const db = {
 
   // Create user profile
   createUserProfile: async (userId, email, name, role) => {
-    const { data, error } = await supabase
+    // Try direct INSERT first
+    let { data, error } = await supabase
       .from('users')
       .insert({
         id: userId,
@@ -205,6 +206,40 @@ export const db = {
         name,
         role
       })
+      .select()
+      .single();
+    
+    // If RLS blocks the INSERT (403 or 42501), use SECURITY DEFINER function as fallback
+    if (error && (error.code === '42501' || error.status === 403 || error.code === 'PGRST301' || error.message?.includes('row-level security'))) {
+      console.warn('createUserProfile: RLS blocked direct INSERT, using SECURITY DEFINER function as fallback');
+      
+      try {
+        const { data: functionData, error: functionError } = await supabase
+          .rpc('create_user_profile', {
+            user_uuid: userId,
+            user_email: email,
+            user_name: name,
+            user_role: role
+          });
+        
+        if (functionData && functionData.length > 0) {
+          console.log('createUserProfile: Successfully created profile via SECURITY DEFINER function');
+          return { 
+            data: functionData[0], 
+            error: null 
+          };
+        }
+        
+        if (functionError) {
+          console.error('createUserProfile: SECURITY DEFINER function also failed:', functionError);
+          return { data: null, error: functionError };
+        }
+      } catch (rpcError) {
+        console.error('createUserProfile: Error calling SECURITY DEFINER function:', rpcError);
+        return { data: null, error: rpcError };
+      }
+    }
+    
     return { data, error }
   },
 

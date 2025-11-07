@@ -19,6 +19,8 @@ const SignUpPage = ({ onSignUp, onBackToLogin }) => {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [errors, setErrors] = useState({});
   const [gameMode, setGameMode] = useState('game'); // 'game' or 'assessment'
+  const [requiresEmailConfirmation, setRequiresEmailConfirmation] = useState(false);
+  const [confirmationEmail, setConfirmationEmail] = useState('');
 
 
   const handleSubmit = async (e) => {
@@ -80,8 +82,16 @@ const SignUpPage = ({ onSignUp, onBackToLogin }) => {
       }
       
       if (result.success) {
-        // Call onSignUp with the form data to handle the UI transition
-        onSignUp({ ...formData, gameMode, user: result.user });
+        // Check if email confirmation is required
+        if (result.requiresEmailConfirmation) {
+          // Show email confirmation message instead of logging in
+          setRequiresEmailConfirmation(true);
+          setConfirmationEmail(result.email);
+          // Don't call onSignUp - stay on signup page to show confirmation message
+        } else {
+          // No email confirmation required - proceed with normal signup flow
+          onSignUp({ ...formData, gameMode, user: result.user });
+        }
       } else {
         setErrors({ general: result.error });
       }
@@ -104,6 +114,51 @@ const SignUpPage = ({ onSignUp, onBackToLogin }) => {
       }));
     }
   };
+
+  // If email confirmation is required, show confirmation message instead of form
+  if (requiresEmailConfirmation) {
+    return (
+      <div className="space-y-6">
+        <div className="p-6 bg-blue-50/50 border border-blue-200 rounded-2xl backdrop-blur-sm">
+          <div className="text-center space-y-4">
+            <div className="inline-flex items-center justify-center w-16 h-16 bg-blue-100 rounded-full mb-4">
+              <svg className="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+              </svg>
+            </div>
+            <h3 className="text-xl font-semibold text-gray-900">Check Your Email</h3>
+            <p className="text-gray-600">
+              We've sent a confirmation email to <strong>{confirmationEmail}</strong>
+            </p>
+            <p className="text-sm text-gray-500">
+              Please click the confirmation link in the email to activate your account. 
+              Once confirmed, you can sign in to access your account.
+            </p>
+          </div>
+        </div>
+        <div className="text-center">
+          <button
+            type="button"
+            onClick={() => {
+              setRequiresEmailConfirmation(false);
+              setFormData({
+                firstName: '',
+                lastName: '',
+                email: '',
+                password: '',
+                confirmPassword: '',
+                userType: ''
+              });
+              onBackToLogin();
+            }}
+            className="text-blue-600 hover:text-blue-700 font-medium text-sm"
+          >
+            Back to Login
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">

@@ -10,6 +10,7 @@ import ClassroomDetail from './ClassroomDetail';
 import SharedVisual from './SharedVisual';
 import { authService } from './services/AuthService.js';
 import { supabaseAuthService } from './services/SupabaseAuthService.js';
+import { supabase } from './lib/supabase.js';
 
 // Jamie's Animated Face Component
 const JamieFace = ({ dqScore, avgDqScore, size = 'small' }) => {
@@ -108,9 +109,9 @@ const JamieAI = () => {
               console.log('User progress data:', user?.progress);
               console.log('Full user object:', JSON.stringify(user, null, 2));
               // Clear any existing timeout
-              if (loadingTimeoutId) {
-                clearTimeout(loadingTimeoutId);
-                setLoadingTimeoutId(null);
+              if (loadingTimeoutRef.current) {
+                clearTimeout(loadingTimeoutRef.current);
+                loadingTimeoutRef.current = null;
               }
               setUserInfo(user);
               setIsLoadingProgress(false);
@@ -123,9 +124,9 @@ const JamieAI = () => {
               // Progress loading failed
               console.log('Progress loading failed, resetting loading state');
               // Clear any existing timeout
-              if (loadingTimeoutId) {
-                clearTimeout(loadingTimeoutId);
-                setLoadingTimeoutId(null);
+              if (loadingTimeoutRef.current) {
+                clearTimeout(loadingTimeoutRef.current);
+                loadingTimeoutRef.current = null;
               }
               setIsLoadingProgress(false);
               setHasStartedLoading(false);
@@ -141,9 +142,9 @@ const JamieAI = () => {
               // When user logs out, clear all state
               console.log('User logged out via auth listener, clearing state');
               // Clear any existing timeout
-              if (loadingTimeoutId) {
-                clearTimeout(loadingTimeoutId);
-                setLoadingTimeoutId(null);
+              if (loadingTimeoutRef.current) {
+                clearTimeout(loadingTimeoutRef.current);
+                loadingTimeoutRef.current = null;
               }
               setUserInfo(null);
               setCurrentView(null);
@@ -187,7 +188,7 @@ const JamieAI = () => {
 
   // Loading state for progress
   const [isLoadingProgress, setIsLoadingProgress] = useState(false);
-  const [loadingTimeoutId, setLoadingTimeoutId] = useState(null);
+  const loadingTimeoutRef = useRef(null); // Use ref instead of state for timeout ID
   const [hasStartedLoading, setHasStartedLoading] = useState(false);
   const [loadedUserIds, setLoadedUserIds] = useState(new Set()); // Track which users we've loaded progress for
 
@@ -220,21 +221,16 @@ const JamieAI = () => {
         setLoadedUserIds(prev => new Set(prev).add(userInfo.id));
         
         // Set a timeout to prevent infinite loading
-        const timeoutId = setTimeout(() => {
+        // Clear any existing timeout first
+        if (loadingTimeoutRef.current) {
+          clearTimeout(loadingTimeoutRef.current);
+        }
+        loadingTimeoutRef.current = setTimeout(() => {
           console.log('Progress loading timeout reached, resetting loading state');
           setIsLoadingProgress(false);
           setHasStartedLoading(false);
+          loadingTimeoutRef.current = null;
         }, 10000); // 10 second timeout
-        setLoadingTimeoutId(timeoutId);
-        
-        // Also set a shorter timeout to check if progress_loaded event is received
-        const checkTimeoutId = setTimeout(() => {
-          console.log('Checking if progress_loaded event was received...');
-          if (isLoadingProgress) {
-            console.log('Progress still loading after 5 seconds, this might indicate an issue');
-            // Don't reset here, let the main timeout handle it
-          }
-        }, 5000); // 5 second check
         
         supabaseAuthService.loadProgressFromSupabase();
       } else {
@@ -243,9 +239,9 @@ const JamieAI = () => {
     } else if (userInfo && userInfo.role !== 'student' && userInfo.role !== 'teacher') {
       console.log('Non-student/teacher user, not loading progress');
       // Clear any existing timeout
-      if (loadingTimeoutId) {
-        clearTimeout(loadingTimeoutId);
-        setLoadingTimeoutId(null);
+      if (loadingTimeoutRef.current) {
+        clearTimeout(loadingTimeoutRef.current);
+        loadingTimeoutRef.current = null;
       }
       // Ensure loading state is false for non-students
       if (isLoadingProgress) {
@@ -256,9 +252,9 @@ const JamieAI = () => {
     } else if (!userInfo) {
       console.log('No userInfo, resetting loading state');
       // Clear any existing timeout
-      if (loadingTimeoutId) {
-        clearTimeout(loadingTimeoutId);
-        setLoadingTimeoutId(null);
+      if (loadingTimeoutRef.current) {
+        clearTimeout(loadingTimeoutRef.current);
+        loadingTimeoutRef.current = null;
       }
       setIsLoadingProgress(false);
       setHasStartedLoading(false);
@@ -268,11 +264,12 @@ const JamieAI = () => {
   // Cleanup timeout on unmount
   useEffect(() => {
     return () => {
-      if (loadingTimeoutId) {
-        clearTimeout(loadingTimeoutId);
+      if (loadingTimeoutRef.current) {
+        clearTimeout(loadingTimeoutRef.current);
+        loadingTimeoutRef.current = null;
       }
     };
-  }, [loadingTimeoutId]);
+  }, []);
   const [gameMode, setGameMode] = useState(() => {
     // Load game mode from localStorage on component mount
     return localStorage.getItem('gameMode') || 'game';
@@ -344,12 +341,21 @@ const JamieAI = () => {
       }
       
       // Check if user is already authenticated at Supabase level
+      // But verify that a session actually exists (not just a local user object)
       if (USE_SUPABASE_AUTH && supabaseAuthService.currentUser) {
-        console.log('User already authenticated at Supabase level, skipping login');
-        console.log('Current view before setting currentView:', currentView);
-        setCurrentView('homepage');
-        console.log('State updated - keeping existing userInfo, currentView: homepage');
-        return { success: true, message: 'Already logged in' };
+        const { data: sessionData } = await supabase.auth.getSession();
+        if (sessionData?.session) {
+          console.log('User already authenticated at Supabase level with valid session, skipping login');
+          console.log('Current view before setting currentView:', currentView);
+          setCurrentView('homepage');
+          console.log('State updated - keeping existing userInfo, currentView: homepage');
+          return { success: true, message: 'Already logged in' };
+        } else {
+          console.log('User object exists but no Supabase session - user may need to confirm email');
+          // Clear the user object since session doesn't exist
+          supabaseAuthService.currentUser = null;
+          // Continue with login flow
+        }
       }
       
       // Set the game mode from landing page
@@ -440,9 +446,9 @@ const JamieAI = () => {
   // Manual reset for stuck loading state
   const resetLoadingState = () => {
     console.log('Manually resetting loading state');
-    if (loadingTimeoutId) {
-      clearTimeout(loadingTimeoutId);
-      setLoadingTimeoutId(null);
+    if (loadingTimeoutRef.current) {
+      clearTimeout(loadingTimeoutRef.current);
+      loadingTimeoutRef.current = null;
     }
     setIsLoadingProgress(false);
     setHasStartedLoading(false);
@@ -455,7 +461,7 @@ const JamieAI = () => {
       hasStartedLoading,
       userInfo: !!userInfo,
       userRole: userInfo?.role,
-      loadingTimeoutId
+      loadingTimeoutId: loadingTimeoutRef.current
     });
   };
 

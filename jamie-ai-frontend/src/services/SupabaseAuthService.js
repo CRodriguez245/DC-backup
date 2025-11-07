@@ -339,8 +339,12 @@ export class SupabaseAuthService {
       let profile = null;
       let profileError = null;
       const profileResult = await db.getUserProfile(session.user.id);
-      profile = profileResult.data;
-      profileError = profileResult.error;
+      if (profileResult) {
+        profile = profileResult.data;
+        profileError = profileResult.error;
+      } else {
+        profileError = { message: 'Failed to get user profile - result was null' };
+      }
       
       // If profile doesn't exist, create it (user confirmed email but profile wasn't created during signup)
       if (profileError || !profile) {

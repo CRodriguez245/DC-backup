@@ -87,7 +87,8 @@ export const db = {
     
     // Use maybeSingle() instead of single() to avoid 406 errors when RLS blocks
     // However, 406 errors can still occur if RLS blocks the query entirely
-    let { data, error } = null;
+    let data = null;
+    let error = null;
     try {
       const result = await supabase
         .from('users')

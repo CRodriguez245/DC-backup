@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/exhaustive-deps */
 import React, { useState, useEffect, useRef } from 'react';
 import { Send, User, Bot, Star, Home, Settings, LogOut, BarChart3, RotateCcw, X, Menu } from 'lucide-react';
 import LandingPage from './LandingPage';
@@ -81,6 +82,7 @@ const JamieAI = () => {
   });
   
   // Initialize authentication on component mount
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     let isInitialized = false;
     
@@ -193,6 +195,7 @@ const JamieAI = () => {
   const [loadedUserIds, setLoadedUserIds] = useState(new Set()); // Track which users we've loaded progress for
 
   // Ensure progress is loaded for students who are already logged in
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     console.log('Progress loading useEffect triggered:', {
       USE_SUPABASE_AUTH,
@@ -317,7 +320,6 @@ const JamieAI = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [showCharacterInfo, setShowCharacterInfo] = useState(false);
   const [demoMode, setDemoMode] = useState(false); // Start with real backend
-  const [showDqPanel, setShowDqPanel] = useState(false);
   const [attemptsRemaining, setAttemptsRemaining] = useState(20);
   const [animatedProgress, setAnimatedProgress] = useState(0);
   const [isProgressAnimating, setIsProgressAnimating] = useState(false);
@@ -345,10 +347,11 @@ const JamieAI = () => {
       if (USE_SUPABASE_AUTH && supabaseAuthService.currentUser) {
         const { data: sessionData } = await supabase.auth.getSession();
         if (sessionData?.session) {
-          console.log('User already authenticated at Supabase level with valid session, skipping login');
+          console.log('User already authenticated at Supabase level with valid session, hydrating state');
           console.log('Current view before setting currentView:', currentView);
+          setUserInfo(prev => prev || supabaseAuthService.currentUser);
           setCurrentView('homepage');
-          console.log('State updated - keeping existing userInfo, currentView: homepage');
+          console.log('State updated - userInfo hydrated from Supabase, currentView: homepage');
           return { success: true, message: 'Already logged in' };
         } else {
           console.log('User object exists but no Supabase session - user may need to confirm email');
@@ -604,6 +607,7 @@ const JamieAI = () => {
   };
 
   // Auto-save in-progress session whenever messages change
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (messages.length > 0) {
       saveInProgressSession();
@@ -611,6 +615,7 @@ const JamieAI = () => {
   }, [messages, attemptsRemaining]);
 
   // Animate progress changes
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     const currentProgress = getJamieProgress();
     if (currentProgress !== animatedProgress) {
@@ -767,6 +772,7 @@ const JamieAI = () => {
   }, [demoMode]);
 
   // User info form component - REMOVED (using LandingPage instead)
+  // eslint-disable-next-line no-unused-vars
   const UserInfoModal_OLD = () => {
     const [formData, setFormData] = useState({
       name: '',
@@ -883,6 +889,7 @@ const JamieAI = () => {
   };
 
   // Decision Quality Score visualization - now only shows coaching effectiveness
+  // eslint-disable-next-line no-unused-vars
   const DQScoreDisplay = ({ scores, avgDqScore, className = "" }) => {
     const dimensions = [
       { key: 'framing', label: 'Framing', color: 'bg-gradient-to-r from-blue-500 to-blue-600' },
@@ -933,6 +940,7 @@ const JamieAI = () => {
   };
 
   // Individual message component
+  // eslint-disable-next-line no-unused-vars
   const ChatMessage = ({ message, isUser, dqScore, avgDqScore, timestamp, isError, showDemoButton, onMessageClick, showDqScore }) => {
     // Determine Jamie's current state for progress display
     const getJamieState = (score) => {
@@ -1060,6 +1068,7 @@ const JamieAI = () => {
   };
 
   // Typing indicator
+  // eslint-disable-next-line no-unused-vars
   const TypingIndicator = () => (
     <div className="flex gap-3 justify-start mb-6 overflow-hidden">
       <div className="w-10 h-10 rounded-full bg-gradient-to-br from-pink-100 to-purple-100 flex items-center justify-center flex-shrink-0 shadow-md">
@@ -1212,12 +1221,16 @@ const JamieAI = () => {
             
             // Update user progress
             if (userInfo) {
+              const rawFinalScore = finalDqScore ? Math.min(...Object.values(finalDqScore)) : 0; // Minimum DQ score (coach sees)
+              const personaStage = null;
               const progressData = {
-                finalScore: finalDqScore ? Math.min(...Object.values(finalDqScore)) : 0, // Use minimum DQ score (what student sees)
+                finalScore: rawFinalScore,
+                rawScore: rawFinalScore,
+                stage: personaStage,
                 attemptsUsed: 20, // All 20 attempts were used when session ends
                 mode: characterData[currentCharacter].gameMode,
                 dqScores: finalDqScore,
-                completed: characterData[currentCharacter].gameMode === 'assessment' ? true : (finalDqScore ? Math.min(...Object.values(finalDqScore)) >= 0.8 : false),
+                completed: characterData[currentCharacter].gameMode === 'assessment' ? true : (rawFinalScore >= 0.8),
                 messages: [...messages, sessionEndMessage] // Include the full chat transcript with end message
               };
               // Use the correct auth service based on USE_SUPABASE_AUTH flag
@@ -1249,7 +1262,8 @@ const JamieAI = () => {
       const requestBody = {
         message: messageText,
         session_id: userInfo ? `session-${userInfo.id}` : 'anon-session',
-        user_id: userInfo ? userInfo.id : 'anon-user'
+        user_id: userInfo ? userInfo.id : 'anon-user',
+        character: currentCharacter
       };
       
       console.log('Request body:', requestBody);
@@ -1362,12 +1376,16 @@ const JamieAI = () => {
             
             // Update user progress
             if (userInfo) {
+              const rawFinalScore = finalDqScore ? Math.min(...Object.values(finalDqScore)) : 0; // Minimum DQ score (coach sees)
+              const personaStage = characterData[currentCharacter].gameMode === 'assessment' ? null : (data?.persona_stage ?? null);
               const progressData = {
-                finalScore: finalDqScore ? Math.min(...Object.values(finalDqScore)) : 0, // Use minimum DQ score (what student sees)
+                finalScore: rawFinalScore,
+                rawScore: rawFinalScore,
+                stage: personaStage,
                 attemptsUsed: 20, // All 20 attempts were used when session ends
                 mode: characterData[currentCharacter].gameMode,
                 dqScores: finalDqScore,
-                completed: characterData[currentCharacter].gameMode === 'assessment' ? true : (finalDqScore ? Math.min(...Object.values(finalDqScore)) >= 0.8 : false),
+                completed: characterData[currentCharacter].gameMode === 'assessment' ? true : (rawFinalScore >= 0.8),
                 messages: [...messages, sessionEndMessage] // Include the full chat transcript with end message
               };
               // Use the correct auth service based on USE_SUPABASE_AUTH flag

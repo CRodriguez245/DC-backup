@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Eye, EyeOff } from 'lucide-react';
 import SignUpPage from './SignUpPage';
-import { authService } from './services/AuthService.js';
 import { supabaseAuthService } from './services/SupabaseAuthService.js';
 
 const LandingPage = ({ onLogin, onSignUp }) => {

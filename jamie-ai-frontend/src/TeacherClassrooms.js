@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Users, Copy, Check, Eye, Trash2, ChevronRight } from 'lucide-react';
+import { Plus, Users, Copy, Check, Eye } from 'lucide-react';
 import { supabaseAuthService as authService } from './services/SupabaseAuthService.js';
 
 const TeacherClassrooms = ({ onBackToHome, onViewClassroom }) => {

@@ -18,7 +18,7 @@ const SignUpPage = ({ onSignUp, onBackToLogin }) => {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [errors, setErrors] = useState({});
-  const [gameMode, setGameMode] = useState('game'); // 'game' or 'assessment'
+  const gameMode = 'game';
   const [requiresEmailConfirmation, setRequiresEmailConfirmation] = useState(false);
   const [confirmationEmail, setConfirmationEmail] = useState('');
 

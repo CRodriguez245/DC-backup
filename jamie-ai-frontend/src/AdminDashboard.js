@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Search, Home, Settings, LogOut, BarChart3, Users, Plus, Copy, Check, Eye, CheckCircle, Menu, X } from 'lucide-react';
+import { Search, Home, Settings, LogOut, BarChart3, Users, Plus, Copy, Check, Eye, Menu, X } from 'lucide-react';
 import { supabaseAuthService as authService } from './services/SupabaseAuthService.js';
 
 const AdminDashboard = ({ onBackToHome, onLogout, onSettings, currentView, userInfo }) => {
@@ -161,7 +161,7 @@ const AdminDashboard = ({ onBackToHome, onLogout, onSettings, currentView, userI
     } finally {
       setIsLoadingStudents(false);
     }
-  }, [userInfo]);
+  }, [userInfo, isLoadingStudents]);
 
   // Load students when component mounts or when activeTab changes
   useEffect(() => {

@@ -1,16 +1,25 @@
 import express from 'express';
 import { getJamieResponse, scoreDQ } from '../utils/openai';
-import { getJamieSystemPrompt } from '../utils/prompts';
+import { getPersonaSystemPrompt, personaStageConfigs, PersonaStageKey } from '../utils/prompts';
 
 const router = express.Router();
 
 type DQDimension = 'framing' | 'alternatives' | 'information' | 'values' | 'reasoning' | 'commitment';
 
-// In-memory session state storage (For Production, replace with Redis/DB)
-const sessionState: Record<string, {
+type PersonaStageState = {
+  currentIndex: number;
+  maxAchievedIndex: number;
+  sampleCounts: number[];
+};
+
+type SessionState = {
   turnsUsed: number;
   dqCoverage: Record<DQDimension, boolean>;
-}> = {};
+  personaStages: Record<string, PersonaStageState>;
+};
+
+// In-memory session state storage (For Production, replace with Redis/DB)
+const sessionState: Record<string, SessionState> = {};
 
 const MAX_TURNS = 20;
 
@@ -18,6 +27,7 @@ router.post('/', async (req, res) => {
   const userMessage: string = req.body.message;
   const sessionId: string = req.body.session_id || 'anon-session';
   const userId: string = req.body.user_id || 'anon-user';
+  const persona: string = (req.body.character || 'jamie').toLowerCase();
 
   if (!sessionState[sessionId]) {
     sessionState[sessionId] = {
@@ -29,7 +39,8 @@ router.post('/', async (req, res) => {
         values: false,
         reasoning: false,
         commitment: false
-      }
+      },
+      personaStages: {}
     };
   }
 
@@ -46,10 +57,47 @@ router.post('/', async (req, res) => {
     const dqScore = Math.min(...dqScoreValues);
     console.log("DQ Score (minimum):", dqScore);
 
-    // Get dynamic Jamie prompt based on coach's effectiveness
-    const jamieSystemPrompt = getJamieSystemPrompt(dqScore);
+    // Determine persona stage and get appropriate system prompt
+    const personaConfig = personaStageConfigs[persona] || personaStageConfigs['jamie'];
+    let stageKey: PersonaStageKey = personaConfig.defaultStage;
+
+    if (personaConfig.lockOnceAchieved) {
+      if (!sessionState[sessionId].personaStages[persona]) {
+        sessionState[sessionId].personaStages[persona] = {
+          currentIndex: 0,
+          maxAchievedIndex: 0,
+          sampleCounts: new Array(personaConfig.stages.length).fill(0)
+        };
+      }
+
+      const personaState = sessionState[sessionId].personaStages[persona];
+
+      for (let i = personaState.maxAchievedIndex + 1; i < personaConfig.stages.length; i++) {
+        const stageConfig = personaConfig.stages[i];
+        if (dqScore >= stageConfig.minScore) {
+          personaState.sampleCounts[i] = (personaState.sampleCounts[i] || 0) + 1;
+          const requiredSamples = stageConfig.minSamples ?? personaConfig.minSamples;
+          if (personaState.sampleCounts[i] >= requiredSamples) {
+            personaState.maxAchievedIndex = i;
+            personaState.currentIndex = i;
+          }
+        }
+      }
+
+      stageKey = personaConfig.stages[personaState.currentIndex].key;
+    } else {
+      let chosenIndex = 0;
+      personaConfig.stages.forEach((stageConfig, index) => {
+        if (dqScore >= stageConfig.minScore) {
+          chosenIndex = index;
+        }
+      });
+      stageKey = personaConfig.stages[chosenIndex].key;
+    }
+
+    const systemPrompt = getPersonaSystemPrompt(persona, stageKey);
     
-    const jamieReply = await getJamieResponse(userMessage, jamieSystemPrompt);
+    const jamieReply = await getJamieResponse(userMessage, systemPrompt);
     console.log("Jamie reply:", jamieReply);
 
     // Update DQ coverage if score >= 0.3
@@ -90,6 +138,8 @@ router.post('/', async (req, res) => {
       conversationStatus,
       sessionSummary,
       timestamp: new Date().toISOString(),
+      persona_stage: stageKey,
+      persona
     };
 
     res.status(200).json(response);

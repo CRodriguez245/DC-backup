@@ -1,6 +1,6 @@
 // Supabase-based Authentication Service
 import { auth, db, supabase } from '../lib/supabase.js';
-import { User, UserManager } from '../models/User.js';
+import { User, UserManager, resolveStageForScore } from '../models/User.js';
 import { ClassroomManager } from '../models/Classroom.js';
 
 export class SupabaseAuthService {
@@ -171,11 +171,26 @@ export class SupabaseAuthService {
 
   // Process progress data from database
   async processProgressData(progressData) {
+    const buildBaseProgress = (character) => {
+      const defaults = resolveStageForScore(character, 0);
+      return {
+        completed: false,
+        bestScore: 0,
+        attempts: 0,
+        lastSession: null,
+        sessions: [],
+        stage: defaults.stage,
+        stageMinScore: defaults.floor,
+        lastRawScore: 0,
+        analytics: { averageScore: 0, totalSessions: 0 }
+      };
+    };
+
     // Transform Supabase progress data to match local format
     const progress = {
-      jamie: { completed: false, sessions: [], analytics: { averageScore: 0, totalSessions: 0 } },
-      andres: { completed: false, sessions: [], analytics: { averageScore: 0, totalSessions: 0 } },
-      kavya: { completed: false, sessions: [], analytics: { averageScore: 0, totalSessions: 0 } }
+      jamie: buildBaseProgress('jamie'),
+      andres: buildBaseProgress('andres'),
+      kavya: buildBaseProgress('kavya')
     };
 
     // Process each progress record
@@ -185,24 +200,36 @@ export class SupabaseAuthService {
       const character = record.character_name.toLowerCase();
       console.log('Character name:', character, 'exists in progress:', !!progress[character]);
       if (progress[character]) {
-        progress[character].completed = true;
-        progress[character].analytics.averageScore = record.average_dq_score || 0;
-        progress[character].analytics.totalSessions = 1; // Each record represents a completed session
-        
-        // Add session data with complete structure to match User model
+        const sessionRawScore = record.average_dq_score || 0;
+        const sessionAttempts = record.turns_used || 20;
+        const { stage, floor } = resolveStageForScore(character, sessionRawScore);
+
         const session = {
           id: 'session_' + Date.now(),
           date: record.completed_at || new Date().toISOString(),
-          score: record.average_dq_score || 0,
-          attempts: 20, // Default attempts for completed sessions
+          score: Math.max(sessionRawScore, floor),
+          rawScore: sessionRawScore,
+          attempts: sessionAttempts,
           mode: record.level || 'assessment',
-          dqScores: { overall: record.average_dq_score || 0 },
+          dqScores: { overall: Math.max(sessionRawScore, floor) },
           completed: true,
+          stage,
+          stageMinScore: floor,
           messages: [] // Empty messages array for Supabase-loaded sessions
         };
-        
+
+        progress[character].completed = true;
+        progress[character].bestScore = Math.max(progress[character].bestScore, session.score);
+        progress[character].attempts += 1;
+        progress[character].stage = stage;
+        progress[character].stageMinScore = floor;
+        progress[character].lastRawScore = sessionRawScore;
         progress[character].sessions = [session];
         progress[character].lastSession = session; // Set lastSession for getCharacterStatus
+        progress[character].analytics = {
+          averageScore: session.score,
+          totalSessions: 1
+        };
         console.log('Updated progress for character:', character, progress[character]);
       }
     });
@@ -213,10 +240,10 @@ export class SupabaseAuthService {
       progress: progress
     });
     this.currentUser = updatedUser;
-    
+
     console.log('Loaded progress from Supabase:', progress);
     console.log('Final progress structure:', JSON.stringify(progress, null, 2));
-    
+
     // Notify listeners that progress was updated
     console.log('Notifying listeners of progress_loaded event');
     this.notifyListeners('progress_loaded', this.currentUser);
@@ -654,10 +681,15 @@ export class SupabaseAuthService {
   // Logout user
   async logout() {
     try {
-      const { error } = await auth.signOut();
+      const { error } = await auth.signOut({ scope: 'local' });
       
       if (error) {
-        console.error('Logout error:', error);
+        // Supabase returns AuthSessionMissingError when session already gone
+        if (error.message?.includes('Auth session missing')) {
+          console.warn('Logout warning: session already missing, treating as success');
+        } else {
+          console.error('Logout error:', error);
+        }
       }
 
       this.currentUser = null;
@@ -738,13 +770,32 @@ export class SupabaseAuthService {
     try {
       // Update local user progress
       this.currentUser.updateProgress(character, sessionData);
+
+      const progressEntry = this.currentUser.progress[character] || {};
+      const stageFloor = progressEntry.stageMinScore || 0;
+      const rawScore = typeof sessionData.rawScore === 'number'
+        ? sessionData.rawScore
+        : (typeof sessionData.finalScore === 'number' ? sessionData.finalScore : 0);
+      const effectiveScore = Math.max(stageFloor, rawScore);
+
+      const rawDqScores = sessionData.dqScores || {};
+      const clampedDqScores = Object.keys(rawDqScores).length > 0
+        ? Object.fromEntries(
+            Object.entries(rawDqScores).map(([key, value]) => [
+              key,
+              Math.max(stageFloor, typeof value === 'number' ? value : 0)
+            ])
+          )
+        : { overall: effectiveScore };
+      clampedDqScores.overall = Math.max(stageFloor, clampedDqScores.overall ?? effectiveScore);
       
       // Save to Supabase
       console.log('Attempting to save progress to Supabase:', {
         studentId: this.currentUser.id,
         character,
         level: sessionData.mode || 'assessment',
-        dqScores: sessionData.dqScores
+        dqScores: rawDqScores,
+        clampedScores: clampedDqScores
       });
 
       // First, create a session record
@@ -806,7 +857,7 @@ export class SupabaseAuthService {
         this.currentUser.id,
         character,
         sessionData.mode || 'assessment',
-        sessionData.dqScores
+        clampedDqScores
       );
 
       if (error) {

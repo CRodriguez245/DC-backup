@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { ArrowLeft, Users, TrendingUp, Trophy, Eye, CheckCircle, Clock } from 'lucide-react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { ArrowLeft, Users, TrendingUp, Trophy, CheckCircle, Clock } from 'lucide-react';
 import { supabaseAuthService as authService } from './services/SupabaseAuthService.js';
 
 const ClassroomDetail = ({ classroomId, onBack }) => {
@@ -7,12 +7,7 @@ const ClassroomDetail = ({ classroomId, onBack }) => {
   const [students, setStudents] = useState([]);
   const [selectedStudent, setSelectedStudent] = useState(null);
 
-  useEffect(() => {
-    console.log('ClassroomDetail useEffect triggered, classroomId:', classroomId);
-    loadClassroomData();
-  }, [classroomId]);
-
-  const loadClassroomData = async () => {
+  const loadClassroomData = useCallback(async () => {
     try {
       console.log('ClassroomDetail: Loading data for classroomId:', classroomId);
       
@@ -41,7 +36,12 @@ const ClassroomDetail = ({ classroomId, onBack }) => {
     } catch (error) {
       console.error('Error loading classroom data:', error);
     }
-  };
+  }, [classroomId]);
+
+  useEffect(() => {
+    console.log('ClassroomDetail useEffect triggered, classroomId:', classroomId);
+    loadClassroomData();
+  }, [classroomId, loadClassroomData]);
 
   const calculateClassStats = () => {
     if (students.length === 0) return { avgScore: 0, totalSessions: 0, completionRate: 0 };

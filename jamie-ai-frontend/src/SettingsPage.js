@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Home, Settings, LogOut, BarChart3, Users, CheckCircle, X } from 'lucide-react';
 import { supabaseAuthService as authService } from './services/SupabaseAuthService.js';
 
@@ -22,29 +22,12 @@ const SettingsPage = ({ onBackToHome, onLogout, onAdminClick, currentView, userI
     dataSharing: false
   });
 
-  const [classroom, setClassroom] = useState({
-    schoolName: '',
-    classroomCode: '',
-    role: 'student'
-  });
-
   const [joinedClassrooms, setJoinedClassrooms] = useState([]);
   const [classCodeInput, setClassCodeInput] = useState('');
   const [joinMessage, setJoinMessage] = useState({ text: '', type: '' });
   const [isJoining, setIsJoining] = useState(false);
 
-  useEffect(() => {
-    loadJoinedClassrooms();
-  }, []);
-
-  // Debug: Log when userInfo changes
-  useEffect(() => {
-    console.log('SettingsPage: userInfo changed:', userInfo);
-    console.log('SettingsPage: userInfo?.role:', userInfo?.role);
-    console.log('SettingsPage: Will show classroom panel?', userInfo?.role === 'student');
-  }, [userInfo]);
-
-  const loadJoinedClassrooms = async () => {
+  const loadJoinedClassrooms = useCallback(async () => {
     try {
       console.log('Loading joined classrooms, userInfo:', userInfo);
       const result = await authService.getUserClassrooms();
@@ -62,7 +45,18 @@ const SettingsPage = ({ onBackToHome, onLogout, onAdminClick, currentView, userI
       // Don't clear existing classrooms on error
       console.warn('Keeping existing classrooms due to exception');
     }
-  };
+  }, [userInfo]);
+
+  useEffect(() => {
+    loadJoinedClassrooms();
+  }, [loadJoinedClassrooms]);
+
+  // Debug: Log when userInfo changes
+  useEffect(() => {
+    console.log('SettingsPage: userInfo changed:', userInfo);
+    console.log('SettingsPage: userInfo?.role:', userInfo?.role);
+    console.log('SettingsPage: Will show classroom panel?', userInfo?.role === 'student');
+  }, [userInfo]);
 
   const handleJoinClassroom = async () => {
     console.log('handleJoinClassroom called with classCodeInput:', classCodeInput);

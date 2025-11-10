@@ -96,6 +96,11 @@ router.post('/', async (req, res) => {
     }
 
     const systemPrompt = getPersonaSystemPrompt(persona, stageKey);
+    console.log('Persona selection:', {
+      persona,
+      stageKey,
+      promptPreview: systemPrompt.slice(0, 120)
+    });
     
     const jamieReply = await getJamieResponse(userMessage, systemPrompt);
     console.log("Jamie reply:", jamieReply);

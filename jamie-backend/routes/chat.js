@@ -73,6 +73,11 @@ router.post('/', async (req, res) => {
         console.log("DQ Score (minimum):", dqScore);
         const stageKey = determineStageKey(dqScore);
         const systemPrompt = (0, prompts_1.getPersonaSystemPrompt)(persona, stageKey);
+        console.log('Persona selection:', {
+            persona,
+            stageKey,
+            promptPreview: systemPrompt.slice(0, 120)
+        });
         const jamieReply = await (0, openai_1.getJamieResponse)(userMessage, systemPrompt);
         console.log("Persona reply:", jamieReply);
         for (const dimension of Object.keys(dqScoreComponents)) {

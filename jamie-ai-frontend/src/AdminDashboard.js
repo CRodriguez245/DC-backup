@@ -163,7 +163,7 @@ const AdminDashboard = ({ onBackToHome, onLogout, onSettings, currentView, userI
       isLoadingStudentsRef.current = false;
       setIsLoadingStudents(false);
     }
-  }, [userInfo?.id, userInfo?.role]);
+  }, [userInfo?.role]);
 
   // Load students when component mounts or when activeTab changes
   useEffect(() => {

@@ -99,7 +99,10 @@ router.post('/', async (req, res) => {
             totalTurns: turnsUsed,
             dqAreasCompleted: Object.keys(dqCoverage).filter((k) => dqCoverage[k]),
             dqAreasMissed: Object.keys(dqCoverage).filter((k) => !dqCoverage[k]),
-            feedback: conversationStatus === 'dq-complete' ? 'You covered all key areas of Decision Quality.' : 'Session ended before all DQ areas were explored.'
+            feedback: conversationStatus === 'dq-complete' ? 'You covered all key areas of Decision Quality.' : 'Session ended before all DQ areas were explored.',
+            persona_stage: stageKey,
+            persona,
+            persona_prompt_preview: systemPrompt.slice(0, 200)
         } : null;
         const response = {
             session_id: sessionId,
@@ -115,7 +118,8 @@ router.post('/', async (req, res) => {
             sessionSummary,
             timestamp: new Date().toISOString(),
             persona_stage: stageKey,
-            persona
+            persona,
+            persona_prompt_preview: systemPrompt.slice(0, 200)
         };
         res.status(200).json(response);
     }

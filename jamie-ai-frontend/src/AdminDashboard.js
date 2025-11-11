@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Search, Home, Settings, LogOut, BarChart3, Users, Plus, Copy, Check, Eye, Menu, X } from 'lucide-react';
 import { supabaseAuthService as authService } from './services/SupabaseAuthService.js';
 
@@ -119,17 +119,18 @@ const AdminDashboard = ({ onBackToHome, onLogout, onSettings, currentView, userI
   // Get real students from all classrooms
   const [students, setStudents] = useState([]);
   const [isLoadingStudents, setIsLoadingStudents] = useState(false);
+  const isLoadingStudentsRef = useRef(false);
 
   const loadAllStudents = useCallback(async () => {
     if (userInfo?.role !== 'teacher') {
       return;
     }
 
-    // Prevent duplicate loading
-    if (isLoadingStudents) {
+    if (isLoadingStudentsRef.current) {
       return;
     }
 
+    isLoadingStudentsRef.current = true;
     setIsLoadingStudents(true);
     
     try {
@@ -159,9 +160,10 @@ const AdminDashboard = ({ onBackToHome, onLogout, onSettings, currentView, userI
     } catch (error) {
       console.error('Error loading students:', error);
     } finally {
+      isLoadingStudentsRef.current = false;
       setIsLoadingStudents(false);
     }
-  }, [userInfo, isLoadingStudents]);
+  }, [userInfo?.id, userInfo?.role]);
 
   // Load students when component mounts or when activeTab changes
   useEffect(() => {

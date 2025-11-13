@@ -255,7 +255,9 @@ export function getPersonaSystemPrompt(persona: string, stage: PersonaStageKey):
 }
 
 export const dqScoringPrompt = (userMessage: string, conversationHistory: string, coachResponse?: string) => `
-Evaluate this coaching interaction using Decision Quality dimensions. Be STRICT and CONSERVATIVE in your scoring. Only award higher scores when there is clear, substantive evidence of progress.
+You are evaluating a coaching interaction using Decision Quality dimensions. You MUST be EXTREMELY STRICT and CONSERVATIVE.
+
+FIRST: Check if the CLIENT MESSAGE is minimal. If the client message is "tell me more", "yes", "okay", "go on", "what do you think?", "I see", or any single word/short phrase without substantive content, you MUST score ALL dimensions at 0.0-0.2. DO NOT give higher scores based on conversation context.
 
 CONVERSATION CONTEXT:
 ${conversationHistory}
@@ -265,19 +267,20 @@ CLIENT MESSAGE:
 
 ${coachResponse ? `COACH RESPONSE:\n"${coachResponse}"` : ''}
 
-CRITICAL SCORING RULES:
-1. The CLIENT MESSAGE is the PRIMARY source for scoring. If the client message is minimal (e.g., "tell me more", "yes", "okay", "go on", single words, or questions without substantive content), score ALL dimensions at 0.0-0.2 REGARDLESS of conversation context.
-2. Conversation context should ONLY be used to understand what the client is referring to, NOT to inflate scores for minimal messages.
-3. Higher scores (0.3+) require the CLIENT MESSAGE itself to contain substantive content demonstrating progress in that dimension.
-4. Do NOT give credit for progress that exists only in the conversation history if the current client message doesn't demonstrate it.
+CRITICAL SCORING RULES (READ THESE FIRST):
+1. **IMMEDIATE CHECK**: If the CLIENT MESSAGE is "tell me more", "yes", "okay", "go on", "what do you think?", "I see", or any minimal phrase (under 10 words without substantive decision-making content), score ALL dimensions at 0.0-0.2. STOP. Do not continue evaluating.
+2. The CLIENT MESSAGE is the ONLY source for scoring. Conversation context is ONLY for understanding references, NOT for inflating scores.
+3. Higher scores (0.3+) require the CLIENT MESSAGE itself to contain substantive content (multiple sentences, specific details, clear decision-making elements).
+4. DO NOT give credit for progress that exists only in conversation history if the current client message doesn't demonstrate it.
 
-MINIMAL MESSAGE EXAMPLES (score 0.0-0.2):
+MINIMAL MESSAGE EXAMPLES (MUST score 0.0-0.2 for ALL dimensions):
 - "tell me more"
 - "yes"
-- "okay"
+- "okay"  
 - "go on"
 - "what do you think?"
 - "I see"
+- "that makes sense"
 - Single-word responses
 - Questions that don't add new information or demonstrate decision-making progress
 

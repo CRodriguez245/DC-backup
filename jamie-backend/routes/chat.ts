@@ -117,8 +117,17 @@ router.post('/', async (req, res) => {
     const personaConfig = personaStageConfigs[persona] || personaStageConfigs['jamie'];
     let stageKey: PersonaStageKey = personaConfig.defaultStage;
     
-    // Use avgTop5Score for stage determination to match frontend progress display
-    const stageScore = avgTop5Score;
+    // Apply smoothing: use exponential moving average to prevent rapid jumps
+    // Store previous average in session state for smoothing
+    const smoothingKey = `${persona}_avgScore`;
+    const previousAvg = (sessionState[sessionId] as any)[smoothingKey] || avgTop5Score;
+    const smoothingFactor = 0.3; // 30% new score, 70% previous (higher = more stable)
+    const smoothedScore = (smoothingFactor * avgTop5Score) + ((1 - smoothingFactor) * previousAvg);
+    (sessionState[sessionId] as any)[smoothingKey] = smoothedScore;
+    
+    // Use smoothed score for stage determination to prevent rapid jumps
+    const stageScore = smoothedScore;
+    console.log("Stage score (smoothed):", stageScore, "from avg:", avgTop5Score, "previous:", previousAvg);
 
     if (!sessionState[sessionId].personaStages[persona]) {
       sessionState[sessionId].personaStages[persona] = {

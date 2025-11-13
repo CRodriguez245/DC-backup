@@ -217,16 +217,16 @@ export const personaStageConfigs: Record<string, PersonaConfig> = {
   andres: {
     stages: [
       { key: 'overwhelmed', minScore: 0 },
-      { key: 'defensive', minScore: 0.2 },      // Raised - requires more engagement
-      { key: 'exploring', minScore: 0.35 },     // Raised - requires substantive exploration
-      { key: 'experimenting', minScore: 0.5 },   // Raised - requires real experimentation
-      { key: 'curious', minScore: 0.65 },       // Raised - requires deep curiosity
-      { key: 'visioning', minScore: 0.8 }       // Raised - requires clear vision
+      { key: 'defensive', minScore: 0.25 },      // Raised - requires more engagement
+      { key: 'exploring', minScore: 0.4 },       // Raised - requires substantive exploration
+      { key: 'experimenting', minScore: 0.55 },  // Raised - requires real experimentation
+      { key: 'curious', minScore: 0.7 },        // Raised - requires deep curiosity
+      { key: 'visioning', minScore: 0.85 }      // Raised - requires clear vision
     ],
     lockOnceAchieved: false,  // Allow regression for realism
     defaultStage: 'overwhelmed',
-    minSamples: 2,  // Increased - requires consistent evidence before progression
-    regressionThreshold: 0.15  // Raised - more stable progression
+    minSamples: 3,  // Increased - requires more consistent evidence before progression
+    regressionThreshold: 0.25  // Raised - more stable progression, less harsh regression
   }
 };
 
@@ -257,21 +257,23 @@ export function getPersonaSystemPrompt(persona: string, stage: PersonaStageKey):
 export const dqScoringPrompt = (userMessage: string, conversationHistory: string, coachResponse?: string) => `
 You are evaluating a coaching interaction using Decision Quality dimensions. You MUST be EXTREMELY STRICT and CONSERVATIVE.
 
-FIRST: Check if the CLIENT MESSAGE is minimal. If the client message is "tell me more", "yes", "okay", "go on", "what do you think?", "I see", or any single word/short phrase without substantive content, you MUST score ALL dimensions at 0.0-0.2. DO NOT give higher scores based on conversation context.
+IMPORTANT: You are scoring the COACH'S MESSAGE (the person providing advice), NOT the persona's response. The coach's message should be evaluated based on how well it demonstrates coaching quality and decision-making support, not the persona's progress.
+
+FIRST: Check if the COACH'S MESSAGE is minimal. If the message is "tell me more", "yes", "okay", "go on", "what do you think?", "I see", or any single word/short phrase without substantive content, you MUST score ALL dimensions at 0.0-0.2. DO NOT give higher scores based on conversation context.
 
 CONVERSATION CONTEXT:
 ${conversationHistory}
 
-CLIENT MESSAGE:
+COACH'S MESSAGE (what you are scoring):
 "${userMessage}"
 
-${coachResponse ? `COACH RESPONSE:\n"${coachResponse}"` : ''}
+${coachResponse ? `PERSONA RESPONSE:\n"${coachResponse}"` : ''}
 
 CRITICAL SCORING RULES (READ THESE FIRST):
-1. **IMMEDIATE CHECK**: If the CLIENT MESSAGE is "tell me more", "yes", "okay", "go on", "what do you think?", "I see", or any minimal phrase (under 10 words without substantive decision-making content), score ALL dimensions at 0.0-0.2. STOP. Do not continue evaluating.
-2. The CLIENT MESSAGE is the ONLY source for scoring. Conversation context is ONLY for understanding references, NOT for inflating scores.
-3. Higher scores (0.3+) require the CLIENT MESSAGE itself to contain substantive content (multiple sentences, specific details, clear decision-making elements).
-4. DO NOT give credit for progress that exists only in conversation history if the current client message doesn't demonstrate it.
+1. **IMMEDIATE CHECK**: If the COACH'S MESSAGE is "tell me more", "yes", "okay", "go on", "what do you think?", "I see", or any minimal phrase (under 10 words without substantive coaching content), score ALL dimensions at 0.0-0.2. STOP. Do not continue evaluating.
+2. The COACH'S MESSAGE is the PRIMARY source for scoring. Evaluate how well the coach's message supports decision-making quality.
+3. Higher scores (0.3+) require the COACH'S MESSAGE itself to contain substantive coaching content (specific advice, questions that explore alternatives, information gathering suggestions, values clarification, logical reasoning support, or commitment-building).
+4. Conversation context helps understand what the coach is responding to, but the COACH'S MESSAGE must demonstrate the coaching quality itself.
 
 MINIMAL MESSAGE EXAMPLES (MUST score 0.0-0.2 for ALL dimensions):
 - "tell me more"

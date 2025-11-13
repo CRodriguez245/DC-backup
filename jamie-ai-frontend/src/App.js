@@ -687,6 +687,12 @@ const JamieAI = () => {
   // Animate progress changes - moved after getJamieProgress definition
   // Use a ref to track the last target progress to avoid dependency issues
   const lastProgressRef = useRef(0);
+  const animatedProgressRef = useRef(0); // Track current animated value without triggering re-renders
+  
+  // Sync ref with state
+  useEffect(() => {
+    animatedProgressRef.current = animatedProgress;
+  }, [animatedProgress]);
   
   useEffect(() => {
     const currentProgress = getJamieProgress();
@@ -696,7 +702,7 @@ const JamieAI = () => {
       setIsProgressAnimating(true);
       
       // Smooth animation to new progress value
-      const startProgress = animatedProgress;
+      const startProgress = animatedProgressRef.current; // Use ref to get current value
       const endProgress = currentProgress;
       const duration = 1200; // 1.2 seconds
       const startTime = Date.now();
@@ -708,8 +714,10 @@ const JamieAI = () => {
         // Use easing function for smooth animation
         const easeOutCubic = 1 - Math.pow(1 - progress, 3);
         const currentValue = startProgress + (endProgress - startProgress) * easeOutCubic;
+        const roundedValue = Math.round(currentValue);
         
-        setAnimatedProgress(Math.round(currentValue));
+        setAnimatedProgress(roundedValue);
+        animatedProgressRef.current = roundedValue; // Update ref as we animate
         
         if (progress < 1) {
           requestAnimationFrame(animate);
@@ -720,7 +728,7 @@ const JamieAI = () => {
       
       requestAnimationFrame(animate);
     }
-  }, [messages, animatedProgress]); // Keep animatedProgress to read current value, but use ref to track target
+  }, [messages]); // Only depend on messages - this ensures we react to new DQ scores immediately
 
   // Get character's current state
   const getCharacterState = () => {

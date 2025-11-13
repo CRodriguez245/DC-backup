@@ -2,6 +2,14 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Search, Home, Settings, LogOut, BarChart3, Users, Plus, Copy, Check, Eye, Menu, X } from 'lucide-react';
 import { supabaseAuthService as authService } from './services/SupabaseAuthService.js';
 
+// Helper function to safely calculate minimum DQ score, filtering out NaN and invalid values
+const safeMinDqScore = (dqScoreObj) => {
+  if (!dqScoreObj || typeof dqScoreObj !== 'object') return 0;
+  const values = Object.values(dqScoreObj)
+    .filter(v => typeof v === 'number' && !isNaN(v) && isFinite(v) && v >= 0 && v <= 1);
+  return values.length > 0 ? Math.min(...values) : 0;
+};
+
 const AdminDashboard = ({ onBackToHome, onLogout, onSettings, currentView, userInfo }) => {
   console.log('AdminDashboard component rendering, userInfo:', userInfo);
   
@@ -467,7 +475,7 @@ const AdminDashboard = ({ onBackToHome, onLogout, onSettings, currentView, userI
                       const latestAssessment = assessmentSessions[assessmentSessions.length - 1];
                       if (latestAssessment.dqScores) {
                         // Use the minimum DQ component score (same as student sees)
-                        const minScore = Math.min(...Object.values(latestAssessment.dqScores));
+                        const minScore = safeMinDqScore(latestAssessment.dqScores);
                         if (minScore > assessmentScore) {
                           assessmentScore = minScore;
                         }
@@ -548,7 +556,7 @@ const AdminDashboard = ({ onBackToHome, onLogout, onSettings, currentView, userI
                       <div className="text-right">
                         <p className="text-sm text-gray-600">Final DQ Score</p>
                         <p className="text-2xl font-bold text-blue-600">
-                          {selectedSession.dqScores ? Math.min(...Object.values(selectedSession.dqScores)).toFixed(2) : selectedSession.score.toFixed(2)}
+                          {selectedSession.dqScores ? safeMinDqScore(selectedSession.dqScores).toFixed(2) : selectedSession.score.toFixed(2)}
                         </p>
                       </div>
                       <div className="text-right">

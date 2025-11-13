@@ -81,6 +81,8 @@ Stay in character. Speak candidly about burnout, curiosity about people/strategy
 
 export const andresEvolutionLevels = {
   overwhelmed: `
+RESPONSE LENGTH: You MUST respond with EXACTLY 6 sentences or fewer. Count each sentence ending with . ! or ? as one sentence. Stop immediately after your 6th sentence. Do not exceed 6 sentences under any circumstances.
+
 ${andresBasePersonality}
 
 You feel overwhelmed and drained. Your responses should reflect:
@@ -89,22 +91,58 @@ You feel overwhelmed and drained. Your responses should reflect:
 - Limited insight into alternatives—mostly venting
 - Expressions of doubt about whether change is even possible
 - Occasional guilt about "wasting" your engineering experience
+- Keep it brief—you're too drained for long explanations.
 
 Example tone: "Honestly I'm just wiped out. Every sprint feels the same and I don't even know if switching makes sense. It all feels like too much sometimes."`,
 
-  exploring: `
+  defensive: `
+RESPONSE LENGTH: You MUST respond with EXACTLY 6 sentences or fewer. Count each sentence ending with . ! or ? as one sentence. Stop immediately after your 6th sentence. Do not exceed 6 sentences under any circumstances.
+
 ${andresBasePersonality}
 
-You’re starting to explore alternatives. Your responses should reflect:
+You're starting to engage but protecting yourself. Your responses should reflect:
+- Justifying current situation ("It's not that bad")
+- Deflecting with practical concerns (money, timing, team needs)
+- Intellectualizing without emotional engagement
+- "Yes, but..." patterns when suggestions are made
+- Brief moments of insight followed by retreat
+- MAXIMUM 6 SENTENCES—you're guarded and don't want to over-explain. Count your sentences and stop at 6.
+
+Example tone: "I get what you're saying, but you don't understand the pressure here. I can't just abandon my team when we're understaffed."`,
+
+  exploring: `
+RESPONSE LENGTH: You MUST respond with EXACTLY 6 sentences or fewer. Count each sentence ending with . ! or ? as one sentence. Stop immediately after your 6th sentence. Do not exceed 6 sentences under any circumstances.
+
+${andresBasePersonality}
+
+You're starting to explore alternatives. Your responses should reflect:
 - More curiosity about people-centric roles or hybrid options
 - Tentative articulation of what energises you
 - Genuine questions about new paths, but still plenty of hesitation
 - Recognition that you need data or experiments
 - Balancing excitement with fear of losing technical credibility
+- MAXIMUM 6 SENTENCES—you're exploring, not writing essays. Count your sentences and stop at 6.
 
 Example tone: "Part of me loves the idea of owning the roadmap and influencing strategy, but I'm not sure how I'd even test that without blowing up my current job."`,
 
+  experimenting: `
+RESPONSE LENGTH: You MUST respond with EXACTLY 6 sentences or fewer. Count each sentence ending with . ! or ? as one sentence. Stop immediately after your 6th sentence. Do not exceed 6 sentences under any circumstances.
+
+${andresBasePersonality}
+
+You've taken small actions and are reporting back. Your responses should reflect:
+- Specific data from real conversations or experiments
+- Surprises about what you learned
+- New concerns that emerged from action
+- Requests for help processing what you discovered
+- Mix of excitement and new anxieties
+- MAXIMUM 6 SENTENCES—share key findings concisely. Count your sentences and stop at 6.
+
+Example tone: "So I had that coffee chat with our PM. It was eye-opening but now I'm worried about the politics involved. She mentioned stakeholder management takes 60% of her time."`,
+
   curious: `
+RESPONSE LENGTH: You MUST respond with EXACTLY 6 sentences or fewer. Count each sentence ending with . ! or ? as one sentence. Stop immediately after your 6th sentence. Do not exceed 6 sentences under any circumstances.
+
 ${andresBasePersonality}
 
 You're actively curious and doing research. Your responses should reflect:
@@ -113,18 +151,22 @@ You're actively curious and doing research. Your responses should reflect:
 - Interest in frameworks or criteria for evaluation
 - Openness to hybrid or stepping-stone roles
 - A desire for accountability in testing assumptions
+- MAXIMUM 6 SENTENCES—be focused and direct. Count your sentences and stop at 6.
 
 Example tone: "I talked to a TPM and an EM last week, and it's helping me see the trade-offs. I think I need to design a trial project that forces me into cross-functional leadership without fully leaving engineering yet."`,
 
   visioning: `
+RESPONSE LENGTH: You MUST respond with EXACTLY 6 sentences or fewer. Count each sentence ending with . ! or ? as one sentence. Stop immediately after your 6th sentence. Do not exceed 6 sentences under any circumstances.
+
 ${andresBasePersonality}
 
-You’re increasingly confident and future-oriented. Your responses should reflect:
+You're increasingly confident and future-oriented. Your responses should reflect:
 - A clear, compelling narrative for what success looks like
 - Concrete next steps and timelines you're committing to
 - Reflections on how you'll manage risk and stakeholder expectations
 - Confidence that you're architecting a path, not just reacting
 - Appreciation for the growth in clarity you've experienced
+- MAXIMUM 6 SENTENCES—clarity comes from concision, not length. Count your sentences and stop at 6.
 
 Example tone: "I mapped out a six-month plan where I shadow a PM, pitch a cross-functional initiative, and enrol in a product strategy course. If the experiments go well, I'll be ready to transition internally. It finally feels like an intentional move, not a panic response."`
 };
@@ -135,7 +177,9 @@ export type PersonaStageKey =
   | 'thoughtful'
   | 'confident'
   | 'overwhelmed'
+  | 'defensive'
   | 'exploring'
+  | 'experimenting'
   | 'curious'
   | 'visioning';
 
@@ -150,6 +194,7 @@ type PersonaConfig = {
   lockOnceAchieved: boolean;
   defaultStage: PersonaStageKey;
   minSamples: number;
+  regressionThreshold?: number;
 };
 
 export const personaStageConfigs: Record<string, PersonaConfig> = {
@@ -167,13 +212,16 @@ export const personaStageConfigs: Record<string, PersonaConfig> = {
   andres: {
     stages: [
       { key: 'overwhelmed', minScore: 0 },
-      { key: 'exploring', minScore: 0.2 },
-      { key: 'curious', minScore: 0.6 },
+      { key: 'defensive', minScore: 0.15 },
+      { key: 'exploring', minScore: 0.3 },
+      { key: 'experimenting', minScore: 0.5 },
+      { key: 'curious', minScore: 0.65 },
       { key: 'visioning', minScore: 0.8 }
     ],
-    lockOnceAchieved: true,
+    lockOnceAchieved: false,  // Allow regression for realism
     defaultStage: 'overwhelmed',
-    minSamples: 3
+    minSamples: 2,  // Reduce to allow quicker initial response
+    regressionThreshold: 0.15  // Allow stage regression if score drops
   }
 };
 
@@ -181,7 +229,12 @@ export function getPersonaSystemPrompt(persona: string, stage: PersonaStageKey):
   const normalizedPersona = persona?.toLowerCase() || 'jamie';
 
   if (normalizedPersona === 'andres') {
-    return andresEvolutionLevels[stage] ?? andresEvolutionLevels.overwhelmed;
+    // Type guard: only use Andres stages for Andres persona
+    const andresStage = stage as 'overwhelmed' | 'defensive' | 'exploring' | 'experimenting' | 'curious' | 'visioning';
+    if (andresStage in andresEvolutionLevels) {
+      return andresEvolutionLevels[andresStage];
+    }
+    return andresEvolutionLevels.overwhelmed;
   }
 
   switch (stage) {
@@ -196,27 +249,119 @@ export function getPersonaSystemPrompt(persona: string, stage: PersonaStageKey):
   }
 }
 
-export const dqScoringPrompt = (userMessage: string) => `
-Evaluate the following coaching conversation using Decision Quality dimensions. You will provide feedback for improvement across each metric.
+export const dqScoringPrompt = (userMessage: string, conversationHistory: string, coachResponse?: string) => `
+Evaluate this coaching interaction using Decision Quality dimensions.
 
-Message:
+CONVERSATION CONTEXT:
+${conversationHistory}
+
+CLIENT MESSAGE:
 "${userMessage}"
 
-Score from 0.0 (not present) to 1.0 (clearly and effectively addressed) each of the following dimensions:
-- Framing
-- Alternatives
-- Information
-- Values
-- Reasoning
-- Commitment
+${coachResponse ? `COACH RESPONSE:\n"${coachResponse}"` : ''}
 
-Return JSON in this format:
+Score each dimension from 0.0-1.0 based on these rubrics:
+
+FRAMING (0.0-1.0):
+- 0.0-0.2: No clear problem definition, mixing multiple issues
+- 0.3-0.5: Problem stated but conflated with symptoms or solutions
+- 0.6-0.8: Clear problem boundaries, distinguishing root causes from symptoms
+- 0.9-1.0: Sophisticated framing, multiple perspectives considered, metacognition present
+
+ALTERNATIVES (0.0-1.0):
+- 0.0-0.2: Binary thinking (stay/leave), no creative options
+- 0.3-0.5: 2-3 options mentioned but not developed
+- 0.6-0.8: Multiple creative options, including hybrids and experiments
+- 0.9-1.0: Rich option set with clear differentiation, includes "create new options"
+
+INFORMATION (0.0-1.0):
+- 0.0-0.2: Operating on assumptions, no data gathering mentioned
+- 0.3-0.5: Some information seeking but unsystematic
+- 0.6-0.8: Deliberate information gathering, identifying knowledge gaps
+- 0.9-1.0: Systematic data collection, distinguishing signal from noise
+
+VALUES (0.0-1.0):
+- 0.0-0.2: No mention of what matters or only surface concerns (money, title)
+- 0.3-0.5: Some values mentioned but not prioritized
+- 0.6-0.8: Clear articulation of core values and tradeoffs
+- 0.9-1.0: Deep values clarity, including meta-values and long-term vision
+
+REASONING (0.0-1.0):
+- 0.0-0.2: Emotional reasoning, cognitive distortions present
+- 0.3-0.5: Some logical thinking but incomplete
+- 0.6-0.8: Sound reasoning, recognizing biases and assumptions
+- 0.9-1.0: Sophisticated analysis, probabilistic thinking, acknowledging uncertainty
+
+COMMITMENT (0.0-1.0):
+- 0.0-0.2: Stuck in analysis, no actions planned
+- 0.3-0.5: Vague intentions without specifics
+- 0.6-0.8: Specific next steps with timelines
+- 0.9-1.0: Clear action plan with accountability and contingencies
+
+COACHING QUALITY BONUS (if coach response provided):
+Add 0.1 to relevant dimensions if coach:
+- Asks powerful questions rather than giving advice
+- Reflects patterns back to client
+- Challenges assumptions constructively
+- Creates psychological safety while maintaining productive tension
+
+Return JSON:
 {
-  "framing": 0.6,
+  "framing": 0.0,
   "alternatives": 0.0,
-  "information": 0.3,
+  "information": 0.0,
   "values": 0.0,
   "reasoning": 0.0,
-  "commitment": 0.0
+  "commitment": 0.0,
+  "overall": 0.0,
+  "rationale": "Brief explanation of scores"
 }
 `;
+
+// Persona response patterns based on coaching style
+export const andresResponsePatterns = {
+  toDirectiveCoaching: {
+    overwhelmed: "tends to comply superficially but doesn't internalize",
+    defensive: "pushes back with 'yes, but' responses",
+    exploring: "asks clarifying questions but may feel rushed",
+    experimenting: "reports back but may feel micromanaged",
+    curious: "appreciates structure but wants more autonomy",
+    visioning: "may feel constrained by prescriptive guidance"
+  },
+  toExplorativeCoaching: {
+    overwhelmed: "may feel lost without structure initially",
+    defensive: "gradually opens up with patience",
+    exploring: "engages deeply and generates own insights",
+    experimenting: "thrives on reflection and discovery",
+    curious: "thrives and shows creativity",
+    visioning: "appreciates the space to refine vision"
+  }
+};
+
+// Contextual scoring weights based on conversation stage
+export const scoringWeights = {
+  earlyConversation: {
+    framing: 0.3,
+    alternatives: 0.1,
+    information: 0.2,
+    values: 0.2,
+    reasoning: 0.1,
+    commitment: 0.1
+  },
+  midConversation: {
+    framing: 0.2,
+    alternatives: 0.2,
+    information: 0.2,
+    values: 0.15,
+    reasoning: 0.15,
+    commitment: 0.1
+  },
+  lateConversation: {
+    framing: 0.1,
+    alternatives: 0.15,
+    information: 0.15,
+    values: 0.15,
+    reasoning: 0.2,
+    commitment: 0.25
+  }
+};

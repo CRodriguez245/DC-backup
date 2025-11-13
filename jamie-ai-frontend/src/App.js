@@ -14,6 +14,14 @@ import { supabaseAuthService } from './services/SupabaseAuthService.js';
 import { supabase } from './lib/supabase.js';
 
 // Jamie's Animated Face Component
+// Helper function to safely calculate minimum DQ score, filtering out NaN and invalid values
+const safeMinDqScore = (dqScoreObj) => {
+  if (!dqScoreObj || typeof dqScoreObj !== 'object') return 0;
+  const values = Object.values(dqScoreObj)
+    .filter(v => typeof v === 'number' && !isNaN(v) && isFinite(v) && v >= 0 && v <= 1);
+  return values.length > 0 ? Math.min(...values) : 0;
+};
+
 const JamieFace = ({ dqScore, avgDqScore, size = 'small' }) => {
   const getJamieState = (score) => {
     if (score >= 0.8) return 'confident';
@@ -614,6 +622,31 @@ const JamieAI = () => {
     }
   }, [messages, attemptsRemaining]);
 
+  // Add initial Andres opening message when starting a new chat session
+  useEffect(() => {
+    // Only add opening message if:
+    // 1. We're in chat view
+    // 2. Current character is Andres
+    // 3. Messages array is empty (new session, not a saved one)
+    // 4. Not currently loading
+    if (
+      currentView === 'chat' &&
+      currentCharacter === 'andres' &&
+      messages.length === 0 &&
+      !isLoading &&
+      !isTyping
+    ) {
+      const andresOpeningMessage = {
+        id: `andres-opening-${Date.now()}`,
+        message: "Honestly, I'm just wiped out. Every sprint feels the same and I don't even know if switching makes sense. It all feels like too much sometimes.",
+        isUser: false,
+        timestamp: new Date().toISOString()
+      };
+      
+      setMessages([andresOpeningMessage]);
+    }
+  }, [currentView, currentCharacter, messages.length, isLoading, isTyping]);
+
   // Animate progress changes
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
@@ -657,13 +690,20 @@ const JamieAI = () => {
     if (jamieMessages.length === 0) return 0;
     
     const latestMessage = jamieMessages[jamieMessages.length - 1];
+    
+    // Use avgDqScore if available (from backend), otherwise calculate safely
+    if (latestMessage.avgDqScore !== undefined) {
+      const safeScore = typeof latestMessage.avgDqScore === 'number' && !isNaN(latestMessage.avgDqScore) && isFinite(latestMessage.avgDqScore)
+        ? latestMessage.avgDqScore
+        : 0;
+      return Math.round(safeScore * 100);
+    }
+    
     if (!latestMessage.dqScore) return 0;
     
-    // Calculate average of all DQ components
-    const scores = Object.values(latestMessage.dqScore);
-    const averageScore = scores.reduce((sum, score) => sum + score, 0) / scores.length;
-    
-    return Math.round(averageScore * 100);
+    // Calculate minimum DQ score safely (using weakest link principle)
+    const minScore = safeMinDqScore(latestMessage.dqScore);
+    return Math.round(minScore * 100);
   };
 
   // Get character's current state
@@ -1011,7 +1051,7 @@ const JamieAI = () => {
                     <div className="bg-blue-50 rounded-lg p-3 border border-blue-200/50">
                       <div className="flex items-center justify-between mb-3">
                         <span className="text-xs font-medium text-gray-700">Decision Quality Score</span>
-                        <span className="text-sm font-medium text-gray-800">{Math.min(...Object.values(dqScore)).toFixed(1)}/1.0</span>
+                        <span className="text-sm font-medium text-gray-800">{(avgDqScore !== undefined ? avgDqScore : safeMinDqScore(dqScore)).toFixed(1)}/1.0</span>
                       </div>
                       
                       <div className="grid grid-cols-3 gap-2">
@@ -1127,7 +1167,25 @@ const JamieAI = () => {
       }, 100);
       
       // Start thinking text animation with smooth transitions
-      const thinkingStates = ['Thinking', 'Analyzing', 'Processing', 'Reflecting', 'Considering'];
+      // Persona-specific loading messages that match each character's vibe
+      const getThinkingStates = (character) => {
+        switch(character) {
+          case 'jamie':
+            // Jamie: confused, uncertain student - casual, uncertain, overwhelmed
+            return ['Hmm...', 'I dunno...', 'Let me think...', 'Maybe...', 'I guess...', 'Um...'];
+          case 'andres':
+            // Andres: burnt out engineer - practical, measured, slightly defensive
+            return ['Hmm', 'Let me see...', 'Well...', 'I suppose...', 'Actually...', 'Right...'];
+          case 'kavya':
+            // Kavya: recent graduate exploring - curious, thoughtful, exploratory
+            return ['Hmm...', 'Interesting...', 'Let me consider...', 'I wonder...', 'That\'s a good point...', 'Maybe...'];
+          default:
+            // Default: more natural, less robotic
+            return ['Hmm...', 'Let me think...', 'I see...', 'Hmm', 'Well...'];
+        }
+      };
+      
+      const thinkingStates = getThinkingStates(currentCharacter);
       let currentIndex = 0;
       const thinkingInterval = setInterval(() => {
         // Fade out
@@ -1890,7 +1948,7 @@ const JamieAI = () => {
                                     Your Final Decision Quality Score
                                   </p>
                                   <p className="text-xl sm:text-[24px] font-bold text-[#2C73EB] leading-[28px] sm:leading-[32px] mt-1">
-                                    {Math.min(...Object.values(msg.dqScore)).toFixed(2)}/1.0
+                                    {(msg.avgDqScore !== undefined ? msg.avgDqScore : safeMinDqScore(msg.dqScore)).toFixed(2)}/1.0
                                   </p>
                                   <p className="text-xs sm:text-[14px] text-[#797979] mt-2">
                                     This score reflects your coaching effectiveness across all six dimensions of decision quality.
@@ -1923,27 +1981,32 @@ const JamieAI = () => {
                                 </div>
                                 
                                 {/* Performance Feedback */}
-                                <div className={`p-3 sm:p-4 rounded-lg ${
-                                  Math.min(...Object.values(msg.dqScore)) >= 0.8 
-                                    ? 'bg-green-50 border border-green-200' 
-                                    : Math.min(...Object.values(msg.dqScore)) >= 0.6
-                                    ? 'bg-blue-50 border border-blue-200'
-                                    : 'bg-yellow-50 border border-yellow-200'
-                                }`}>
-                                  <p className={`text-xs sm:text-[14px] font-medium ${
-                                    Math.min(...Object.values(msg.dqScore)) >= 0.8 
-                                      ? 'text-green-800' 
-                                      : Math.min(...Object.values(msg.dqScore)) >= 0.6
-                                      ? 'text-blue-800'
-                                      : 'text-yellow-800'
-                                  }`}>
-                                    {Math.min(...Object.values(msg.dqScore)) >= 0.8 
-                                      ? '🎉 Excellent! You demonstrated strong coaching skills across all dimensions.'
-                                      : Math.min(...Object.values(msg.dqScore)) >= 0.6
-                                      ? '👍 Good effort! Review the lower-scoring dimensions to improve your coaching approach.'
-                                      : '💡 Keep practicing! Focus on asking questions that address all six dimensions of decision quality.'}
-                                  </p>
-                                </div>
+                                {(() => {
+                                  const minScore = msg.avgDqScore !== undefined ? msg.avgDqScore : safeMinDqScore(msg.dqScore);
+                                  return (
+                                    <div className={`p-3 sm:p-4 rounded-lg ${
+                                      minScore >= 0.8 
+                                        ? 'bg-green-50 border border-green-200' 
+                                        : minScore >= 0.6
+                                        ? 'bg-blue-50 border border-blue-200'
+                                        : 'bg-yellow-50 border border-yellow-200'
+                                    }`}>
+                                      <p className={`text-xs sm:text-[14px] font-medium ${
+                                        minScore >= 0.8 
+                                          ? 'text-green-800' 
+                                          : minScore >= 0.6
+                                          ? 'text-blue-800'
+                                          : 'text-yellow-800'
+                                      }`}>
+                                        {minScore >= 0.8 
+                                          ? '🎉 Excellent! You demonstrated strong coaching skills across all dimensions.'
+                                          : minScore >= 0.6
+                                          ? '👍 Good effort! Review the lower-scoring dimensions to improve your coaching approach.'
+                                          : '💡 Keep practicing! Focus on asking questions that address all six dimensions of decision quality.'}
+                                      </p>
+                                    </div>
+                                  );
+                                })()}
                               </div>
                             </div>
                           )}
@@ -1979,7 +2042,7 @@ const JamieAI = () => {
                                 Decision Quality Score
                               </p>
                               <p className="text-[16px] font-semibold text-[#797979] leading-[26px]">
-                                {Math.min(...Object.values(msg.dqScore)).toFixed(1)}/1.0
+                                {(msg.avgDqScore !== undefined ? msg.avgDqScore : safeMinDqScore(msg.dqScore)).toFixed(1)}/1.0
                               </p>
                             </div>
                             

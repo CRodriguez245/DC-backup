@@ -832,7 +832,13 @@ export class SupabaseAuthService {
             content: msg.message,
             timestamp: msg.timestamp || new Date().toISOString(),
             dq_scores: (msg.dqScore || msg.dq_score) ? JSON.stringify(msg.dqScore || msg.dq_score) : null,
-            dq_score_minimum: (msg.dqScore || msg.dq_score) ? Math.min(...Object.values(msg.dqScore || msg.dq_score)) : null,
+            dq_score_minimum: (() => {
+              const dqObj = msg.dqScore || msg.dq_score;
+              if (!dqObj || typeof dqObj !== 'object') return null;
+              const values = Object.values(dqObj)
+                .filter(v => typeof v === 'number' && !isNaN(v) && isFinite(v) && v >= 0 && v <= 1);
+              return values.length > 0 ? Math.min(...values) : null;
+            })(),
             turn_number: index + 1
           }));
 

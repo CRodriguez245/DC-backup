@@ -484,7 +484,12 @@ export const db = {
         message_type: messageType,
         content,
         dq_scores: dqScores,
-        dq_score_minimum: dqScores ? Math.min(...Object.values(dqScores)) : null
+        dq_score_minimum: (() => {
+          if (!dqScores || typeof dqScores !== 'object') return null;
+          const values = Object.values(dqScores)
+            .filter(v => typeof v === 'number' && !isNaN(v) && isFinite(v) && v >= 0 && v <= 1);
+          return values.length > 0 ? Math.min(...values) : null;
+        })()
       })
     return { data, error }
   },
@@ -496,7 +501,12 @@ export const db = {
       characterName,
       level,
       dqScores,
-      averageScore: dqScores ? Math.min(...Object.values(dqScores)) : null
+      averageScore: (() => {
+        if (!dqScores || typeof dqScores !== 'object') return null;
+        const values = Object.values(dqScores)
+          .filter(v => typeof v === 'number' && !isNaN(v) && isFinite(v) && v >= 0 && v <= 1);
+        return values.length > 0 ? Math.min(...values) : null;
+      })()
     });
 
     const { data, error } = await supabase
@@ -505,7 +515,12 @@ export const db = {
         student_id: studentId,
         character_name: characterName,
         level,
-        average_dq_score: dqScores ? Math.min(...Object.values(dqScores)) : null,
+        average_dq_score: (() => {
+          if (!dqScores || typeof dqScores !== 'object') return null;
+          const values = Object.values(dqScores)
+            .filter(v => typeof v === 'number' && !isNaN(v) && isFinite(v) && v >= 0 && v <= 1);
+          return values.length > 0 ? Math.min(...values) : null;
+        })(),
         completed_at: new Date().toISOString()
       })
     

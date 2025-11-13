@@ -16,6 +16,7 @@ type SessionState = {
   turnsUsed: number;
   dqCoverage: Record<DQDimension, boolean>;
   personaStages: Record<string, PersonaStageState>;
+  conversationHistory: Array<{ role: 'user' | 'coach'; content: string }>;
 };
 
 // In-memory session state storage (For Production, replace with Redis/DB)
@@ -40,7 +41,8 @@ router.post('/', async (req, res) => {
         reasoning: false,
         commitment: false
       },
-      personaStages: {}
+      personaStages: {},
+      conversationHistory: []
     };
   }
 
@@ -49,32 +51,79 @@ router.post('/', async (req, res) => {
   try {
     console.log("Received message:", userMessage);
 
-    const dqScoreComponents = await scoreDQ(userMessage);
+    // Build conversation history string from previous messages
+    const conversationHistory = sessionState[sessionId].conversationHistory
+      .map(msg => `${msg.role === 'user' ? 'Client' : 'Coach'}: ${msg.content}`)
+      .join('\n\n');
+
+    // Score DQ with conversation context (coach response will be added after generation)
+    const dqScoreComponents = await scoreDQ(userMessage, conversationHistory);
     console.log("DQ Score Components:", dqScoreComponents);
 
     // Calculate DQ score using the "weakest link" principle (minimum of all components)
-    const dqScoreValues = Object.values(dqScoreComponents as Record<string, number>);
-    const dqScore = Math.min(...dqScoreValues);
-    console.log("DQ Score (minimum):", dqScore);
+    // Only use the 6 core DQ dimensions, exclude 'overall' and 'rationale'
+    const dqDimensions: DQDimension[] = ['framing', 'alternatives', 'information', 'values', 'reasoning', 'commitment'];
+    const dqScoreValues: number[] = [];
+    
+    // Safely extract and validate each dimension score
+    for (const dim of dqDimensions) {
+      const value = dqScoreComponents?.[dim];
+      
+      // Skip null/undefined
+      if (value === null || value === undefined) continue;
+      
+      // Convert to number
+      const numValue = typeof value === 'number' ? value : parseFloat(String(value));
+      
+      // Validate: must be a finite number between 0 and 1
+      if (typeof numValue === 'number' && 
+          !isNaN(numValue) && 
+          isFinite(numValue) && 
+          numValue >= 0 && 
+          numValue <= 1) {
+        dqScoreValues.push(numValue);
+      }
+    }
+    
+    // Calculate minimum with extra safety
+    let finalDqScore = 0;
+    if (dqScoreValues.length > 0) {
+      // Double-check all values are valid before Math.min
+      const allValid = dqScoreValues.every(v => 
+        typeof v === 'number' && !isNaN(v) && isFinite(v)
+      );
+      if (allValid) {
+        const minScore = Math.min(...dqScoreValues);
+        // Final validation
+        if (typeof minScore === 'number' && !isNaN(minScore) && isFinite(minScore)) {
+          finalDqScore = minScore;
+        }
+      }
+    }
+    
+    console.log("DQ Score (minimum):", finalDqScore, "from values:", dqScoreValues, "raw components:", dqScoreComponents);
 
     // Determine persona stage and get appropriate system prompt
     const personaConfig = personaStageConfigs[persona] || personaStageConfigs['jamie'];
     let stageKey: PersonaStageKey = personaConfig.defaultStage;
+    
+    // Use finalDqScore for stage determination (ensures it's never NaN)
+
+    if (!sessionState[sessionId].personaStages[persona]) {
+      sessionState[sessionId].personaStages[persona] = {
+        currentIndex: 0,
+        maxAchievedIndex: 0,
+        sampleCounts: new Array(personaConfig.stages.length).fill(0)
+      };
+    }
+
+    const personaState = sessionState[sessionId].personaStages[persona];
 
     if (personaConfig.lockOnceAchieved) {
-      if (!sessionState[sessionId].personaStages[persona]) {
-        sessionState[sessionId].personaStages[persona] = {
-          currentIndex: 0,
-          maxAchievedIndex: 0,
-          sampleCounts: new Array(personaConfig.stages.length).fill(0)
-        };
-      }
-
-      const personaState = sessionState[sessionId].personaStages[persona];
-
+      // Locked progression: can only move forward
       for (let i = personaState.maxAchievedIndex + 1; i < personaConfig.stages.length; i++) {
         const stageConfig = personaConfig.stages[i];
-        if (dqScore >= stageConfig.minScore) {
+        if (finalDqScore >= stageConfig.minScore) {
           personaState.sampleCounts[i] = (personaState.sampleCounts[i] || 0) + 1;
           const requiredSamples = stageConfig.minSamples ?? personaConfig.minSamples;
           if (personaState.sampleCounts[i] >= requiredSamples) {
@@ -83,15 +132,54 @@ router.post('/', async (req, res) => {
           }
         }
       }
-
       stageKey = personaConfig.stages[personaState.currentIndex].key;
     } else {
-      let chosenIndex = 0;
-      personaConfig.stages.forEach((stageConfig, index) => {
-        if (dqScore >= stageConfig.minScore) {
-          chosenIndex = index;
+      // Unlocked progression: can regress if score drops significantly
+      let chosenIndex = personaState.currentIndex;
+      
+      // Check for progression
+      for (let i = personaState.currentIndex + 1; i < personaConfig.stages.length; i++) {
+        const stageConfig = personaConfig.stages[i];
+        if (finalDqScore >= stageConfig.minScore) {
+          personaState.sampleCounts[i] = (personaState.sampleCounts[i] || 0) + 1;
+          const requiredSamples = stageConfig.minSamples ?? personaConfig.minSamples;
+          if (personaState.sampleCounts[i] >= requiredSamples) {
+            chosenIndex = i;
+            if (i > personaState.maxAchievedIndex) {
+              personaState.maxAchievedIndex = i;
+            }
+          }
         }
-      });
+      }
+
+      // Check for regression (if regressionThreshold is defined)
+      if (personaConfig.regressionThreshold !== undefined) {
+        const currentStageConfig = personaConfig.stages[personaState.currentIndex];
+        const scoreDrop = currentStageConfig.minScore - finalDqScore;
+        
+        if (scoreDrop > personaConfig.regressionThreshold && chosenIndex === personaState.currentIndex) {
+          // Score dropped significantly below current stage threshold
+          // Find the highest stage that matches the current score
+          for (let i = personaState.currentIndex - 1; i >= 0; i--) {
+            const stageConfig = personaConfig.stages[i];
+            if (finalDqScore >= stageConfig.minScore) {
+              chosenIndex = i;
+              break;
+            }
+          }
+        }
+      } else {
+        // No regression threshold: find highest matching stage
+        for (let i = personaConfig.stages.length - 1; i >= 0; i--) {
+          const stageConfig = personaConfig.stages[i];
+          if (finalDqScore >= stageConfig.minScore) {
+            chosenIndex = i;
+            break;
+          }
+        }
+      }
+
+      personaState.currentIndex = chosenIndex;
       stageKey = personaConfig.stages[chosenIndex].key;
     }
 
@@ -102,8 +190,14 @@ router.post('/', async (req, res) => {
       promptPreview: systemPrompt.slice(0, 120)
     });
     
-    const jamieReply = await getJamieResponse(userMessage, systemPrompt);
+    const jamieReply = await getJamieResponse(userMessage, systemPrompt, persona);
     console.log("Jamie reply:", jamieReply);
+
+    // Update conversation history
+    sessionState[sessionId].conversationHistory.push(
+      { role: 'user', content: userMessage },
+      { role: 'coach', content: jamieReply }
+    );
 
     // Update DQ coverage if score >= 0.3
     for (const dimension of Object.keys(dqScoreComponents) as DQDimension[]) {
@@ -139,7 +233,7 @@ router.post('/', async (req, res) => {
       user_message: userMessage,
       jamie_reply: jamieReply,
       dq_score: dqScoreComponents,
-      dq_score_minimum: dqScore,
+      dq_score_minimum: finalDqScore,
       turnsUsed,
       turnsRemaining,
       dqCoverage,

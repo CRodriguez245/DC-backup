@@ -26,7 +26,8 @@ router.post('/', async (req, res) => {
                 reasoning: false,
                 commitment: false
             },
-            personaStages: {}
+            personaStages: {},
+            conversationHistory: []
         };
     }
     sessionState[sessionId].turnsUsed += 1;
@@ -41,8 +42,9 @@ router.post('/', async (req, res) => {
         return sessionState[sessionId].personaStages[persona];
     };
     const determineStageKey = (score) => {
+        const personaState = ensurePersonaState();
         if (personaConfig.lockOnceAchieved) {
-            const personaState = ensurePersonaState();
+            // Locked progression: can only move forward
             for (let i = personaState.maxAchievedIndex + 1; i < personaConfig.stages.length; i++) {
                 const stageConfig = personaConfig.stages[i];
                 if (score >= stageConfig.minScore) {
@@ -56,30 +58,118 @@ router.post('/', async (req, res) => {
             }
             return personaConfig.stages[personaState.currentIndex].key;
         }
-        let chosenIndex = 0;
-        personaConfig.stages.forEach((stageConfig, index) => {
-            if (score >= stageConfig.minScore) {
-                chosenIndex = index;
+        else {
+            // Unlocked progression: can regress if score drops significantly
+            let chosenIndex = personaState.currentIndex;
+            // Check for progression
+            for (let i = personaState.currentIndex + 1; i < personaConfig.stages.length; i++) {
+                const stageConfig = personaConfig.stages[i];
+                if (score >= stageConfig.minScore) {
+                    personaState.sampleCounts[i] = (personaState.sampleCounts[i] || 0) + 1;
+                    const requiredSamples = stageConfig.minSamples || personaConfig.minSamples;
+                    if (personaState.sampleCounts[i] >= requiredSamples) {
+                        chosenIndex = i;
+                        if (i > personaState.maxAchievedIndex) {
+                            personaState.maxAchievedIndex = i;
+                        }
+                    }
+                }
             }
-        });
-        return personaConfig.stages[chosenIndex].key;
+            // Check for regression (if regressionThreshold is defined)
+            if (personaConfig.regressionThreshold !== undefined) {
+                const currentStageConfig = personaConfig.stages[personaState.currentIndex];
+                const scoreDrop = currentStageConfig.minScore - score;
+                if (scoreDrop > personaConfig.regressionThreshold && chosenIndex === personaState.currentIndex) {
+                    // Score dropped significantly below current stage threshold
+                    // Find the highest stage that matches the current score
+                    for (let i = personaState.currentIndex - 1; i >= 0; i--) {
+                        const stageConfig = personaConfig.stages[i];
+                        if (score >= stageConfig.minScore) {
+                            chosenIndex = i;
+                            break;
+                        }
+                    }
+                }
+            }
+            else {
+                // No regression threshold: find highest matching stage
+                for (let i = personaConfig.stages.length - 1; i >= 0; i--) {
+                    const stageConfig = personaConfig.stages[i];
+                    if (score >= stageConfig.minScore) {
+                        chosenIndex = i;
+                        break;
+                    }
+                }
+            }
+            personaState.currentIndex = chosenIndex;
+            return personaConfig.stages[chosenIndex].key;
+        }
     };
     try {
         console.log("Received message:", userMessage);
-        const dqScoreComponents = await (0, openai_1.scoreDQ)(userMessage);
+        // Build conversation history string from previous messages
+        const conversationHistory = sessionState[sessionId].conversationHistory
+            .map(function (msg) { return (msg.role === 'user' ? 'Client' : 'Coach') + ": " + msg.content; })
+            .join('\n\n');
+        // Score DQ with conversation context (coach response will be added after generation)
+        const dqScoreComponents = await (0, openai_1.scoreDQ)(userMessage, conversationHistory);
         console.log("DQ Score Components:", dqScoreComponents);
-        const dqScoreValues = Object.values(dqScoreComponents);
-        const dqScore = Math.min(...dqScoreValues);
-        console.log("DQ Score (minimum):", dqScore);
-        const stageKey = determineStageKey(dqScore);
+        // Calculate DQ score using the "weakest link" principle (minimum of all components)
+        // Only use the 6 core DQ dimensions, exclude 'overall' and 'rationale'
+        const dqDimensions = ['framing', 'alternatives', 'information', 'values', 'reasoning', 'commitment'];
+        const dqScoreValues = [];
+        
+        // Safely extract and validate each dimension score
+        for (var _i = 0, dqDimensions_1 = dqDimensions; _i < dqDimensions_1.length; _i++) {
+            var dim = dqDimensions_1[_i];
+            var value = dqScoreComponents === null || dqScoreComponents === void 0 ? void 0 : dqScoreComponents[dim];
+            
+            // Skip null/undefined
+            if (value === null || value === undefined) {
+                continue;
+            }
+            
+            // Convert to number
+            var numValue = typeof value === 'number' ? value : parseFloat(String(value));
+            
+            // Validate: must be a finite number between 0 and 1
+            if (typeof numValue === 'number' && 
+                !isNaN(numValue) && 
+                isFinite(numValue) && 
+                numValue >= 0 && 
+                numValue <= 1) {
+                dqScoreValues.push(numValue);
+            }
+        }
+        
+        // Calculate minimum with extra safety
+        var finalDqScore = 0;
+        if (dqScoreValues.length > 0) {
+            // Double-check all values are valid before Math.min
+            var allValid = dqScoreValues.every(function (v) { 
+                return typeof v === 'number' && !isNaN(v) && isFinite(v); 
+            });
+            if (allValid) {
+                var minScore = Math.min.apply(Math, dqScoreValues);
+                // Final validation
+                if (typeof minScore === 'number' && !isNaN(minScore) && isFinite(minScore)) {
+                    finalDqScore = minScore;
+                }
+            }
+        }
+        
+        console.log("DQ Score (minimum):", finalDqScore, "from values:", dqScoreValues, "raw components:", dqScoreComponents);
+        const stageKey = determineStageKey(finalDqScore);
         const systemPrompt = (0, prompts_1.getPersonaSystemPrompt)(persona, stageKey);
         console.log('Persona selection:', {
             persona,
             stageKey,
             promptPreview: systemPrompt.slice(0, 120)
         });
-        const jamieReply = await (0, openai_1.getJamieResponse)(userMessage, systemPrompt);
+        const jamieReply = await (0, openai_1.getJamieResponse)(userMessage, systemPrompt, persona);
         console.log("Persona reply:", jamieReply);
+        // Update conversation history
+        sessionState[sessionId].conversationHistory.push({ role: 'user', content: userMessage }, { role: 'coach', content: jamieReply });
         for (const dimension of Object.keys(dqScoreComponents)) {
             if (dqScoreComponents[dimension] >= 0.3) {
                 sessionState[sessionId].dqCoverage[dimension] = true;
@@ -110,7 +200,7 @@ router.post('/', async (req, res) => {
             user_message: userMessage,
             jamie_reply: jamieReply,
             dq_score: dqScoreComponents,
-            dq_score_minimum: dqScore,
+            dq_score_minimum: finalDqScore,
             turnsUsed,
             turnsRemaining,
             dqCoverage,

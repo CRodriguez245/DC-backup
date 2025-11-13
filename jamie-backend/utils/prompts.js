@@ -267,32 +267,32 @@ ALTERNATIVES (0.0-1.0):
 - 0.9-1.0: Client message demonstrates rich option set with clear differentiation, includes "create new options"
 
 INFORMATION (0.0-1.0):
-- 0.0-0.2: Operating on assumptions, no data gathering mentioned, OR no information-seeking behavior
-- 0.3-0.4: Vague mention of needing information, but no specific plan
-- 0.5-0.6: Some information seeking mentioned but unsystematic
-- 0.7-0.8: Deliberate information gathering, identifying knowledge gaps
-- 0.9-1.0: Systematic data collection, distinguishing signal from noise
+- 0.0-0.2: Minimal client message OR operating on assumptions, no data gathering mentioned in client message, OR no information-seeking behavior demonstrated
+- 0.3-0.4: Client message vaguely mentions needing information, but no specific plan
+- 0.5-0.6: Client message mentions some information seeking but unsystematic
+- 0.7-0.8: Client message shows deliberate information gathering, identifying knowledge gaps
+- 0.9-1.0: Client message demonstrates systematic data collection, distinguishing signal from noise
 
 VALUES (0.0-1.0):
-- 0.0-0.2: No mention of what matters or only surface concerns (money, title), OR no values discussion
-- 0.3-0.4: Some values mentioned but superficial, not prioritized
-- 0.5-0.6: Some values mentioned with basic prioritization
-- 0.7-0.8: Clear articulation of core values and tradeoffs
-- 0.9-1.0: Deep values clarity, including meta-values and long-term vision
+- 0.0-0.2: Minimal client message OR no mention of what matters in client message, OR only surface concerns (money, title), OR no values discussion in client message
+- 0.3-0.4: Client message mentions some values but superficial, not prioritized
+- 0.5-0.6: Client message mentions values with basic prioritization
+- 0.7-0.8: Client message clearly articulates core values and tradeoffs
+- 0.9-1.0: Client message demonstrates deep values clarity, including meta-values and long-term vision
 
 REASONING (0.0-1.0):
-- 0.0-0.2: Emotional reasoning, cognitive distortions present, OR no logical thinking demonstrated
-- 0.3-0.4: Some logical thinking but incomplete, still heavily emotional
-- 0.5-0.6: Mix of emotional and logical reasoning, some awareness of biases
-- 0.7-0.8: Sound reasoning, recognizing biases and assumptions
-- 0.9-1.0: Sophisticated analysis, probabilistic thinking, acknowledging uncertainty
+- 0.0-0.2: Minimal client message OR emotional reasoning in client message, cognitive distortions present, OR no logical thinking demonstrated in client message
+- 0.3-0.4: Client message shows some logical thinking but incomplete, still heavily emotional
+- 0.5-0.6: Client message shows mix of emotional and logical reasoning, some awareness of biases
+- 0.7-0.8: Client message demonstrates sound reasoning, recognizing biases and assumptions
+- 0.9-1.0: Client message demonstrates sophisticated analysis, probabilistic thinking, acknowledging uncertainty
 
 COMMITMENT (0.0-1.0):
-- 0.0-0.2: Stuck in analysis, no actions planned, OR no commitment discussed
-- 0.3-0.4: Vague intentions mentioned but no specifics
-- 0.5-0.6: Some specific intentions but no clear plan
-- 0.7-0.8: Specific next steps with timelines
-- 0.9-1.0: Clear action plan with accountability and contingencies
+- 0.0-0.2: Minimal client message OR stuck in analysis, no actions planned in client message, OR no commitment discussed in client message
+- 0.3-0.4: Client message mentions vague intentions but no specifics
+- 0.5-0.6: Client message mentions some specific intentions but no clear plan
+- 0.7-0.8: Client message includes specific next steps with timelines
+- 0.9-1.0: Client message demonstrates clear action plan with accountability and contingencies
 
 COACHING QUALITY BONUS (if coach response provided):
 Add 0.05-0.1 to relevant dimensions ONLY if coach demonstrates:

@@ -202,17 +202,22 @@ const JamieAI = () => {
   const [hasStartedLoading, setHasStartedLoading] = useState(false);
   const [loadedUserIds, setLoadedUserIds] = useState(new Set()); // Track which users we've loaded progress for
 
-  // Version check - log thresholds to verify deployment
+  // Version check - log thresholds to verify deployment (ALWAYS VISIBLE)
   useEffect(() => {
-    console.log('🔍 DEPLOYMENT CHECK - Andres Stage Thresholds:', {
+    const versionInfo = {
       defensive: 0.15,
       exploring: 0.3,
       experimenting: 0.5,
       curious: 0.65,
       visioning: 0.8,
-      commit: '2626031',
-      message: 'If you see defensive: 0.15 (not 0.25), the update is deployed!'
-    });
+      commit: '2c88454',
+      deployed: new Date().toISOString()
+    };
+    console.log('%c🔍 DEPLOYMENT CHECK - Andres Stage Thresholds', 'color: #00ff00; font-size: 16px; font-weight: bold;');
+    console.log('%cIf you see defensive: 0.15 (NOT 0.25), the update is deployed!', 'color: #ff0000; font-size: 14px; font-weight: bold;');
+    console.log(versionInfo);
+    // Also set on window for easy access
+    window.ANDRES_VERSION = versionInfo;
   }, []);
 
   // Ensure progress is loaded for students who are already logged in

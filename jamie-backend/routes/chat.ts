@@ -103,11 +103,22 @@ router.post('/', async (req, res) => {
     
     console.log("DQ Score (minimum):", finalDqScore, "from values:", dqScoreValues, "raw components:", dqScoreComponents);
 
+    // Calculate average of top 5 dimensions for stage progression (matches frontend progress calculation)
+    // This ensures persona stage aligns with visible progress, not just the weakest link
+    const sortedScores = [...dqScoreValues].sort((a, b) => b - a);
+    const top5Scores = sortedScores.slice(0, Math.min(5, sortedScores.length));
+    const avgTop5Score = top5Scores.length > 0 
+      ? top5Scores.reduce((sum, val) => sum + val, 0) / top5Scores.length 
+      : finalDqScore; // Fallback to minimum if no valid scores
+    
+    console.log("DQ Score (avg top 5):", avgTop5Score, "from top 5:", top5Scores);
+
     // Determine persona stage and get appropriate system prompt
     const personaConfig = personaStageConfigs[persona] || personaStageConfigs['jamie'];
     let stageKey: PersonaStageKey = personaConfig.defaultStage;
     
-    // Use finalDqScore for stage determination (ensures it's never NaN)
+    // Use avgTop5Score for stage determination to match frontend progress display
+    const stageScore = avgTop5Score;
 
     if (!sessionState[sessionId].personaStages[persona]) {
       sessionState[sessionId].personaStages[persona] = {
@@ -123,7 +134,7 @@ router.post('/', async (req, res) => {
       // Locked progression: can only move forward
       for (let i = personaState.maxAchievedIndex + 1; i < personaConfig.stages.length; i++) {
         const stageConfig = personaConfig.stages[i];
-        if (finalDqScore >= stageConfig.minScore) {
+        if (stageScore >= stageConfig.minScore) {
           personaState.sampleCounts[i] = (personaState.sampleCounts[i] || 0) + 1;
           const requiredSamples = stageConfig.minSamples ?? personaConfig.minSamples;
           if (personaState.sampleCounts[i] >= requiredSamples) {
@@ -140,7 +151,7 @@ router.post('/', async (req, res) => {
       // Check for progression
       for (let i = personaState.currentIndex + 1; i < personaConfig.stages.length; i++) {
         const stageConfig = personaConfig.stages[i];
-        if (finalDqScore >= stageConfig.minScore) {
+        if (stageScore >= stageConfig.minScore) {
           personaState.sampleCounts[i] = (personaState.sampleCounts[i] || 0) + 1;
           const requiredSamples = stageConfig.minSamples ?? personaConfig.minSamples;
           if (personaState.sampleCounts[i] >= requiredSamples) {
@@ -155,14 +166,14 @@ router.post('/', async (req, res) => {
       // Check for regression (if regressionThreshold is defined)
       if (personaConfig.regressionThreshold !== undefined) {
         const currentStageConfig = personaConfig.stages[personaState.currentIndex];
-        const scoreDrop = currentStageConfig.minScore - finalDqScore;
+        const scoreDrop = currentStageConfig.minScore - stageScore;
         
         if (scoreDrop > personaConfig.regressionThreshold && chosenIndex === personaState.currentIndex) {
           // Score dropped significantly below current stage threshold
           // Find the highest stage that matches the current score
           for (let i = personaState.currentIndex - 1; i >= 0; i--) {
             const stageConfig = personaConfig.stages[i];
-            if (finalDqScore >= stageConfig.minScore) {
+            if (stageScore >= stageConfig.minScore) {
               chosenIndex = i;
               break;
             }
@@ -172,7 +183,7 @@ router.post('/', async (req, res) => {
         // No regression threshold: find highest matching stage
         for (let i = personaConfig.stages.length - 1; i >= 0; i--) {
           const stageConfig = personaConfig.stages[i];
-          if (finalDqScore >= stageConfig.minScore) {
+          if (stageScore >= stageConfig.minScore) {
             chosenIndex = i;
             break;
           }

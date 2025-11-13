@@ -159,7 +159,18 @@ router.post('/', async (req, res) => {
         }
         
         console.log("DQ Score (minimum):", finalDqScore, "from values:", dqScoreValues, "raw components:", dqScoreComponents);
-        const stageKey = determineStageKey(finalDqScore);
+        
+        // Calculate average of top 5 dimensions for stage progression (matches frontend progress calculation)
+        // This ensures persona stage aligns with visible progress, not just the weakest link
+        const sortedScores = dqScoreValues.slice().sort(function (a, b) { return b - a; });
+        const top5Scores = sortedScores.slice(0, Math.min(5, sortedScores.length));
+        const avgTop5Score = top5Scores.length > 0 
+            ? top5Scores.reduce(function (sum, val) { return sum + val; }, 0) / top5Scores.length 
+            : finalDqScore; // Fallback to minimum if no valid scores
+        
+        console.log("DQ Score (avg top 5):", avgTop5Score, "from top 5:", top5Scores);
+        
+        const stageKey = determineStageKey(avgTop5Score);
         const systemPrompt = (0, prompts_1.getPersonaSystemPrompt)(persona, stageKey);
         console.log('Persona selection:', {
             persona,

@@ -647,40 +647,6 @@ const JamieAI = () => {
     }
   }, [currentView, currentCharacter, messages.length, isLoading, isTyping]);
 
-  // Animate progress changes
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  useEffect(() => {
-    const currentProgress = getJamieProgress();
-    if (currentProgress !== animatedProgress) {
-      setIsProgressAnimating(true);
-      
-      // Smooth animation to new progress value
-      const startProgress = animatedProgress;
-      const endProgress = currentProgress;
-      const duration = 1200; // 1.2 seconds
-      const startTime = Date.now();
-      
-      const animate = () => {
-        const elapsed = Date.now() - startTime;
-        const progress = Math.min(elapsed / duration, 1);
-        
-        // Use easing function for smooth animation
-        const easeOutCubic = 1 - Math.pow(1 - progress, 3);
-        const currentValue = startProgress + (endProgress - startProgress) * easeOutCubic;
-        
-        setAnimatedProgress(Math.round(currentValue));
-        
-        if (progress < 1) {
-          requestAnimationFrame(animate);
-        } else {
-          setIsProgressAnimating(false);
-        }
-      };
-      
-      requestAnimationFrame(animate);
-    }
-  }, [messages, animatedProgress]);
-
   // Calculate Jamie's progress percentage
   const getJamieProgress = () => {
     if (messages.length === 0) return 0; // Start at 0%
@@ -717,6 +683,44 @@ const JamieAI = () => {
     
     return Math.round(avgScore * 100);
   };
+
+  // Animate progress changes - moved after getJamieProgress definition
+  // Use a ref to track the last target progress to avoid dependency issues
+  const lastProgressRef = useRef(0);
+  
+  useEffect(() => {
+    const currentProgress = getJamieProgress();
+    // Only animate if progress actually changed (not just during animation)
+    if (currentProgress !== lastProgressRef.current) {
+      lastProgressRef.current = currentProgress;
+      setIsProgressAnimating(true);
+      
+      // Smooth animation to new progress value
+      const startProgress = animatedProgress;
+      const endProgress = currentProgress;
+      const duration = 1200; // 1.2 seconds
+      const startTime = Date.now();
+      
+      const animate = () => {
+        const elapsed = Date.now() - startTime;
+        const progress = Math.min(elapsed / duration, 1);
+        
+        // Use easing function for smooth animation
+        const easeOutCubic = 1 - Math.pow(1 - progress, 3);
+        const currentValue = startProgress + (endProgress - startProgress) * easeOutCubic;
+        
+        setAnimatedProgress(Math.round(currentValue));
+        
+        if (progress < 1) {
+          requestAnimationFrame(animate);
+        } else {
+          setIsProgressAnimating(false);
+        }
+      };
+      
+      requestAnimationFrame(animate);
+    }
+  }, [messages, animatedProgress]); // Keep animatedProgress to read current value, but use ref to track target
 
   // Get character's current state
   const getCharacterState = () => {

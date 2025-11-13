@@ -744,12 +744,12 @@ const JamieAI = () => {
     
     // Use character-specific stage thresholds
     if (currentCharacter === 'andres') {
-      // Andres stages: overwhelmed (0), defensive (0.25), exploring (0.4), experimenting (0.55), curious (0.7), visioning (0.85)
-      if (progressDecimal >= 0.85) return 'Visioning';
-      if (progressDecimal >= 0.7) return 'Curious';
-      if (progressDecimal >= 0.55) return 'Experimenting';
-      if (progressDecimal >= 0.4) return 'Exploring';
-      if (progressDecimal >= 0.25) return 'Defensive';
+      // Andres stages: overwhelmed (0), defensive (0.15), exploring (0.3), experimenting (0.5), curious (0.65), visioning (0.8)
+      if (progressDecimal >= 0.8) return 'Visioning';
+      if (progressDecimal >= 0.65) return 'Curious';
+      if (progressDecimal >= 0.5) return 'Experimenting';
+      if (progressDecimal >= 0.3) return 'Exploring';
+      if (progressDecimal >= 0.15) return 'Defensive';
       return 'Overwhelmed';
     } else if (currentCharacter === 'kavya') {
       // Kavya only has one stage for now

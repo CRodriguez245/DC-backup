@@ -217,29 +217,44 @@ export const personaStageConfigs: Record<string, PersonaConfig> = {
   andres: {
     stages: [
       { key: 'overwhelmed', minScore: 0 },
-      { key: 'defensive', minScore: 0.25 },      // Raised - requires more engagement
-      { key: 'exploring', minScore: 0.4 },       // Raised - requires substantive exploration
-      { key: 'experimenting', minScore: 0.55 },  // Raised - requires real experimentation
-      { key: 'curious', minScore: 0.7 },        // Raised - requires deep curiosity
-      { key: 'visioning', minScore: 0.85 }      // Raised - requires clear vision
+      { key: 'defensive', minScore: 0.15 },      // Original suggested threshold
+      { key: 'exploring', minScore: 0.3 },       // Original suggested threshold
+      { key: 'experimenting', minScore: 0.5 },   // Original suggested threshold
+      { key: 'curious', minScore: 0.65 },       // Original suggested threshold
+      { key: 'visioning', minScore: 0.8 }       // Original suggested threshold
     ],
     lockOnceAchieved: false,  // Allow regression for realism
     defaultStage: 'overwhelmed',
-    minSamples: 3,  // Increased - requires more consistent evidence before progression
-    regressionThreshold: 0.25  // Raised - more stable progression, less harsh regression
+    minSamples: 2,  // Original suggested - allows quicker initial response
+    regressionThreshold: 0.15  // Original suggested - allows stage regression if score drops
   }
 };
 
-export function getPersonaSystemPrompt(persona: string, stage: PersonaStageKey): string {
+export function getPersonaSystemPrompt(
+  persona: string, 
+  stage: PersonaStageKey, 
+  coachingStyle?: 'directive' | 'explorative' | 'mixed'
+): string {
   const normalizedPersona = persona?.toLowerCase() || 'jamie';
 
   if (normalizedPersona === 'andres') {
     // Type guard: only use Andres stages for Andres persona
     const andresStage = stage as 'overwhelmed' | 'defensive' | 'exploring' | 'experimenting' | 'curious' | 'visioning';
-    if (andresStage in andresEvolutionLevels) {
-      return andresEvolutionLevels[andresStage];
+    let basePrompt = andresEvolutionLevels[andresStage] || andresEvolutionLevels.overwhelmed;
+    
+    // Add coaching style context if provided
+    if (coachingStyle && andresResponsePatterns) {
+      const patternKey = coachingStyle === 'directive' ? 'toDirectiveCoaching' : 
+                        coachingStyle === 'explorative' ? 'toExplorativeCoaching' : 
+                        'toDirectiveCoaching'; // Default for mixed
+      const pattern = andresResponsePatterns[patternKey]?.[andresStage];
+      
+      if (pattern) {
+        basePrompt += `\n\nCOACHING CONTEXT: The coach is using ${coachingStyle} coaching. Based on your current stage (${andresStage}), you ${pattern}. Adjust your response accordingly while staying true to your stage characteristics.`;
+      }
     }
-    return andresEvolutionLevels.overwhelmed;
+    
+    return basePrompt;
   }
 
   switch (stage) {
@@ -255,89 +270,60 @@ export function getPersonaSystemPrompt(persona: string, stage: PersonaStageKey):
 }
 
 export const dqScoringPrompt = (userMessage: string, conversationHistory: string, coachResponse?: string) => `
-You are evaluating a coaching interaction using Decision Quality dimensions. You MUST be EXTREMELY STRICT and CONSERVATIVE.
-
-IMPORTANT: You are scoring the COACH'S MESSAGE (the person providing advice), NOT the persona's response. The coach's message should be evaluated based on how well it demonstrates coaching quality and decision-making support, not the persona's progress.
-
-FIRST: Check if the COACH'S MESSAGE is minimal. If the message is "tell me more", "yes", "okay", "go on", "what do you think?", "I see", or any single word/short phrase without substantive content, you MUST score ALL dimensions at 0.0-0.2. DO NOT give higher scores based on conversation context.
+Evaluate this coaching interaction using Decision Quality dimensions.
 
 CONVERSATION CONTEXT:
 ${conversationHistory}
 
-COACH'S MESSAGE (what you are scoring):
+CLIENT MESSAGE:
 "${userMessage}"
 
-${coachResponse ? `PERSONA RESPONSE:\n"${coachResponse}"` : ''}
+${coachResponse ? `COACH RESPONSE:\n"${coachResponse}"` : ''}
 
-CRITICAL SCORING RULES (READ THESE FIRST):
-1. **IMMEDIATE CHECK**: If the COACH'S MESSAGE is "tell me more", "yes", "okay", "go on", "what do you think?", "I see", or any minimal phrase (under 10 words without substantive coaching content), score ALL dimensions at 0.0-0.2. STOP. Do not continue evaluating.
-2. The COACH'S MESSAGE is the PRIMARY source for scoring. Evaluate how well the coach's message supports decision-making quality.
-3. Higher scores (0.3+) require the COACH'S MESSAGE itself to contain substantive coaching content (specific advice, questions that explore alternatives, information gathering suggestions, values clarification, logical reasoning support, or commitment-building).
-4. Conversation context helps understand what the coach is responding to, but the COACH'S MESSAGE must demonstrate the coaching quality itself.
-
-MINIMAL MESSAGE EXAMPLES (MUST score 0.0-0.2 for ALL dimensions):
-- "tell me more"
-- "yes"
-- "okay"  
-- "go on"
-- "what do you think?"
-- "I see"
-- "that makes sense"
-- Single-word responses
-- Questions that don't add new information or demonstrate decision-making progress
-
-Score each dimension from 0.0-1.0 based on these STRICT rubrics:
+Score each dimension from 0.0-1.0 based on these rubrics:
 
 FRAMING (0.0-1.0):
-- 0.0-0.2: Minimal client message (e.g., "tell me more", "yes", single words) OR no clear problem definition, mixing multiple issues
-- 0.3-0.4: Client message mentions a problem but conflates it with symptoms or solutions, lacks clarity
-- 0.5-0.6: Client message states problem with some boundaries, but still mixing symptoms
-- 0.7-0.8: Client message shows clear problem boundaries, distinguishing root causes from symptoms
-- 0.9-1.0: Client message demonstrates sophisticated framing, multiple perspectives considered, metacognition present
+- 0.0-0.2: No clear problem definition, mixing multiple issues
+- 0.3-0.5: Problem stated but conflated with symptoms or solutions
+- 0.6-0.8: Clear problem boundaries, distinguishing root causes from symptoms
+- 0.9-1.0: Sophisticated framing, multiple perspectives considered, metacognition present
 
 ALTERNATIVES (0.0-1.0):
-- 0.0-0.2: Minimal client message OR binary thinking (stay/leave), no creative options, OR no alternatives discussed in the client message
-- 0.3-0.4: Client message mentions 1-2 options but doesn't develop or explore them
-- 0.5-0.6: Client message mentions 2-3 options with some development
-- 0.7-0.8: Client message discusses multiple creative options, including hybrids and experiments
-- 0.9-1.0: Client message demonstrates rich option set with clear differentiation, includes "create new options"
+- 0.0-0.2: Binary thinking (stay/leave), no creative options
+- 0.3-0.5: 2-3 options mentioned but not developed
+- 0.6-0.8: Multiple creative options, including hybrids and experiments
+- 0.9-1.0: Rich option set with clear differentiation, includes "create new options"
 
 INFORMATION (0.0-1.0):
-- 0.0-0.2: Minimal client message OR operating on assumptions, no data gathering mentioned in client message, OR no information-seeking behavior demonstrated
-- 0.3-0.4: Client message vaguely mentions needing information, but no specific plan
-- 0.5-0.6: Client message mentions some information seeking but unsystematic
-- 0.7-0.8: Client message shows deliberate information gathering, identifying knowledge gaps
-- 0.9-1.0: Client message demonstrates systematic data collection, distinguishing signal from noise
+- 0.0-0.2: Operating on assumptions, no data gathering mentioned
+- 0.3-0.5: Some information seeking but unsystematic
+- 0.6-0.8: Deliberate information gathering, identifying knowledge gaps
+- 0.9-1.0: Systematic data collection, distinguishing signal from noise
 
 VALUES (0.0-1.0):
-- 0.0-0.2: Minimal client message OR no mention of what matters in client message, OR only surface concerns (money, title), OR no values discussion in client message
-- 0.3-0.4: Client message mentions some values but superficial, not prioritized
-- 0.5-0.6: Client message mentions values with basic prioritization
-- 0.7-0.8: Client message clearly articulates core values and tradeoffs
-- 0.9-1.0: Client message demonstrates deep values clarity, including meta-values and long-term vision
+- 0.0-0.2: No mention of what matters or only surface concerns (money, title)
+- 0.3-0.5: Some values mentioned but not prioritized
+- 0.6-0.8: Clear articulation of core values and tradeoffs
+- 0.9-1.0: Deep values clarity, including meta-values and long-term vision
 
 REASONING (0.0-1.0):
-- 0.0-0.2: Minimal client message OR emotional reasoning in client message, cognitive distortions present, OR no logical thinking demonstrated in client message
-- 0.3-0.4: Client message shows some logical thinking but incomplete, still heavily emotional
-- 0.5-0.6: Client message shows mix of emotional and logical reasoning, some awareness of biases
-- 0.7-0.8: Client message demonstrates sound reasoning, recognizing biases and assumptions
-- 0.9-1.0: Client message demonstrates sophisticated analysis, probabilistic thinking, acknowledging uncertainty
+- 0.0-0.2: Emotional reasoning, cognitive distortions present
+- 0.3-0.5: Some logical thinking but incomplete
+- 0.6-0.8: Sound reasoning, recognizing biases and assumptions
+- 0.9-1.0: Sophisticated analysis, probabilistic thinking, acknowledging uncertainty
 
 COMMITMENT (0.0-1.0):
-- 0.0-0.2: Minimal client message OR stuck in analysis, no actions planned in client message, OR no commitment discussed in client message
-- 0.3-0.4: Client message mentions vague intentions but no specifics
-- 0.5-0.6: Client message mentions some specific intentions but no clear plan
-- 0.7-0.8: Client message includes specific next steps with timelines
-- 0.9-1.0: Client message demonstrates clear action plan with accountability and contingencies
+- 0.0-0.2: Stuck in analysis, no actions planned
+- 0.3-0.5: Vague intentions without specifics
+- 0.6-0.8: Specific next steps with timelines
+- 0.9-1.0: Clear action plan with accountability and contingencies
 
 COACHING QUALITY BONUS (if coach response provided):
-Add 0.05-0.1 to relevant dimensions ONLY if coach demonstrates:
+Add 0.1 to relevant dimensions if coach:
 - Asks powerful questions rather than giving advice
 - Reflects patterns back to client
 - Challenges assumptions constructively
 - Creates psychological safety while maintaining productive tension
-
-IMPORTANT: Do NOT add coaching bonus if the coach response is minimal (e.g., "tell me more", "go on", single questions).
 
 Return JSON:
 {

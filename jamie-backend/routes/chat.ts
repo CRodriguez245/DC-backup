@@ -1,6 +1,6 @@
 import express from 'express';
 import { getJamieResponse, scoreDQ } from '../utils/openai';
-import { getPersonaSystemPrompt, personaStageConfigs, PersonaStageKey } from '../utils/prompts';
+import { getPersonaSystemPrompt, personaStageConfigs, PersonaStageKey, scoringWeights, andresResponsePatterns } from '../utils/prompts';
 
 const router = express.Router();
 
@@ -56,8 +56,46 @@ router.post('/', async (req, res) => {
       .map(msg => `${msg.role === 'user' ? 'Client' : 'Coach'}: ${msg.content}`)
       .join('\n\n');
 
-    // Score DQ with conversation context (coach response will be added after generation)
-    const dqScoreComponents = await scoreDQ(userMessage, conversationHistory);
+    // PRE-CHECK: Catch truly minimal messages (exact phrases only, not substantive content)
+    const minimalMessagePatterns = [
+      /^tell me more\s*$/i,
+      /^tell me more about\s*$/i,
+      /^yes\s*$/i,
+      /^okay?\s*$/i,
+      /^ok\s*$/i,
+      /^sure\s*$/i,
+      /^go on\s*$/i,
+      /^continue\s*$/i,
+      /^keep going\s*$/i,
+      /^what do you think\s*\??\s*$/i,
+      /^what's your take\s*\??\s*$/i,
+      /^i see\s*$/i,
+      /^i understand\s*$/i,
+      /^that makes sense\s*$/i
+    ];
+    
+    // Only catch exact minimal phrases - if message has substantive content, let LLM score it
+    const trimmedMessage = userMessage.trim();
+    const isExactMinimalPhrase = minimalMessagePatterns.some(pattern => pattern.test(trimmedMessage));
+    
+    let dqScoreComponents: any;
+    if (isExactMinimalPhrase) {
+      // Force minimal scores only for exact minimal phrases
+      console.log("⚠️ MINIMAL MESSAGE DETECTED - Forcing 0.1 scores for:", userMessage);
+      dqScoreComponents = {
+        framing: 0.1,
+        alternatives: 0.1,
+        information: 0.1,
+        values: 0.1,
+        reasoning: 0.1,
+        commitment: 0.1,
+        overall: 0.1,
+        rationale: "The coach's message is minimal and does not contain substantive coaching content. Per scoring rules, all dimensions must be scored 0.0-0.2."
+      };
+    } else {
+      // Score DQ with conversation context (coach response will be added after generation)
+      dqScoreComponents = await scoreDQ(userMessage, conversationHistory);
+    }
     console.log("DQ Score Components:", dqScoreComponents);
 
     // Calculate DQ score using the "weakest link" principle (minimum of all components)
@@ -103,31 +141,87 @@ router.post('/', async (req, res) => {
     
     console.log("DQ Score (minimum):", finalDqScore, "from values:", dqScoreValues, "raw components:", dqScoreComponents);
 
-    // Calculate average of top 5 dimensions for stage progression (matches frontend progress calculation)
-    // This ensures persona stage aligns with visible progress, not just the weakest link
+    // Apply contextual scoring weights based on conversation stage
+    const turnsUsed = sessionState[sessionId].turnsUsed;
+    let conversationStage: 'earlyConversation' | 'midConversation' | 'lateConversation';
+    if (turnsUsed <= 6) {
+      conversationStage = 'earlyConversation';
+    } else if (turnsUsed <= 13) {
+      conversationStage = 'midConversation';
+    } else {
+      conversationStage = 'lateConversation';
+    }
+    
+    const weights = scoringWeights[conversationStage];
+    console.log(`Conversation stage: ${conversationStage} (turn ${turnsUsed}), applying weights:`, weights);
+    
+    // Create a map of dimension to score
+    const dimensionScores: Record<DQDimension, number> = {
+      framing: 0,
+      alternatives: 0,
+      information: 0,
+      values: 0,
+      reasoning: 0,
+      commitment: 0
+    };
+    
+    // Populate dimension scores from dqScoreComponents
+    for (const dim of dqDimensions) {
+      const value = dqScoreComponents?.[dim];
+      if (value !== null && value !== undefined) {
+        const numValue = typeof value === 'number' ? value : parseFloat(String(value));
+        if (typeof numValue === 'number' && !isNaN(numValue) && isFinite(numValue) && numValue >= 0 && numValue <= 1) {
+          dimensionScores[dim] = numValue;
+        }
+      }
+    }
+    
+    // Calculate weighted average for stage progression
+    let weightedSum = 0;
+    let totalWeight = 0;
+    for (const dim of dqDimensions) {
+      const score = dimensionScores[dim];
+      const weight = weights[dim];
+      weightedSum += score * weight;
+      totalWeight += weight;
+    }
+    const weightedAvgScore = totalWeight > 0 ? weightedSum / totalWeight : finalDqScore;
+    
+    // Also calculate average of top 5 dimensions (for backward compatibility and frontend display)
     const sortedScores = [...dqScoreValues].sort((a, b) => b - a);
     const top5Scores = sortedScores.slice(0, Math.min(5, sortedScores.length));
     const avgTop5Score = top5Scores.length > 0 
       ? top5Scores.reduce((sum, val) => sum + val, 0) / top5Scores.length 
-      : finalDqScore; // Fallback to minimum if no valid scores
+      : finalDqScore;
     
-    console.log("DQ Score (avg top 5):", avgTop5Score, "from top 5:", top5Scores);
+    // Use weighted average for stage progression (more contextual)
+    const avgTop5ScoreForStage = weightedAvgScore;
+    console.log("DQ Score (weighted avg):", weightedAvgScore, "DQ Score (avg top 5):", avgTop5Score, "from top 5:", top5Scores);
 
     // Determine persona stage and get appropriate system prompt
     const personaConfig = personaStageConfigs[persona] || personaStageConfigs['jamie'];
     let stageKey: PersonaStageKey = personaConfig.defaultStage;
     
-    // Apply smoothing: use exponential moving average to prevent rapid jumps
+    // Apply light smoothing: use exponential moving average to prevent rapid jumps
     // Store previous average in session state for smoothing
     const smoothingKey = `${persona}_avgScore`;
-    const previousAvg = (sessionState[sessionId] as any)[smoothingKey] || avgTop5Score;
-    const smoothingFactor = 0.3; // 30% new score, 70% previous (higher = more stable)
-    const smoothedScore = (smoothingFactor * avgTop5Score) + ((1 - smoothingFactor) * previousAvg);
+    const previousAvg = (sessionState[sessionId] as any)[smoothingKey] || avgTop5ScoreForStage;
+    const smoothingFactor = 0.7; // 70% new score, 30% previous (more responsive, less smoothing)
+    const smoothedScore = (smoothingFactor * avgTop5ScoreForStage) + ((1 - smoothingFactor) * previousAvg);
     (sessionState[sessionId] as any)[smoothingKey] = smoothedScore;
-    
+
     // Use smoothed score for stage determination to prevent rapid jumps
     const stageScore = smoothedScore;
-    console.log("Stage score (smoothed):", stageScore, "from avg:", avgTop5Score, "previous:", previousAvg);
+    console.log("Stage score (smoothed):", stageScore, "from weighted avg:", avgTop5ScoreForStage, "previous:", previousAvg);
+    
+    // Detect coaching style for persona response patterns
+    const isDirective = /(?:you should|you need to|you must|do this|try this|start by|pursue|ask them to)/i.test(userMessage);
+    const isExplorative = /(?:what|how|why|tell me|explore|consider|think about|what if|help me think)/i.test(userMessage);
+    const coachingStyle: 'directive' | 'explorative' | 'mixed' = 
+      isDirective && isExplorative ? 'mixed' :
+      isDirective ? 'directive' :
+      isExplorative ? 'explorative' : 'mixed';
+    console.log("Coaching style detected:", coachingStyle);
 
     if (!sessionState[sessionId].personaStages[persona]) {
       sessionState[sessionId].personaStages[persona] = {
@@ -203,10 +297,11 @@ router.post('/', async (req, res) => {
       stageKey = personaConfig.stages[chosenIndex].key;
     }
 
-    const systemPrompt = getPersonaSystemPrompt(persona, stageKey);
+    const systemPrompt = getPersonaSystemPrompt(persona, stageKey, coachingStyle);
     console.log('Persona selection:', {
       persona,
       stageKey,
+      coachingStyle,
       promptPreview: systemPrompt.slice(0, 120)
     });
     

@@ -673,7 +673,11 @@ const JamieAI = () => {
     // For progress display, use average of top 5 dimensions (excluding lowest)
     // This shows progress even when one dimension is lagging
     const dqObj = latestMessage.dqScore;
-    const values = Object.values(dqObj)
+    
+    // Only use the 6 core DQ dimensions, exclude 'overall' and 'rationale'
+    const coreDimensions = ['framing', 'alternatives', 'information', 'values', 'reasoning', 'commitment'];
+    const values = coreDimensions
+      .map(dim => dqObj[dim])
       .filter(v => typeof v === 'number' && !isNaN(v) && isFinite(v) && v >= 0 && v <= 1)
       .sort((a, b) => b - a); // Sort descending
     

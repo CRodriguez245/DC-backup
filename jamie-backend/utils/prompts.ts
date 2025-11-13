@@ -212,16 +212,16 @@ export const personaStageConfigs: Record<string, PersonaConfig> = {
   andres: {
     stages: [
       { key: 'overwhelmed', minScore: 0 },
-      { key: 'defensive', minScore: 0.15 },
-      { key: 'exploring', minScore: 0.3 },
-      { key: 'experimenting', minScore: 0.5 },
-      { key: 'curious', minScore: 0.65 },
-      { key: 'visioning', minScore: 0.8 }
+      { key: 'defensive', minScore: 0.1 },      // Lowered from 0.15 - easier to progress
+      { key: 'exploring', minScore: 0.2 },      // Lowered from 0.3 - more achievable
+      { key: 'experimenting', minScore: 0.35 }, // Lowered from 0.5 - visible progress
+      { key: 'curious', minScore: 0.5 },        // Lowered from 0.65 - more reachable
+      { key: 'visioning', minScore: 0.7 }       // Lowered from 0.8 - achievable goal
     ],
     lockOnceAchieved: false,  // Allow regression for realism
     defaultStage: 'overwhelmed',
-    minSamples: 2,  // Reduce to allow quicker initial response
-    regressionThreshold: 0.15  // Allow stage regression if score drops
+    minSamples: 1,  // Reduced from 2 - faster progression to show progress
+    regressionThreshold: 0.1  // Lowered from 0.15 - less harsh regression
   }
 };
 

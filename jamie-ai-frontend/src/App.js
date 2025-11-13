@@ -701,9 +701,21 @@ const JamieAI = () => {
     
     if (!latestMessage.dqScore) return 0;
     
-    // Calculate minimum DQ score safely (using weakest link principle)
-    const minScore = safeMinDqScore(latestMessage.dqScore);
-    return Math.round(minScore * 100);
+    // For progress display, use average of top 5 dimensions (excluding lowest)
+    // This shows progress even when one dimension is lagging
+    const dqObj = latestMessage.dqScore;
+    const values = Object.values(dqObj)
+      .filter(v => typeof v === 'number' && !isNaN(v) && isFinite(v) && v >= 0 && v <= 1)
+      .sort((a, b) => b - a); // Sort descending
+    
+    if (values.length === 0) return 0;
+    
+    // Use average of top 5 dimensions (or all if less than 5)
+    // This gives a more encouraging progress view while still reflecting overall quality
+    const topValues = values.slice(0, Math.min(5, values.length));
+    const avgScore = topValues.reduce((sum, val) => sum + val, 0) / topValues.length;
+    
+    return Math.round(avgScore * 100);
   };
 
   // Get character's current state

@@ -9,9 +9,11 @@ export const STAGE_THRESHOLDS = {
   },
   andres: {
     overwhelmed: 0,
-    exploring: 0.2,
-    curious: 0.6,
-    visioning: 0.8
+    defensive: 0.1,      // Lowered from 0.15 - easier to progress
+    exploring: 0.2,      // Lowered from 0.3 - more achievable
+    experimenting: 0.35, // Lowered from 0.5 - visible progress
+    curious: 0.5,        // Lowered from 0.65 - more reachable
+    visioning: 0.7       // Lowered from 0.8 - achievable goal
   },
   kavya: {
     reflective: 0

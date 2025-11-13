@@ -129,7 +129,7 @@ const HomePage = ({ userInfo, gameMode, onStartCoaching, onLogout, onSettings, o
 
   return (
     <div className="h-screen bg-white relative flex flex-col" style={{ animation: 'pageFadeIn 0.6s ease-out' }}>
-      <style jsx>{`
+      <style>{`
         @keyframes tooltipFadeIn {
           from {
             opacity: 0;

@@ -744,12 +744,12 @@ const JamieAI = () => {
     
     // Use character-specific stage thresholds
     if (currentCharacter === 'andres') {
-      // Andres stages: overwhelmed (0), defensive (0.1), exploring (0.2), experimenting (0.35), curious (0.5), visioning (0.7)
-      if (progressDecimal >= 0.7) return 'Visioning';
-      if (progressDecimal >= 0.5) return 'Curious';
-      if (progressDecimal >= 0.35) return 'Experimenting';
-      if (progressDecimal >= 0.2) return 'Exploring';
-      if (progressDecimal >= 0.1) return 'Defensive';
+      // Andres stages: overwhelmed (0), defensive (0.2), exploring (0.35), experimenting (0.5), curious (0.65), visioning (0.8)
+      if (progressDecimal >= 0.8) return 'Visioning';
+      if (progressDecimal >= 0.65) return 'Curious';
+      if (progressDecimal >= 0.5) return 'Experimenting';
+      if (progressDecimal >= 0.35) return 'Exploring';
+      if (progressDecimal >= 0.2) return 'Defensive';
       return 'Overwhelmed';
     } else if (currentCharacter === 'kavya') {
       // Kavya only has one stage for now
@@ -1635,7 +1635,7 @@ const JamieAI = () => {
         })()
       ) : finalCurrentView === 'chat' ? (
         <div className="bg-white h-screen w-full flex flex-col sm:flex-row">
-      <style jsx>{`
+      <style>{`
         @keyframes slideInUp {
           from {
             opacity: 0;

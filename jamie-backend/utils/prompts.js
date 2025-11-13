@@ -189,16 +189,16 @@ exports.personaStageConfigs = {
     andres: {
         stages: [
             { key: 'overwhelmed', minScore: 0 },
-            { key: 'defensive', minScore: 0.1 },      // Lowered from 0.15 - easier to progress
-            { key: 'exploring', minScore: 0.2 },      // Lowered from 0.3 - more achievable
-            { key: 'experimenting', minScore: 0.35 }, // Lowered from 0.5 - visible progress
-            { key: 'curious', minScore: 0.5 },        // Lowered from 0.65 - more reachable
-            { key: 'visioning', minScore: 0.7 }       // Lowered from 0.8 - achievable goal
+            { key: 'defensive', minScore: 0.2 },      // Raised - requires more engagement
+            { key: 'exploring', minScore: 0.35 },     // Raised - requires substantive exploration
+            { key: 'experimenting', minScore: 0.5 },   // Raised - requires real experimentation
+            { key: 'curious', minScore: 0.65 },       // Raised - requires deep curiosity
+            { key: 'visioning', minScore: 0.8 }       // Raised - requires clear vision
         ],
         lockOnceAchieved: false,  // Allow regression for realism
         defaultStage: 'overwhelmed',
-        minSamples: 1,  // Reduced from 2 - faster progression to show progress
-        regressionThreshold: 0.1  // Lowered from 0.15 - less harsh regression
+        minSamples: 2,  // Increased - requires consistent evidence before progression
+        regressionThreshold: 0.15  // Raised - more stable progression
     }
 };
 function getPersonaSystemPrompt(persona, stage) {
@@ -224,7 +224,7 @@ function getPersonaSystemPrompt(persona, stage) {
 }
 exports.getPersonaSystemPrompt = getPersonaSystemPrompt;
 const dqScoringPrompt = (userMessage, conversationHistory, coachResponse) => `
-Evaluate this coaching interaction using Decision Quality dimensions.
+Evaluate this coaching interaction using Decision Quality dimensions. Be STRICT and CONSERVATIVE in your scoring. Only award higher scores when there is clear, substantive evidence of progress.
 
 CONVERSATION CONTEXT:
 ${conversationHistory}
@@ -234,50 +234,60 @@ CLIENT MESSAGE:
 
 ${coachResponse ? `COACH RESPONSE:\n"${coachResponse}"` : ''}
 
-Score each dimension from 0.0-1.0 based on these rubrics:
+CRITICAL: For minimal interactions (e.g., "tell me more", "yes", "okay", single questions without context), score ALL dimensions at 0.0-0.2. Higher scores require SUBSTANTIVE engagement and clear evidence.
+
+Score each dimension from 0.0-1.0 based on these STRICT rubrics:
 
 FRAMING (0.0-1.0):
-- 0.0-0.2: No clear problem definition, mixing multiple issues
-- 0.3-0.5: Problem stated but conflated with symptoms or solutions
-- 0.6-0.8: Clear problem boundaries, distinguishing root causes from symptoms
+- 0.0-0.2: No clear problem definition, mixing multiple issues, OR minimal interaction (e.g., "tell me more", "yes", single words)
+- 0.3-0.4: Problem mentioned but conflated with symptoms or solutions, lacks clarity
+- 0.5-0.6: Problem stated with some boundaries, but still mixing symptoms
+- 0.7-0.8: Clear problem boundaries, distinguishing root causes from symptoms
 - 0.9-1.0: Sophisticated framing, multiple perspectives considered, metacognition present
 
 ALTERNATIVES (0.0-1.0):
-- 0.0-0.2: Binary thinking (stay/leave), no creative options
-- 0.3-0.5: 2-3 options mentioned but not developed
-- 0.6-0.8: Multiple creative options, including hybrids and experiments
+- 0.0-0.2: Binary thinking (stay/leave), no creative options, OR no alternatives discussed at all
+- 0.3-0.4: 1-2 options mentioned but not developed or explored
+- 0.5-0.6: 2-3 options mentioned with some development
+- 0.7-0.8: Multiple creative options, including hybrids and experiments
 - 0.9-1.0: Rich option set with clear differentiation, includes "create new options"
 
 INFORMATION (0.0-1.0):
-- 0.0-0.2: Operating on assumptions, no data gathering mentioned
-- 0.3-0.5: Some information seeking but unsystematic
-- 0.6-0.8: Deliberate information gathering, identifying knowledge gaps
+- 0.0-0.2: Operating on assumptions, no data gathering mentioned, OR no information-seeking behavior
+- 0.3-0.4: Vague mention of needing information, but no specific plan
+- 0.5-0.6: Some information seeking mentioned but unsystematic
+- 0.7-0.8: Deliberate information gathering, identifying knowledge gaps
 - 0.9-1.0: Systematic data collection, distinguishing signal from noise
 
 VALUES (0.0-1.0):
-- 0.0-0.2: No mention of what matters or only surface concerns (money, title)
-- 0.3-0.5: Some values mentioned but not prioritized
-- 0.6-0.8: Clear articulation of core values and tradeoffs
+- 0.0-0.2: No mention of what matters or only surface concerns (money, title), OR no values discussion
+- 0.3-0.4: Some values mentioned but superficial, not prioritized
+- 0.5-0.6: Some values mentioned with basic prioritization
+- 0.7-0.8: Clear articulation of core values and tradeoffs
 - 0.9-1.0: Deep values clarity, including meta-values and long-term vision
 
 REASONING (0.0-1.0):
-- 0.0-0.2: Emotional reasoning, cognitive distortions present
-- 0.3-0.5: Some logical thinking but incomplete
-- 0.6-0.8: Sound reasoning, recognizing biases and assumptions
+- 0.0-0.2: Emotional reasoning, cognitive distortions present, OR no logical thinking demonstrated
+- 0.3-0.4: Some logical thinking but incomplete, still heavily emotional
+- 0.5-0.6: Mix of emotional and logical reasoning, some awareness of biases
+- 0.7-0.8: Sound reasoning, recognizing biases and assumptions
 - 0.9-1.0: Sophisticated analysis, probabilistic thinking, acknowledging uncertainty
 
 COMMITMENT (0.0-1.0):
-- 0.0-0.2: Stuck in analysis, no actions planned
-- 0.3-0.5: Vague intentions without specifics
-- 0.6-0.8: Specific next steps with timelines
+- 0.0-0.2: Stuck in analysis, no actions planned, OR no commitment discussed
+- 0.3-0.4: Vague intentions mentioned but no specifics
+- 0.5-0.6: Some specific intentions but no clear plan
+- 0.7-0.8: Specific next steps with timelines
 - 0.9-1.0: Clear action plan with accountability and contingencies
 
 COACHING QUALITY BONUS (if coach response provided):
-Add 0.1 to relevant dimensions if coach:
+Add 0.05-0.1 to relevant dimensions ONLY if coach demonstrates:
 - Asks powerful questions rather than giving advice
 - Reflects patterns back to client
 - Challenges assumptions constructively
 - Creates psychological safety while maintaining productive tension
+
+IMPORTANT: Do NOT add coaching bonus if the coach response is minimal (e.g., "tell me more", "go on", single questions).
 
 Return JSON:
 {

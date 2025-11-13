@@ -248,9 +248,9 @@ export function getPersonaSystemPrompt(persona: string, stage: PersonaStageKey):
     case 'thoughtful':
       return jamieEvolutionLevels.thoughtful;
     case 'confident':
-      return jamieEvolutionLevels.confident;
+    return jamieEvolutionLevels.confident;
     default:
-      return jamieEvolutionLevels.confused;
+    return jamieEvolutionLevels.confused;
   }
 }
 
@@ -265,51 +265,65 @@ CLIENT MESSAGE:
 
 ${coachResponse ? `COACH RESPONSE:\n"${coachResponse}"` : ''}
 
-CRITICAL: For minimal interactions (e.g., "tell me more", "yes", "okay", single questions without context), score ALL dimensions at 0.0-0.2. Higher scores require SUBSTANTIVE engagement and clear evidence.
+CRITICAL SCORING RULES:
+1. The CLIENT MESSAGE is the PRIMARY source for scoring. If the client message is minimal (e.g., "tell me more", "yes", "okay", "go on", single words, or questions without substantive content), score ALL dimensions at 0.0-0.2 REGARDLESS of conversation context.
+2. Conversation context should ONLY be used to understand what the client is referring to, NOT to inflate scores for minimal messages.
+3. Higher scores (0.3+) require the CLIENT MESSAGE itself to contain substantive content demonstrating progress in that dimension.
+4. Do NOT give credit for progress that exists only in the conversation history if the current client message doesn't demonstrate it.
+
+MINIMAL MESSAGE EXAMPLES (score 0.0-0.2):
+- "tell me more"
+- "yes"
+- "okay"
+- "go on"
+- "what do you think?"
+- "I see"
+- Single-word responses
+- Questions that don't add new information or demonstrate decision-making progress
 
 Score each dimension from 0.0-1.0 based on these STRICT rubrics:
 
 FRAMING (0.0-1.0):
-- 0.0-0.2: No clear problem definition, mixing multiple issues, OR minimal interaction (e.g., "tell me more", "yes", single words)
-- 0.3-0.4: Problem mentioned but conflated with symptoms or solutions, lacks clarity
-- 0.5-0.6: Problem stated with some boundaries, but still mixing symptoms
-- 0.7-0.8: Clear problem boundaries, distinguishing root causes from symptoms
-- 0.9-1.0: Sophisticated framing, multiple perspectives considered, metacognition present
+- 0.0-0.2: Minimal client message (e.g., "tell me more", "yes", single words) OR no clear problem definition, mixing multiple issues
+- 0.3-0.4: Client message mentions a problem but conflates it with symptoms or solutions, lacks clarity
+- 0.5-0.6: Client message states problem with some boundaries, but still mixing symptoms
+- 0.7-0.8: Client message shows clear problem boundaries, distinguishing root causes from symptoms
+- 0.9-1.0: Client message demonstrates sophisticated framing, multiple perspectives considered, metacognition present
 
 ALTERNATIVES (0.0-1.0):
-- 0.0-0.2: Binary thinking (stay/leave), no creative options, OR no alternatives discussed at all
-- 0.3-0.4: 1-2 options mentioned but not developed or explored
-- 0.5-0.6: 2-3 options mentioned with some development
-- 0.7-0.8: Multiple creative options, including hybrids and experiments
-- 0.9-1.0: Rich option set with clear differentiation, includes "create new options"
+- 0.0-0.2: Minimal client message OR binary thinking (stay/leave), no creative options, OR no alternatives discussed in the client message
+- 0.3-0.4: Client message mentions 1-2 options but doesn't develop or explore them
+- 0.5-0.6: Client message mentions 2-3 options with some development
+- 0.7-0.8: Client message discusses multiple creative options, including hybrids and experiments
+- 0.9-1.0: Client message demonstrates rich option set with clear differentiation, includes "create new options"
 
 INFORMATION (0.0-1.0):
-- 0.0-0.2: Operating on assumptions, no data gathering mentioned, OR no information-seeking behavior
-- 0.3-0.4: Vague mention of needing information, but no specific plan
-- 0.5-0.6: Some information seeking mentioned but unsystematic
-- 0.7-0.8: Deliberate information gathering, identifying knowledge gaps
-- 0.9-1.0: Systematic data collection, distinguishing signal from noise
+- 0.0-0.2: Minimal client message OR operating on assumptions, no data gathering mentioned in client message, OR no information-seeking behavior demonstrated
+- 0.3-0.4: Client message vaguely mentions needing information, but no specific plan
+- 0.5-0.6: Client message mentions some information seeking but unsystematic
+- 0.7-0.8: Client message shows deliberate information gathering, identifying knowledge gaps
+- 0.9-1.0: Client message demonstrates systematic data collection, distinguishing signal from noise
 
 VALUES (0.0-1.0):
-- 0.0-0.2: No mention of what matters or only surface concerns (money, title), OR no values discussion
-- 0.3-0.4: Some values mentioned but superficial, not prioritized
-- 0.5-0.6: Some values mentioned with basic prioritization
-- 0.7-0.8: Clear articulation of core values and tradeoffs
-- 0.9-1.0: Deep values clarity, including meta-values and long-term vision
+- 0.0-0.2: Minimal client message OR no mention of what matters in client message, OR only surface concerns (money, title), OR no values discussion in client message
+- 0.3-0.4: Client message mentions some values but superficial, not prioritized
+- 0.5-0.6: Client message mentions values with basic prioritization
+- 0.7-0.8: Client message clearly articulates core values and tradeoffs
+- 0.9-1.0: Client message demonstrates deep values clarity, including meta-values and long-term vision
 
 REASONING (0.0-1.0):
-- 0.0-0.2: Emotional reasoning, cognitive distortions present, OR no logical thinking demonstrated
-- 0.3-0.4: Some logical thinking but incomplete, still heavily emotional
-- 0.5-0.6: Mix of emotional and logical reasoning, some awareness of biases
-- 0.7-0.8: Sound reasoning, recognizing biases and assumptions
-- 0.9-1.0: Sophisticated analysis, probabilistic thinking, acknowledging uncertainty
+- 0.0-0.2: Minimal client message OR emotional reasoning in client message, cognitive distortions present, OR no logical thinking demonstrated in client message
+- 0.3-0.4: Client message shows some logical thinking but incomplete, still heavily emotional
+- 0.5-0.6: Client message shows mix of emotional and logical reasoning, some awareness of biases
+- 0.7-0.8: Client message demonstrates sound reasoning, recognizing biases and assumptions
+- 0.9-1.0: Client message demonstrates sophisticated analysis, probabilistic thinking, acknowledging uncertainty
 
 COMMITMENT (0.0-1.0):
-- 0.0-0.2: Stuck in analysis, no actions planned, OR no commitment discussed
-- 0.3-0.4: Vague intentions mentioned but no specifics
-- 0.5-0.6: Some specific intentions but no clear plan
-- 0.7-0.8: Specific next steps with timelines
-- 0.9-1.0: Clear action plan with accountability and contingencies
+- 0.0-0.2: Minimal client message OR stuck in analysis, no actions planned in client message, OR no commitment discussed in client message
+- 0.3-0.4: Client message mentions vague intentions but no specifics
+- 0.5-0.6: Client message mentions some specific intentions but no clear plan
+- 0.7-0.8: Client message includes specific next steps with timelines
+- 0.9-1.0: Client message demonstrates clear action plan with accountability and contingencies
 
 COACHING QUALITY BONUS (if coach response provided):
 Add 0.05-0.1 to relevant dimensions ONLY if coach demonstrates:

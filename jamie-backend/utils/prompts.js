@@ -234,23 +234,37 @@ CLIENT MESSAGE:
 
 ${coachResponse ? `COACH RESPONSE:\n"${coachResponse}"` : ''}
 
-CRITICAL: For minimal interactions (e.g., "tell me more", "yes", "okay", single questions without context), score ALL dimensions at 0.0-0.2. Higher scores require SUBSTANTIVE engagement and clear evidence.
+CRITICAL SCORING RULES:
+1. The CLIENT MESSAGE is the PRIMARY source for scoring. If the client message is minimal (e.g., "tell me more", "yes", "okay", "go on", single words, or questions without substantive content), score ALL dimensions at 0.0-0.2 REGARDLESS of conversation context.
+2. Conversation context should ONLY be used to understand what the client is referring to, NOT to inflate scores for minimal messages.
+3. Higher scores (0.3+) require the CLIENT MESSAGE itself to contain substantive content demonstrating progress in that dimension.
+4. Do NOT give credit for progress that exists only in the conversation history if the current client message doesn't demonstrate it.
+
+MINIMAL MESSAGE EXAMPLES (score 0.0-0.2):
+- "tell me more"
+- "yes"
+- "okay"
+- "go on"
+- "what do you think?"
+- "I see"
+- Single-word responses
+- Questions that don't add new information or demonstrate decision-making progress
 
 Score each dimension from 0.0-1.0 based on these STRICT rubrics:
 
 FRAMING (0.0-1.0):
-- 0.0-0.2: No clear problem definition, mixing multiple issues, OR minimal interaction (e.g., "tell me more", "yes", single words)
-- 0.3-0.4: Problem mentioned but conflated with symptoms or solutions, lacks clarity
-- 0.5-0.6: Problem stated with some boundaries, but still mixing symptoms
-- 0.7-0.8: Clear problem boundaries, distinguishing root causes from symptoms
-- 0.9-1.0: Sophisticated framing, multiple perspectives considered, metacognition present
+- 0.0-0.2: Minimal client message (e.g., "tell me more", "yes", single words) OR no clear problem definition in client message, mixing multiple issues
+- 0.3-0.4: Client message mentions a problem but conflates it with symptoms or solutions, lacks clarity
+- 0.5-0.6: Client message states problem with some boundaries, but still mixing symptoms
+- 0.7-0.8: Client message shows clear problem boundaries, distinguishing root causes from symptoms
+- 0.9-1.0: Client message demonstrates sophisticated framing, multiple perspectives considered, metacognition present
 
 ALTERNATIVES (0.0-1.0):
-- 0.0-0.2: Binary thinking (stay/leave), no creative options, OR no alternatives discussed at all
-- 0.3-0.4: 1-2 options mentioned but not developed or explored
-- 0.5-0.6: 2-3 options mentioned with some development
-- 0.7-0.8: Multiple creative options, including hybrids and experiments
-- 0.9-1.0: Rich option set with clear differentiation, includes "create new options"
+- 0.0-0.2: Minimal client message OR binary thinking (stay/leave), no creative options, OR no alternatives discussed in the client message
+- 0.3-0.4: Client message mentions 1-2 options but doesn't develop or explore them
+- 0.5-0.6: Client message mentions 2-3 options with some development
+- 0.7-0.8: Client message discusses multiple creative options, including hybrids and experiments
+- 0.9-1.0: Client message demonstrates rich option set with clear differentiation, includes "create new options"
 
 INFORMATION (0.0-1.0):
 - 0.0-0.2: Operating on assumptions, no data gathering mentioned, OR no information-seeking behavior

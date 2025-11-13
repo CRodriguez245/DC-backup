@@ -202,6 +202,19 @@ const JamieAI = () => {
   const [hasStartedLoading, setHasStartedLoading] = useState(false);
   const [loadedUserIds, setLoadedUserIds] = useState(new Set()); // Track which users we've loaded progress for
 
+  // Version check - log thresholds to verify deployment
+  useEffect(() => {
+    console.log('🔍 DEPLOYMENT CHECK - Andres Stage Thresholds:', {
+      defensive: 0.15,
+      exploring: 0.3,
+      experimenting: 0.5,
+      curious: 0.65,
+      visioning: 0.8,
+      commit: '2626031',
+      message: 'If you see defensive: 0.15 (not 0.25), the update is deployed!'
+    });
+  }, []);
+
   // Ensure progress is loaded for students who are already logged in
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
@@ -745,6 +758,7 @@ const JamieAI = () => {
     // Use character-specific stage thresholds
     if (currentCharacter === 'andres') {
       // Andres stages: overwhelmed (0), defensive (0.15), exploring (0.3), experimenting (0.5), curious (0.65), visioning (0.8)
+      // VERSION CHECK: If you see defensive: 0.15, exploring: 0.3, experimenting: 0.5 in console, the update is deployed
       if (progressDecimal >= 0.8) return 'Visioning';
       if (progressDecimal >= 0.65) return 'Curious';
       if (progressDecimal >= 0.5) return 'Experimenting';

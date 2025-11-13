@@ -647,25 +647,28 @@ const JamieAI = () => {
     }
   }, [currentView, currentCharacter, messages.length, isLoading, isTyping]);
 
-  // Calculate Jamie's progress percentage
+  // Calculate progress percentage for current character
   const getJamieProgress = () => {
     if (messages.length === 0) return 0; // Start at 0%
     
-    // Find the latest Jamie message with DQ score
-    const jamieMessages = messages.filter(msg => !msg.isUser && msg.dqScore);
-    if (jamieMessages.length === 0) return 0;
+    // Find the latest character message with DQ score
+    const characterMessages = messages.filter(msg => !msg.isUser && msg.dqScore);
+    if (characterMessages.length === 0) return 0;
     
-    const latestMessage = jamieMessages[jamieMessages.length - 1];
+    const latestMessage = characterMessages[characterMessages.length - 1];
     
-    // Use avgDqScore if available (from backend), otherwise calculate safely
-    if (latestMessage.avgDqScore !== undefined) {
-      const safeScore = typeof latestMessage.avgDqScore === 'number' && !isNaN(latestMessage.avgDqScore) && isFinite(latestMessage.avgDqScore)
-        ? latestMessage.avgDqScore
-        : 0;
-      return Math.round(safeScore * 100);
+    // Always calculate from dqScore object for more accurate progress display
+    // avgDqScore from backend is the minimum (weakest link), which can be misleading
+    if (!latestMessage.dqScore) {
+      // Fallback to avgDqScore if dqScore is not available
+      if (latestMessage.avgDqScore !== undefined) {
+        const safeScore = typeof latestMessage.avgDqScore === 'number' && !isNaN(latestMessage.avgDqScore) && isFinite(latestMessage.avgDqScore)
+          ? latestMessage.avgDqScore
+          : 0;
+        return Math.round(safeScore * 100);
+      }
+      return 0;
     }
-    
-    if (!latestMessage.dqScore) return 0;
     
     // For progress display, use average of top 5 dimensions (excluding lowest)
     // This shows progress even when one dimension is lagging
@@ -730,13 +733,30 @@ const JamieAI = () => {
     }
   }, [messages]); // Only depend on messages - this ensures we react to new DQ scores immediately
 
-  // Get character's current state
+  // Get character's current state based on progress percentage
   const getCharacterState = () => {
     const progress = getJamieProgress();
-    if (progress >= 80) return 'Confident';
-    if (progress >= 60) return 'Thoughtful';
-    if (progress >= 30) return 'Uncertain';
-    return 'Confused';
+    const progressDecimal = progress / 100; // Convert percentage to decimal (0-1)
+    
+    // Use character-specific stage thresholds
+    if (currentCharacter === 'andres') {
+      // Andres stages: overwhelmed (0), defensive (0.1), exploring (0.2), experimenting (0.35), curious (0.5), visioning (0.7)
+      if (progressDecimal >= 0.7) return 'Visioning';
+      if (progressDecimal >= 0.5) return 'Curious';
+      if (progressDecimal >= 0.35) return 'Experimenting';
+      if (progressDecimal >= 0.2) return 'Exploring';
+      if (progressDecimal >= 0.1) return 'Defensive';
+      return 'Overwhelmed';
+    } else if (currentCharacter === 'kavya') {
+      // Kavya only has one stage for now
+      return 'Reflective';
+    } else {
+      // Jamie stages: confused (0), uncertain (0.3), thoughtful (0.6), confident (0.8)
+      if (progressDecimal >= 0.8) return 'Confident';
+      if (progressDecimal >= 0.6) return 'Thoughtful';
+      if (progressDecimal >= 0.3) return 'Uncertain';
+      return 'Confused';
+    }
   };
 
   // Test connection to backend

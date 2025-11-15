@@ -72,11 +72,7 @@ const JamieFace = ({ dqScore, avgDqScore, size = 'small' }) => {
   );
 };
 
-const JamieAI = () => {
-  if (typeof window !== 'undefined' && window.location.pathname === '/reset-password') {
-    return <ResetPasswordPage />;
-  }
-
+const MainApp = () => {
   // Feature flag to use Supabase authentication
   const USE_SUPABASE_AUTH = true; // Re-enable Supabase authentication
 
@@ -2253,6 +2249,18 @@ const JamieAI = () => {
       )}
     </div>
   );
+};
+
+const JamieAI = () => {
+  const isResetRoute =
+    typeof window !== 'undefined' &&
+    window.location.pathname === '/reset-password';
+
+  if (isResetRoute) {
+    return <ResetPasswordPage />;
+  }
+
+  return <MainApp />;
 };
 
 export default JamieAI;

@@ -23,6 +23,8 @@ const safeMinDqScore = (dqScoreObj) => {
   return values.length > 0 ? Math.min(...values) : 0;
 };
 
+const MAX_INPUT_HEIGHT = 120;
+
 const JamieFace = ({ dqScore, avgDqScore, size = 'small' }) => {
   const getJamieState = (score) => {
     if (score >= 0.8) return 'confident';
@@ -313,6 +315,19 @@ const JamieAI = () => {
   // Refs
   const messagesEndRef = useRef(null);
   const chatContainerRef = useRef(null);
+  const messageInputRef = useRef(null);
+
+  const adjustMessageInputHeight = (element) => {
+    if (!element) return;
+    element.style.height = 'auto';
+    const newHeight = Math.min(element.scrollHeight, MAX_INPUT_HEIGHT);
+    element.style.height = `${newHeight}px`;
+    element.style.overflowY = element.scrollHeight > MAX_INPUT_HEIGHT ? 'auto' : 'hidden';
+  };
+
+  useEffect(() => {
+    adjustMessageInputHeight(messageInputRef.current);
+  }, [currentMessage]);
 
   // Handle login from landing page
   const handleLogin = async (loginData) => {
@@ -1524,6 +1539,7 @@ const JamieAI = () => {
   // Handle message input change (optimized to prevent flashing)
   const handleMessageChange = (e) => {
     setCurrentMessage(e.target.value);
+    adjustMessageInputHeight(e.target);
   };
 
   // Handle enter key (optimized)
@@ -2152,6 +2168,7 @@ const JamieAI = () => {
               {/* Blue Input Chat */}
                 <div className="bg-[#538ff6] rounded-[25px] sm:rounded-[45px] w-full max-w-[400px] sm:max-w-[626px] px-3 sm:px-[29px] py-2 sm:py-[15px] flex items-center justify-between shadow-2xl">
                 <textarea
+                  ref={messageInputRef}
                   value={currentMessage}
                   onChange={handleMessageChange}
                   onKeyPress={handleKeyPress}

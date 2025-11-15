@@ -12,6 +12,7 @@ const LandingPage = ({ onLogin, onSignUp }) => {
   const USE_SUPABASE_AUTH = true; // Re-enable Supabase authentication
   
   const [showSignUp, setShowSignUp] = useState(false);
+  const [isForgotPassword, setIsForgotPassword] = useState(false);
   const [formData, setFormData] = useState({
     email: '',
     password: ''
@@ -20,6 +21,9 @@ const LandingPage = ({ onLogin, onSignUp }) => {
   const [errors, setErrors] = useState({});
   const [taglineText, setTaglineText] = useState('');
   const [isTaglineTyping, setIsTaglineTyping] = useState(true);
+  const [resetEmail, setResetEmail] = useState('');
+  const [resetStatus, setResetStatus] = useState({ state: 'idle', message: '' });
+  const [resetError, setResetError] = useState('');
 
 
   const handleSubmit = async (e) => {
@@ -94,6 +98,10 @@ const LandingPage = ({ onLogin, onSignUp }) => {
 
   const handleBackToLogin = () => {
     setShowSignUp(false);
+    setIsForgotPassword(false);
+    setResetEmail('');
+    setResetStatus({ state: 'idle', message: '' });
+    setResetError('');
   };
 
   const handleSignUp = async (signupData) => {
@@ -107,6 +115,22 @@ const LandingPage = ({ onLogin, onSignUp }) => {
     
     if (result && !result.success) {
       setErrors({ general: result.message });
+    }
+  };
+
+  const handleForgotPasswordSubmit = async (e) => {
+    e.preventDefault();
+    if (!resetEmail) {
+      setResetError('Email is required');
+      return;
+    }
+    setResetError('');
+    setResetStatus({ state: 'loading', message: 'Sending reset email...' });
+    const result = await supabaseAuthService.requestPasswordReset(resetEmail);
+    if (result.success) {
+      setResetStatus({ state: 'success', message: result.message });
+    } else {
+      setResetStatus({ state: 'error', message: result.error || 'Failed to send reset email.' });
     }
   };
 
@@ -195,12 +219,14 @@ const LandingPage = ({ onLogin, onSignUp }) => {
               className="text-3xl text-black mb-3 transition-all duration-300 ease-in-out sm:text-4xl sm:mb-4" 
               style={{ fontFamily: 'Futura, -apple-system, BlinkMacSystemFont, sans-serif', fontWeight: 400 }}
             >
-              {showSignUp ? 'Create Account' : 'Welcome back!'}
+              {showSignUp ? 'Create Account' : isForgotPassword ? 'Forgot password?' : 'Welcome back!'}
             </h1>
             <p className="text-gray-600 text-sm transition-all duration-300 ease-in-out sm:text-base sm:leading-relaxed">
               {showSignUp 
                 ? 'Join Decision Coach to practice coaching skills and help others make informed life decisions.'
-                : 'Practice coaching skills and help others navigate important life decisions with confidence.'
+                : isForgotPassword
+                  ? "Enter your email and we'll send you instructions to reset your password."
+                  : 'Practice coaching skills and help others navigate important life decisions with confidence.'
               }
             </p>
           </div>
@@ -213,6 +239,64 @@ const LandingPage = ({ onLogin, onSignUp }) => {
                 className="animate-fadeInUp"
               >
                 <SignUpPage onSignUp={handleSignUp} onBackToLogin={handleBackToLogin} />
+              </div>
+            ) : isForgotPassword ? (
+              <div
+                key="forgot-password"
+                className="animate-fadeInUp"
+              >
+                <form onSubmit={handleForgotPasswordSubmit} className="space-y-4">
+                  {resetStatus.state === 'error' && (
+                    <div className="p-4 bg-red-50/50 border border-red-100 rounded-2xl backdrop-blur-sm">
+                      <p className="text-sm text-red-600 font-medium text-center">{resetStatus.message}</p>
+                    </div>
+                  )}
+                  {resetStatus.state === 'success' && (
+                    <div className="p-4 bg-green-50/60 border border-green-100 rounded-2xl backdrop-blur-sm">
+                      <p className="text-sm text-green-700 font-medium text-center">{resetStatus.message}</p>
+                    </div>
+                  )}
+                  <div>
+                    <label htmlFor="reset-email" className="block text-sm font-medium text-gray-700 mb-2 sm:text-base">
+                      Email Address
+                    </label>
+                    <input
+                      type="email"
+                      id="reset-email"
+                      value={resetEmail}
+                      onChange={(e) => {
+                        setResetEmail(e.target.value);
+                        setResetError('');
+                      }}
+                      className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors sm:px-4 sm:py-3 sm:text-base ${
+                        resetError ? 'border-red-300 bg-red-50/30' : 'border-gray-300'
+                      }`}
+                      placeholder="email@example.com"
+                    />
+                    {resetError && (
+                      <p className="mt-1.5 text-xs text-red-600 font-medium sm:text-sm">{resetError}</p>
+                    )}
+                  </div>
+                  <button
+                    type="submit"
+                    className="w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors font-medium sm:py-3 sm:text-base disabled:opacity-60"
+                    disabled={resetStatus.state === 'loading'}
+                  >
+                    {resetStatus.state === 'loading' ? 'Sending...' : 'Send reset link'}
+                  </button>
+                  <div className="text-center">
+                    <p className="text-gray-600">
+                      Remembered your password?{' '}
+                      <button
+                        type="button"
+                        className="text-blue-600 hover:text-blue-700 font-medium"
+                        onClick={handleBackToLogin}
+                      >
+                        Back to login
+                      </button>
+                    </p>
+                  </div>
+                </form>
               </div>
             ) : (
               <div 
@@ -287,18 +371,30 @@ const LandingPage = ({ onLogin, onSignUp }) => {
                     Log in
                   </button>
 
-                  {/* Sign Up Link */}
-                  <div className="text-center">
-                    <p className="text-gray-600">
-                      Don't have an account?{' '}
+                  <div className="flex items-center justify-between text-sm text-gray-600">
+                    <button
+                      type="button"
+                      className="text-blue-600 hover:text-blue-700 font-medium"
+                      onClick={() => {
+                        setIsForgotPassword(true);
+                        setShowSignUp(false);
+                      }}
+                    >
+                      Forgot password?
+                    </button>
+                    <div>
+                      Don&apos;t have an account?{' '}
                       <button
                         type="button"
                         className="text-blue-600 hover:text-blue-700 font-medium"
-                        onClick={() => setShowSignUp(true)}
+                        onClick={() => {
+                          setShowSignUp(true);
+                          setIsForgotPassword(false);
+                        }}
                       >
                         Sign up
                       </button>
-                    </p>
+                    </div>
                   </div>
                 </form>
               </div>

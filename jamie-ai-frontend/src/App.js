@@ -13,6 +13,7 @@ import { authService } from './services/AuthService.js';
 import { supabaseAuthService } from './services/SupabaseAuthService.js';
 import { supabase } from './lib/supabase.js';
 import { debugLog } from './utils/debugLog';
+import ResetPasswordPage from './ResetPasswordPage';
 
 // Jamie's Animated Face Component
 // Helper function to safely calculate minimum DQ score, filtering out NaN and invalid values
@@ -72,6 +73,10 @@ const JamieFace = ({ dqScore, avgDqScore, size = 'small' }) => {
 };
 
 const JamieAI = () => {
+  if (typeof window !== 'undefined' && window.location.pathname === '/reset-password') {
+    return <ResetPasswordPage />;
+  }
+
   // Feature flag to use Supabase authentication
   const USE_SUPABASE_AUTH = true; // Re-enable Supabase authentication
 

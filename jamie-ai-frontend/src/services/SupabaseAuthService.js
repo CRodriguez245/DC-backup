@@ -892,6 +892,48 @@ export class SupabaseAuthService {
     }
   }
 
+  async requestPasswordReset(email) {
+    try {
+      if (!email) {
+        throw new Error('Email is required');
+      }
+
+      const redirectTo = `${window.location.origin}/reset-password`;
+      const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo });
+
+      if (error) {
+        throw error;
+      }
+
+      return { success: true, message: 'Password reset email sent. Please check your inbox.' };
+    } catch (error) {
+      return { success: false, error: error.message || 'Failed to send reset email' };
+    }
+  }
+
+  async updatePassword(newPassword) {
+    try {
+      if (!newPassword) {
+        throw new Error('Password is required');
+      }
+
+      const { data, error } = await supabase.auth.updateUser({ password: newPassword });
+
+      if (error) {
+        throw error;
+      }
+
+      // Refresh current user if possible
+      if (data?.user) {
+        await this.refreshCurrentUser();
+      }
+
+      return { success: true, message: 'Password updated successfully' };
+    } catch (error) {
+      return { success: false, error: error.message || 'Failed to update password' };
+    }
+  }
+
   // Get user progress summary
   getProgressSummary() {
     if (!this.currentUser) {

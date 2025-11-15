@@ -12,6 +12,7 @@ import SharedVisual from './SharedVisual';
 import { authService } from './services/AuthService.js';
 import { supabaseAuthService } from './services/SupabaseAuthService.js';
 import { supabase } from './lib/supabase.js';
+import { debugLog } from './utils/debugLog';
 
 // Jamie's Animated Face Component
 // Helper function to safely calculate minimum DQ score, filtering out NaN and invalid values
@@ -78,10 +79,10 @@ const JamieAI = () => {
     if (USE_SUPABASE_AUTH) {
       const currentUser = supabaseAuthService.getCurrentUser();
       if (currentUser) {
-        console.log('User already logged in on mount:', currentUser);
+        debugLog('User already logged in on mount:', currentUser);
         // If it's a student or teacher, ensure progress is loaded
         if (currentUser.role === 'student' || currentUser.role === 'teacher') {
-          console.log('User logged in, will load progress in useEffect for role:', currentUser.role);
+          debugLog('User logged in, will load progress in useEffect for role:', currentUser.role);
         }
         return currentUser;
       }
@@ -107,17 +108,17 @@ const JamieAI = () => {
         
         // Set up auth state listener
         supabaseAuthService.addListener((event, user) => {
-            console.log('Auth state changed:', event, user);
-            console.log('Current view when auth state changes:', currentView);
-            console.log('Current isLoadingProgress state:', isLoadingProgress);
-            console.log('Current hasStartedLoading state:', hasStartedLoading);
+            debugLog('Auth state changed:', event, user);
+            debugLog('Current view when auth state changes:', currentView);
+            debugLog('Current isLoadingProgress state:', isLoadingProgress);
+            debugLog('Current hasStartedLoading state:', hasStartedLoading);
             
             if (event === 'progress_loaded' || event === 'progress_updated') {
               // Update userInfo when progress is loaded/updated
-              console.log('Updating userInfo due to progress event:', event);
-              console.log('Setting isLoadingProgress to false');
-              console.log('User progress data:', user?.progress);
-              console.log('Full user object:', JSON.stringify(user, null, 2));
+              debugLog('Updating userInfo due to progress event:', event);
+              debugLog('Setting isLoadingProgress to false');
+              debugLog('User progress data:', user?.progress);
+              debugLog('Full user object:', JSON.stringify(user, null, 2));
               // Clear any existing timeout
               if (loadingTimeoutRef.current) {
                 clearTimeout(loadingTimeoutRef.current);
@@ -128,11 +129,11 @@ const JamieAI = () => {
               setHasStartedLoading(false);
             } else if (event === 'progress_loading_started') {
               // Progress loading has started
-              console.log('Progress loading started, setting loading state');
+              debugLog('Progress loading started, setting loading state');
               setIsLoadingProgress(true);
             } else if (event === 'progress_loading_failed') {
               // Progress loading failed
-              console.log('Progress loading failed, resetting loading state');
+              debugLog('Progress loading failed, resetting loading state');
               // Clear any existing timeout
               if (loadingTimeoutRef.current) {
                 clearTimeout(loadingTimeoutRef.current);
@@ -142,15 +143,15 @@ const JamieAI = () => {
               setHasStartedLoading(false);
             } else if (event === 'login' && user) {
               // When user logs in, ensure we're on homepage
-              console.log('User logged in via auth listener, setting currentView to homepage');
-              console.log('User role:', user.role);
+              debugLog('User logged in via auth listener, setting currentView to homepage');
+              debugLog('User role:', user.role);
               setUserInfo(user);
               setCurrentView('homepage');
               // Don't set loading state here - let the useEffect handle it
-              console.log('Login event processed, useEffect will handle progress loading');
+              debugLog('Login event processed, useEffect will handle progress loading');
             } else if (event === 'logout') {
               // When user logs out, clear all state
-              console.log('User logged out via auth listener, clearing state');
+              debugLog('User logged out via auth listener, clearing state');
               // Clear any existing timeout
               if (loadingTimeoutRef.current) {
                 clearTimeout(loadingTimeoutRef.current);
@@ -164,14 +165,14 @@ const JamieAI = () => {
               setLoadedUserIds(new Set()); // Clear loaded user IDs
             } else if (event === 'classroom_joined' || event === 'classroom_created') {
               // Don't update userInfo for classroom events - these pass classroom objects, not user objects
-              console.log('Classroom event received, not updating userInfo:', event);
+              debugLog('Classroom event received, not updating userInfo:', event);
               // The userInfo should remain as the User object, not be replaced with classroom
             } else if (user && typeof user === 'object' && user.role) {
               // Only update userInfo if user is actually a User object (has a role property)
-              console.log('Updating userInfo due to auth event:', event);
+              debugLog('Updating userInfo due to auth event:', event);
               setUserInfo(user);
             } else {
-              console.log('Ignoring auth event that doesn\'t contain valid user data:', event, user);
+              debugLog('Ignoring auth event that doesn\'t contain valid user data:', event, user);
             }
           });
         
@@ -180,9 +181,9 @@ const JamieAI = () => {
         
         // Add debugging helper
         window.debugAuth = () => {
-          console.log('Current user:', supabaseAuthService.getCurrentUser());
-          console.log('Is loading progress:', supabaseAuthService.isLoadingProgress);
-          console.log('Listeners count:', supabaseAuthService.listeners.length);
+          debugLog('Current user:', supabaseAuthService.getCurrentUser());
+          debugLog('Is loading progress:', supabaseAuthService.isLoadingProgress);
+          debugLog('Listeners count:', supabaseAuthService.listeners.length);
         };
       } else {
         // Use original auth service
@@ -202,47 +203,15 @@ const JamieAI = () => {
   const [hasStartedLoading, setHasStartedLoading] = useState(false);
   const [loadedUserIds, setLoadedUserIds] = useState(new Set()); // Track which users we've loaded progress for
 
-  // Version check - log thresholds to verify deployment (ALWAYS VISIBLE)
-  useEffect(() => {
-    const versionInfo = {
-      defensive: 0.15,
-      exploring: 0.3,
-      experimenting: 0.5,
-      curious: 0.65,
-      visioning: 0.8,
-      commit: '2c88454',
-      deployed: new Date().toISOString()
-    };
-    console.log('%c🔍 DEPLOYMENT CHECK - Andres Stage Thresholds', 'color: #00ff00; font-size: 16px; font-weight: bold;');
-    console.log('%cIf you see defensive: 0.15 (NOT 0.25), the update is deployed!', 'color: #ff0000; font-size: 14px; font-weight: bold;');
-    console.log(versionInfo);
-    // Also set on window for easy access
-    window.ANDRES_VERSION = versionInfo;
-  }, []);
-
   // Ensure progress is loaded for students who are already logged in
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
-    console.log('Progress loading useEffect triggered:', {
-      USE_SUPABASE_AUTH,
-      userInfo: !!userInfo,
-      userRole: userInfo?.role,
-      userId: userInfo?.id,
-      isLoadingProgress,
-      hasProgress: !!userInfo?.progress,
-      jamieProgress: userInfo?.progress?.jamie,
-      jamieSessions: userInfo?.progress?.jamie?.sessions?.length
-    });
-    
     if (USE_SUPABASE_AUTH && userInfo && (userInfo.role === 'student' || userInfo.role === 'teacher')) {
-      console.log('User userInfo detected, ensuring progress is loaded for role:', userInfo.role);
-      
       // Check if we've already loaded progress for this user
       const hasLoadedForUser = loadedUserIds.has(userInfo.id);
       
       // Only start loading if we haven't already started, not currently loading, and haven't loaded for this user
       if (!hasStartedLoading && !isLoadingProgress && !hasLoadedForUser) {
-        console.log('Starting to load progress for user with role:', userInfo.role);
         setHasStartedLoading(true);
         setIsLoadingProgress(true);
         
@@ -255,18 +224,14 @@ const JamieAI = () => {
           clearTimeout(loadingTimeoutRef.current);
         }
         loadingTimeoutRef.current = setTimeout(() => {
-          console.log('Progress loading timeout reached, resetting loading state');
           setIsLoadingProgress(false);
           setHasStartedLoading(false);
           loadingTimeoutRef.current = null;
         }, 10000); // 10 second timeout
         
         supabaseAuthService.loadProgressFromSupabase();
-      } else {
-        console.log('Progress loading already started, in progress, or already loaded for this user');
       }
     } else if (userInfo && userInfo.role !== 'student' && userInfo.role !== 'teacher') {
-      console.log('Non-student/teacher user, not loading progress');
       // Clear any existing timeout
       if (loadingTimeoutRef.current) {
         clearTimeout(loadingTimeoutRef.current);
@@ -274,12 +239,10 @@ const JamieAI = () => {
       }
       // Ensure loading state is false for non-students
       if (isLoadingProgress) {
-        console.log('Resetting isLoadingProgress to false for non-student');
         setIsLoadingProgress(false);
       }
       setHasStartedLoading(false);
     } else if (!userInfo) {
-      console.log('No userInfo, resetting loading state');
       // Clear any existing timeout
       if (loadingTimeoutRef.current) {
         clearTimeout(loadingTimeoutRef.current);
@@ -306,9 +269,6 @@ const JamieAI = () => {
   const [currentView, setCurrentView] = useState('homepage'); // 'homepage', 'chat', 'dashboard', 'admin', 'settings', 'classrooms', 'classroom-detail'
   const [currentCharacter, setCurrentCharacter] = useState('jamie'); // 'jamie', 'andres', or 'kavya'
   const [selectedClassroomId, setSelectedClassroomId] = useState(null);
-  
-  // Debug current view
-  console.log('App.js: Current view:', currentView, 'Selected classroom ID:', selectedClassroomId);
   
   // Character data
   const characterData = {
@@ -357,14 +317,14 @@ const JamieAI = () => {
   // Handle login from landing page
   const handleLogin = async (loginData) => {
     try {
-      console.log('handleLogin called with:', loginData);
+      debugLog('handleLogin called with:', loginData);
       
       // Check if user is already logged in
       if (userInfo && userInfo.id) {
-        console.log('User already logged in, skipping login');
-        console.log('Current view before setting currentView:', currentView);
+        debugLog('User already logged in, skipping login');
+        debugLog('Current view before setting currentView:', currentView);
         setCurrentView('homepage');
-        console.log('State updated - keeping existing userInfo, currentView: homepage');
+        debugLog('State updated - keeping existing userInfo, currentView: homepage');
         return { success: true, message: 'Already logged in' };
       }
       
@@ -373,14 +333,14 @@ const JamieAI = () => {
       if (USE_SUPABASE_AUTH && supabaseAuthService.currentUser) {
         const { data: sessionData } = await supabase.auth.getSession();
         if (sessionData?.session) {
-          console.log('User already authenticated at Supabase level with valid session, hydrating state');
-          console.log('Current view before setting currentView:', currentView);
+          debugLog('User already authenticated at Supabase level with valid session, hydrating state');
+          debugLog('Current view before setting currentView:', currentView);
           setUserInfo(prev => prev || supabaseAuthService.currentUser);
           setCurrentView('homepage');
-          console.log('State updated - userInfo hydrated from Supabase, currentView: homepage');
+          debugLog('State updated - userInfo hydrated from Supabase, currentView: homepage');
           return { success: true, message: 'Already logged in' };
         } else {
-          console.log('User object exists but no Supabase session - user may need to confirm email');
+          debugLog('User object exists but no Supabase session - user may need to confirm email');
           // Clear the user object since session doesn't exist
           supabaseAuthService.currentUser = null;
           // Continue with login flow
@@ -394,7 +354,7 @@ const JamieAI = () => {
       }
       
       // Use authentication service for login
-      console.log('Using Supabase auth:', USE_SUPABASE_AUTH);
+      debugLog('Using Supabase auth:', USE_SUPABASE_AUTH);
       const result = USE_SUPABASE_AUTH 
         ? await supabaseAuthService.login({
             email: loginData.email,
@@ -405,18 +365,18 @@ const JamieAI = () => {
             password: loginData.password || 'demo' // For demo purposes
           });
       
-      console.log('Auth service result:', result);
+      debugLog('Auth service result:', result);
       
       if (result.success) {
-        console.log('Login successful, setting userInfo to:', result.user);
-        console.log('Current view before setting userInfo:', currentView);
+        debugLog('Login successful, setting userInfo to:', result.user);
+        debugLog('Current view before setting userInfo:', currentView);
         setUserInfo(result.user);
-        console.log('Setting currentView to homepage');
+        debugLog('Setting currentView to homepage');
         setCurrentView('homepage');
-        console.log('State updated - userInfo:', result.user, 'currentView: homepage');
+        debugLog('State updated - userInfo:', result.user, 'currentView: homepage');
         return { success: true, message: result.message };
       } else {
-        console.log('Login failed:', result.error);
+        debugLog('Login failed:', result.error);
         return { success: false, message: result.error };
       }
     } catch (error) {
@@ -450,8 +410,8 @@ const JamieAI = () => {
 
   // Handle character selection
   const handleCharacterClick = (characterId) => {
-    console.log('Character clicked:', characterId, 'Setting currentView to chat');
-    console.log('Current isLoadingProgress:', isLoadingProgress);
+    debugLog('Character clicked:', characterId, 'Setting currentView to chat');
+    debugLog('Current isLoadingProgress:', isLoadingProgress);
     
     // Save current session before switching
     if (messages.length > 0) {
@@ -474,7 +434,7 @@ const JamieAI = () => {
 
   // Manual reset for stuck loading state
   const resetLoadingState = () => {
-    console.log('Manually resetting loading state');
+    debugLog('Manually resetting loading state');
     if (loadingTimeoutRef.current) {
       clearTimeout(loadingTimeoutRef.current);
       loadingTimeoutRef.current = null;
@@ -485,7 +445,7 @@ const JamieAI = () => {
 
   // Global debug function for testing
   window.debugLoadingState = () => {
-    console.log('Current loading state:', {
+    debugLog('Current loading state:', {
       isLoadingProgress,
       hasStartedLoading,
       userInfo: !!userInfo,
@@ -499,19 +459,19 @@ const JamieAI = () => {
 
   // Handle logout
   const handleLogout = async () => {
-    console.log('Logout initiated');
+    debugLog('Logout initiated');
     
     try {
       // Use authentication service for logout
       if (USE_SUPABASE_AUTH) {
-        console.log('Calling Supabase logout');
+        debugLog('Calling Supabase logout');
         const result = await supabaseAuthService.logout();
-        console.log('Supabase logout result:', result);
+        debugLog('Supabase logout result:', result);
         
         // The auth listener will handle clearing state when it receives the 'logout' event
         // But we'll also clear it here as a backup
         if (result.success) {
-          console.log('Logout successful, clearing local state');
+          debugLog('Logout successful, clearing local state');
           setUserInfo(null);
           setCurrentView(null);
           setMessages([]);
@@ -552,7 +512,7 @@ const JamieAI = () => {
         localStorage.removeItem('currentSession');
       }
       
-      console.log('Logout completed');
+      debugLog('Logout completed');
     } catch (error) {
       console.error('Logout error:', error);
       // Even if logout fails, clear local state
@@ -808,7 +768,7 @@ const JamieAI = () => {
         const data = await response.json();
         if (data.jamie_reply) {
           setConnectionStatus('connected');
-          console.log('✅ Backend connection successful');
+          debugLog('✅ Backend connection successful');
           return;
         }
       }
@@ -817,7 +777,7 @@ const JamieAI = () => {
       console.error('❌ Backend connection failed:', error);
       
       // If remote backend failed, automatically switch to demo mode
-      console.log('❌ Backend unavailable, switching to demo mode');
+      debugLog('❌ Backend unavailable, switching to demo mode');
       setConnectionStatus('failed');
       // Use setTimeout to ensure state updates properly
       setTimeout(() => {
@@ -1377,7 +1337,7 @@ const JamieAI = () => {
     }
 
     try {
-      console.log('Sending message to API:', messageText);
+      debugLog('Sending message to API:', messageText);
       
       // Determine backend URL based on environment
       const isDevelopment = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
@@ -1391,7 +1351,7 @@ const JamieAI = () => {
         character: currentCharacter
       };
       
-      console.log('Request body:', requestBody);
+      debugLog('Request body:', requestBody);
       
       const response = await fetch(backendUrl, {
         method: 'POST',
@@ -1402,7 +1362,7 @@ const JamieAI = () => {
         body: JSON.stringify(requestBody),
       });
 
-      console.log('Response status:', response.status);
+      debugLog('Response status:', response.status);
 
       if (!response.ok) {
         const errorText = await response.text();
@@ -1411,7 +1371,7 @@ const JamieAI = () => {
       }
 
       const data = await response.json();
-      console.log('API Response:', data);
+      debugLog('API Response:', data);
       
       // Update user message with DQ score components and minimum
       setMessages(prev => prev.map(msg => 
@@ -1441,7 +1401,7 @@ const JamieAI = () => {
         
         // Reset demo mode since backend is working
         if (demoMode) {
-          console.log('✅ Backend is working, resetting demo mode');
+          debugLog('✅ Backend is working, resetting demo mode');
           setDemoMode(false);
         }
         
@@ -1534,7 +1494,7 @@ const JamieAI = () => {
       setConnectionStatus('failed');
       
       // Automatically switch to demo mode when backend fails
-      console.log('❌ Backend failed, switching to demo mode');
+      debugLog('❌ Backend failed, switching to demo mode');
       setDemoMode(true);
       
       // Use demo response instead of showing error
@@ -1587,7 +1547,7 @@ const JamieAI = () => {
   const showSharedVisual = !userInfo || finalCurrentView === 'homepage';
 
   // Debug logging for routing
-  console.log('App.js render - userInfo:', !!userInfo, 'currentView:', currentView, 'safeCurrentView:', safeCurrentView, 'finalCurrentView:', finalCurrentView, 'isLoadingProgress:', isLoadingProgress);
+  debugLog('App.js render - userInfo:', !!userInfo, 'currentView:', currentView, 'safeCurrentView:', safeCurrentView, 'finalCurrentView:', finalCurrentView, 'isLoadingProgress:', isLoadingProgress);
 
   return (
     <div className="min-h-screen bg-white">
@@ -1636,15 +1596,15 @@ const JamieAI = () => {
         <TeacherClassrooms 
           onBackToHome={() => setCurrentView('homepage')}
           onViewClassroom={(classroomId) => {
-            console.log('App.js: onViewClassroom called with classroomId:', classroomId);
+            debugLog('App.js: onViewClassroom called with classroomId:', classroomId);
             setSelectedClassroomId(classroomId);
             setCurrentView('classroom-detail');
-            console.log('App.js: Set currentView to classroom-detail');
+            debugLog('App.js: Set currentView to classroom-detail');
           }}
         />
       ) : finalCurrentView === 'classroom-detail' ? (
         (() => {
-          console.log('App.js: Rendering ClassroomDetail, classroomId:', selectedClassroomId);
+          debugLog('App.js: Rendering ClassroomDetail, classroomId:', selectedClassroomId);
           return (
             <ClassroomDetail 
               classroomId={selectedClassroomId}

@@ -2,10 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { Eye, EyeOff } from 'lucide-react';
 import SignUpPage from './SignUpPage';
 import { supabaseAuthService } from './services/SupabaseAuthService.js';
+import { debugLog } from './utils/debugLog';
 
 const LandingPage = ({ onLogin, onSignUp }) => {
-  console.log('LandingPage rendered with onLogin:', typeof onLogin);
-  console.log('LandingPage props:', { onLogin: !!onLogin, onSignUp: !!onSignUp });
+  debugLog('LandingPage rendered with onLogin:', typeof onLogin);
+  debugLog('LandingPage props:', { onLogin: !!onLogin, onSignUp: !!onSignUp });
   
   // Feature flag to use Supabase authentication
   const USE_SUPABASE_AUTH = true; // Re-enable Supabase authentication
@@ -22,9 +23,9 @@ const LandingPage = ({ onLogin, onSignUp }) => {
 
 
   const handleSubmit = async (e) => {
-    console.log('Form submitted!', e);
+    debugLog('Form submitted!', e);
     e.preventDefault();
-    console.log('Form data:', formData);
+    debugLog('Form data:', formData);
     
     const newErrors = {};
 
@@ -38,7 +39,7 @@ const LandingPage = ({ onLogin, onSignUp }) => {
       newErrors.password = 'Password is required';
     }
 
-    console.log('Validation errors:', newErrors);
+    debugLog('Validation errors:', newErrors);
 
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
@@ -50,17 +51,17 @@ const LandingPage = ({ onLogin, onSignUp }) => {
       
       if (USE_SUPABASE_AUTH) {
         // Use Supabase authentication but still call onLogin to update React state
-        console.log('Attempting Supabase login with:', formData.email);
+        debugLog('Attempting Supabase login with:', formData.email);
         result = await supabaseAuthService.login({ ...formData, gameMode: 'assessment' });
-        console.log('Supabase login result:', result);
+        debugLog('Supabase login result:', result);
         
         // If login was successful, call onLogin to update the parent component state
         if (result && result.success) {
-          console.log('Supabase login successful, calling onLogin to update state');
+          debugLog('Supabase login successful, calling onLogin to update state');
           const onLoginResult = await onLogin({ ...formData, gameMode: 'assessment' });
-          console.log('onLogin result:', onLoginResult);
+          debugLog('onLogin result:', onLoginResult);
         } else {
-          console.log('Supabase login failed:', result);
+          debugLog('Supabase login failed:', result);
         }
       } else {
         // Use original authentication service

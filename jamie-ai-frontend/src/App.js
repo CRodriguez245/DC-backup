@@ -72,25 +72,88 @@ const JamieFace = ({ dqScore, avgDqScore, size = 'small' }) => {
   );
 };
 
+const ALLOWED_VIEWS = [
+  'homepage',
+  'chat',
+  'dashboard',
+  'admin',
+  'settings',
+  'classrooms',
+  'classroom-detail'
+];
+
+const getSavedView = () => {
+  if (typeof window === 'undefined') return 'homepage';
+  const savedView = sessionStorage.getItem('currentView');
+  return savedView && ALLOWED_VIEWS.includes(savedView) ? savedView : 'homepage';
+};
+
+const getSavedCharacter = () => {
+  if (typeof window === 'undefined') return 'jamie';
+  return localStorage.getItem('currentCharacter') || 'jamie';
+};
+
 const MainApp = () => {
   // Feature flag to use Supabase authentication
   const USE_SUPABASE_AUTH = true; // Re-enable Supabase authentication
 
-  // User information state - now using auth service
-  const [userInfo, setUserInfo] = useState(() => {
-    // Check if user is already logged in on component mount
+  // Check for existing Supabase session synchronously before first render
+  const getInitialAuthState = () => {
     if (USE_SUPABASE_AUTH) {
-      const currentUser = supabaseAuthService.getCurrentUser();
-      if (currentUser) {
-        debugLog('User already logged in on mount:', currentUser);
-        // If it's a student or teacher, ensure progress is loaded
-        if (currentUser.role === 'student' || currentUser.role === 'teacher') {
-          debugLog('User logged in, will load progress in useEffect for role:', currentUser.role);
+      // Check localStorage for Supabase session (Supabase stores it with keys starting with 'sb-')
+      try {
+        // Look for any Supabase auth token in localStorage
+        let hasSession = false;
+        for (let i = 0; i < localStorage.length; i++) {
+          const key = localStorage.key(i);
+          if (key && key.startsWith('sb-') && key.includes('auth-token')) {
+            hasSession = true;
+            break;
+          }
         }
-        return currentUser;
+        
+        if (hasSession) {
+          // Session exists, try to get user from auth service
+          const currentUser = supabaseAuthService.getCurrentUser();
+          if (currentUser) {
+            debugLog('User already logged in on mount (from session):', currentUser);
+            return currentUser;
+          }
+          // If session token exists but getCurrentUser() returns null,
+          // the service might not be initialized yet - return null and let useEffect handle it
+          // isAuthChecking will remain true, preventing any render
+        }
+      } catch (e) {
+        debugLog('Error checking session storage:', e);
       }
     }
     return null;
+  };
+
+  // User information state - now using auth service
+  const [userInfo, setUserInfo] = useState(() => {
+    return getInitialAuthState();
+  });
+
+  // Add loading state to prevent flash of landing page
+  // Always check auth on mount if using Supabase to prevent flash
+  // Also check if there's a session token - if so, keep checking until confirmed
+  const [isAuthChecking, setIsAuthChecking] = useState(() => {
+    if (!USE_SUPABASE_AUTH) return false;
+    // Check if there's a session token - if so, we need to verify it
+    try {
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && key.startsWith('sb-') && key.includes('auth-token')) {
+          // Session token exists, keep checking until confirmed
+          return true;
+        }
+      }
+    } catch (e) {
+      // Ignore errors
+    }
+    // No session token, but still check auth if using Supabase
+    return true;
   });
   
   // Initialize authentication on component mount
@@ -145,11 +208,21 @@ const MainApp = () => {
               setIsLoadingProgress(false);
               setHasStartedLoading(false);
             } else if (event === 'login' && user) {
-              // When user logs in, ensure we're on homepage
-              debugLog('User logged in via auth listener, setting currentView to homepage');
+              // When user logs in, preserve existing view or restore from sessionStorage
+              debugLog('User logged in via auth listener');
               debugLog('User role:', user.role);
               setUserInfo(user);
-              setCurrentView('homepage');
+              // Preserve current view, or restore from sessionStorage, or default to homepage
+              setCurrentView(prev => {
+                if (prev) return prev; // Keep existing view
+                // Try to restore from sessionStorage
+                const savedView = sessionStorage.getItem('currentView');
+                if (savedView && ALLOWED_VIEWS.includes(savedView)) {
+                  debugLog('Restoring view from sessionStorage on login:', savedView);
+                  return savedView;
+                }
+                return 'homepage'; // Last resort default
+              });
               // Don't set loading state here - let the useEffect handle it
               debugLog('Login event processed, useEffect will handle progress loading');
             } else if (event === 'logout') {
@@ -166,6 +239,8 @@ const MainApp = () => {
               setIsLoadingProgress(false);
               setHasStartedLoading(false);
               setLoadedUserIds(new Set()); // Clear loaded user IDs
+              // Clear sessionStorage
+              sessionStorage.removeItem('currentView');
             } else if (event === 'classroom_joined' || event === 'classroom_created') {
               // Don't update userInfo for classroom events - these pass classroom objects, not user objects
               debugLog('Classroom event received, not updating userInfo:', event);
@@ -188,12 +263,36 @@ const MainApp = () => {
           debugLog('Is loading progress:', supabaseAuthService.isLoadingProgress);
           debugLog('Listeners count:', supabaseAuthService.listeners.length);
         };
+
+        // Hydrate existing session on refresh
+        const existingUser = supabaseAuthService.getCurrentUser();
+        if (existingUser) {
+          debugLog('Hydrating user from existing Supabase session:', existingUser);
+          // Restore view from sessionStorage FIRST
+          const savedView = sessionStorage.getItem('currentView');
+          const viewToSet = (savedView && ALLOWED_VIEWS.includes(savedView)) ? savedView : 'homepage';
+          debugLog('Restoring view from sessionStorage during auth init:', viewToSet);
+          
+          // Set both userInfo and currentView in the same batch
+          // Then clear isAuthChecking - React will batch these updates
+          setUserInfo(existingUser);
+          setCurrentView(viewToSet);
+        } else {
+          // No user found, ensure we're on landing page
+          setCurrentView(null);
+        }
+        
+        // Clear auth checking state after initialization
+        // React batches synchronous state updates, so currentView will be set
+        // before isAuthChecking becomes false in the same render cycle
+        setIsAuthChecking(false);
       } else {
         // Use original auth service
         authService.init();
         setUserInfo(authService.getCurrentUser());
         // Make authService available in console for demo
         window.authService = authService;
+        setIsAuthChecking(false);
       }
     };
 
@@ -269,8 +368,25 @@ const MainApp = () => {
     // Load game mode from localStorage on component mount
     return localStorage.getItem('gameMode') || 'game';
   });
-  const [currentView, setCurrentView] = useState('homepage'); // 'homepage', 'chat', 'dashboard', 'admin', 'settings', 'classrooms', 'classroom-detail'
-  const [currentCharacter, setCurrentCharacter] = useState('jamie'); // 'jamie', 'andres', or 'kavya'
+  
+  // Initialize currentView to null - will be set after auth check to prevent flash
+  const [currentView, setCurrentView] = useState(null); // 'homepage', 'chat', 'dashboard', 'admin', 'settings', 'classrooms', 'classroom-detail'
+  
+  // Save currentView to sessionStorage whenever it changes (if user is authenticated)
+  useEffect(() => {
+    if (userInfo && currentView) {
+      sessionStorage.setItem('currentView', currentView);
+      debugLog('Saved currentView to sessionStorage:', currentView);
+    }
+  }, [currentView, userInfo]);
+
+  const [currentCharacter, setCurrentCharacter] = useState(() => getSavedCharacter()); // 'jamie', 'andres', or 'kavya'
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('currentCharacter', currentCharacter);
+    }
+  }, [currentCharacter]);
   const [selectedClassroomId, setSelectedClassroomId] = useState(null);
   
   // Character data
@@ -504,6 +620,9 @@ const MainApp = () => {
           // Clear localStorage
           localStorage.removeItem('gameMode');
           localStorage.removeItem('currentCharacter');
+          
+          // Clear sessionStorage
+          sessionStorage.removeItem('currentView');
           localStorage.removeItem('messages');
           localStorage.removeItem('currentSession');
         }
@@ -1553,28 +1672,37 @@ const MainApp = () => {
   };
 
   // Safety check: if userInfo exists but currentView is null, default to homepage
-  // But preserve chat view if user is in a chat session
-  const safeCurrentView = userInfo && !currentView ? 'homepage' : currentView;
+  // BUT: if we're still checking auth or restoring view, don't default yet (will show loading instead)
+  const safeCurrentView = (userInfo && !currentView && !isAuthChecking) ? 'homepage' : currentView;
   
   // Additional safety: preserve chat view during progress loading
   // Always preserve chat view if user is in a chat session, regardless of loading state
   const finalCurrentView = (currentView === 'chat') ? 'chat' : safeCurrentView;
 
   // Determine if we should show the shared visual
-  const showSharedVisual = !userInfo || finalCurrentView === 'homepage';
+  // Don't show during loading to prevent flash
+  const isAuthOrViewLoading = isAuthChecking || (userInfo && !currentView);
+  const showSharedVisual = !isAuthOrViewLoading && (!userInfo || finalCurrentView === 'homepage');
 
   // Debug logging for routing
-  debugLog('App.js render - userInfo:', !!userInfo, 'currentView:', currentView, 'safeCurrentView:', safeCurrentView, 'finalCurrentView:', finalCurrentView, 'isLoadingProgress:', isLoadingProgress);
+  debugLog('App.js render - userInfo:', !!userInfo, 'currentView:', currentView, 'safeCurrentView:', safeCurrentView, 'finalCurrentView:', finalCurrentView, 'isLoadingProgress:', isLoadingProgress, 'isAuthOrViewLoading:', isAuthOrViewLoading);
 
   return (
     <div className="min-h-screen bg-white">
       {/* Shared visual that persists across login and homepage */}
+      {/* Don't render during loading to prevent flash */}
       {showSharedVisual && <SharedVisual />}
       
       {/* Page Content */}
-      {!userInfo ? (
+      {isAuthOrViewLoading ? (
+        // Show loading while checking auth OR while view is being restored
+        // This ensures we don't render homepage or landing page before we know the correct view
+        <div className="min-h-screen flex items-center justify-center">
+          <div className="text-gray-500">Loading...</div>
+        </div>
+      ) : !userInfo ? (
         <LandingPage onLogin={handleLogin} onSignUp={handleLogin} />
-      ) : finalCurrentView === 'homepage' ? (
+      ) : currentView === 'homepage' ? (
         <HomePage 
           userInfo={userInfo}
           gameMode={gameMode}

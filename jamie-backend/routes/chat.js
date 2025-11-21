@@ -157,7 +157,20 @@ router.post('/', async (req, res) => {
                     }
                 }
             }
-            return personaConfig.stages[personaState.currentIndex].key;
+            // CRITICAL: Final validation before returning for locked progression
+            const currentIndex = personaState.currentIndex;
+            if (currentIndex < 0 || currentIndex >= personaConfig.stages.length) {
+                console.error(`⚠️⚠️⚠️ CRITICAL ERROR: Invalid currentIndex ${currentIndex} for persona "${persona}" with ${personaConfig.stages.length} stages. Defaulting to index 0.`);
+                return personaConfig.defaultStage || personaConfig.stages[0].key;
+            }
+            const returnedStageKey = personaConfig.stages[currentIndex].key;
+            const validStageKeys = personaConfig.stages.map(s => s.key);
+            if (!validStageKeys.includes(returnedStageKey)) {
+                console.error(`⚠️⚠️⚠️ CRITICAL ERROR: Invalid stage "${returnedStageKey}" for persona "${persona}". Defaulting to: ${personaConfig.defaultStage || personaConfig.stages[0].key}`);
+                return personaConfig.defaultStage || personaConfig.stages[0].key;
+            }
+            console.log(`📊 determineStageKey (locked) result: persona="${persona}", score=${score.toFixed(3)}, currentIndex=${currentIndex}, stageKey="${returnedStageKey}"`);
+            return returnedStageKey;
         }
         else {
             // Unlocked progression: can regress if score drops significantly
@@ -203,7 +216,25 @@ router.post('/', async (req, res) => {
                 }
             }
             personaState.currentIndex = chosenIndex;
+            
+            // CRITICAL: Final validation before returning - ensure index is valid
+            if (chosenIndex < 0 || chosenIndex >= personaConfig.stages.length) {
+                console.error(`⚠️⚠️⚠️ CRITICAL ERROR: Invalid chosenIndex ${chosenIndex} for persona "${persona}" with ${personaConfig.stages.length} stages. Defaulting to index 0.`);
+                chosenIndex = 0;
+                personaState.currentIndex = 0;
+            }
+            
             const returnedStageKey = personaConfig.stages[chosenIndex].key;
+            const validStageKeys = personaConfig.stages.map(s => s.key);
+            
+            // CRITICAL: Double-check that the returned stage key is valid for this persona
+            if (!validStageKeys.includes(returnedStageKey)) {
+                console.error(`⚠️⚠️⚠️ CRITICAL ERROR: determineStageKey returned invalid stage "${returnedStageKey}" for persona "${persona}". Valid stages:`, validStageKeys);
+                const defaultStageKey = personaConfig.defaultStage || personaConfig.stages[0].key;
+                console.error(`⚠️ Defaulting to: ${defaultStageKey}`);
+                return defaultStageKey;
+            }
+            
             console.log(`📊 determineStageKey result: persona="${persona}", score=${score.toFixed(3)}, chosenIndex=${chosenIndex}, stageKey="${returnedStageKey}"`);
             return returnedStageKey;
         }

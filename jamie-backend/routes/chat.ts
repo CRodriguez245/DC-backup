@@ -24,6 +24,12 @@ const sessionState: Record<string, SessionState> = {};
 
 const MAX_TURNS = 20;
 
+// Persona-specific turn limits
+const getMaxTurns = (persona: string): number => {
+  const normalizedPersona = (persona || '').toLowerCase();
+  return normalizedPersona === 'kavya' ? 10 : 20;
+};
+
 router.post('/', async (req, res) => {
   const userMessage: string = req.body.message;
   const sessionId: string = req.body.session_id || 'anon-session';
@@ -205,7 +211,11 @@ router.post('/', async (req, res) => {
       personaConfig = personaStageConfigs['jamie'];
     }
     console.log('✅ Persona config validated - persona:', persona, 'defaultStage:', personaConfig.defaultStage);
-    let stageKey: PersonaStageKey = personaConfig.defaultStage;
+    console.log('✅ Persona config stages:', personaConfig.stages.map(s => s.key));
+    
+    // CRITICAL: Force correct default stage for this persona (never use wrong persona's default)
+    let stageKey: PersonaStageKey = personaConfig.defaultStage || personaConfig.stages[0].key;
+    console.log('🔍 Initial stageKey before determination:', stageKey);
     
     // Apply light smoothing: use exponential moving average to prevent rapid jumps
     // Store previous average in session state for smoothing
@@ -340,12 +350,25 @@ router.post('/', async (req, res) => {
       console.log(`📊 determineStageKey result: persona="${persona}", score=${stageScore.toFixed(3)}, chosenIndex=${chosenIndex}, stageKey="${stageKey}"`);
     }
     
-    // CRITICAL: Final validation after stage determination
+    // CRITICAL: Final validation after stage determination - MUST RUN BEFORE PROMPT GENERATION
     const validStagesForPersona = personaConfig.stages.map(s => s.key);
     if (!validStagesForPersona.includes(stageKey)) {
       console.error(`⚠️⚠️⚠️ CRITICAL ERROR: Invalid stage "${stageKey}" for persona "${persona}". Valid stages:`, validStagesForPersona);
+      console.error(`⚠️ Current persona config:`, {
+        persona,
+        defaultStage: personaConfig.defaultStage,
+        stages: validStagesForPersona,
+        receivedStageKey: stageKey
+      });
       stageKey = personaConfig.defaultStage || personaConfig.stages[0].key;
-      console.error(`⚠️ Defaulting to persona's default stage: ${stageKey}`);
+      console.error(`⚠️✅ FORCING CORRECT STAGE: Defaulting to "${stageKey}" for persona "${persona}"`);
+    }
+    
+    // CRITICAL: Double-check stage matches persona before proceeding
+    if (persona === 'kavya' && (stageKey === 'confused' || stageKey === 'uncertain' || stageKey === 'thoughtful' || stageKey === 'confident')) {
+      console.error(`⚠️⚠️⚠️ CRITICAL: Kavya received Jamie stage "${stageKey}"! Forcing correct stage "overwhelmed"`);
+      stageKey = 'overwhelmed';
+      personaState.currentIndex = 0;
     }
     
     console.log('✅ Validated stage key:', stageKey, 'for persona:', persona);
@@ -374,7 +397,9 @@ router.post('/', async (req, res) => {
     }
 
     const turnsUsed = sessionState[sessionId].turnsUsed;
-    const turnsRemaining = MAX_TURNS - turnsUsed;
+    const maxTurnsForPersona = getMaxTurns(persona);
+    const turnsRemaining = maxTurnsForPersona - turnsUsed;
+    console.log(`📊 Turn tracking: persona="${persona}", turnsUsed=${turnsUsed}, maxTurns=${maxTurnsForPersona}, turnsRemaining=${turnsRemaining}`);
     const dqCoverage = sessionState[sessionId].dqCoverage;
 
     let conversationStatus = 'in-progress';

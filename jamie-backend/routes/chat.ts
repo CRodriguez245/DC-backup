@@ -396,7 +396,7 @@ router.post('/', async (req, res) => {
       }
     }
 
-    const turnsUsed = sessionState[sessionId].turnsUsed;
+    // turnsUsed is already declared above (line 151)
     const maxTurnsForPersona = getMaxTurns(persona);
     const turnsRemaining = maxTurnsForPersona - turnsUsed;
     console.log(`📊 Turn tracking: persona="${persona}", turnsUsed=${turnsUsed}, maxTurns=${maxTurnsForPersona}, turnsRemaining=${turnsRemaining}`);

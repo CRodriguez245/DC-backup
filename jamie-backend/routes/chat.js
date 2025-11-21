@@ -487,7 +487,7 @@ router.post('/', async (req, res) => {
                 sessionState[sessionId].dqCoverage[dimension] = true;
             }
         }
-        const turnsUsed = sessionState[sessionId].turnsUsed;
+        // turnsUsed is already declared above (line 350)
         const turnsRemaining = maxTurnsForPersona - turnsUsed;
         console.log(`📊 Turn tracking: persona="${persona}", turnsUsed=${turnsUsed}, maxTurns=${maxTurnsForPersona}, turnsRemaining=${turnsRemaining}`);
         const dqCoverage = sessionState[sessionId].dqCoverage;

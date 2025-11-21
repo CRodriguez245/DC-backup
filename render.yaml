@@ -1,0 +1,14 @@
+services:
+  - type: web
+    name: jamie-backend
+    env: node
+    plan: free
+    buildCommand: cd jamie-backend && npm install
+    startCommand: cd jamie-backend && npm start
+    rootDir: jamie-backend
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+

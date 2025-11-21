@@ -370,22 +370,34 @@ function getPersonaSystemPrompt(persona, stage, coachingStyle) {
     }
     if (normalizedPersona === 'kavya') {
         console.log('✅ KAVYA PERSONA DETECTED! Using Kavya prompts.');
+        // CRITICAL: If stage is a Jamie stage, force correct Kavya stage
+        const jamieStages = ['confused', 'uncertain', 'thoughtful', 'confident'];
+        if (jamieStages.includes(stage)) {
+            console.error(`⚠️⚠️⚠️ CRITICAL ERROR: Kavya received Jamie stage "${stage}"! Forcing correct stage "overwhelmed"`);
+            stage = 'overwhelmed';
+        }
         // Type guard: only use Kavya stages for Kavya persona
         // CRITICAL: Ensure stage is valid for Kavya, default to overwhelmed if not
         const validKavyaStages = ['overwhelmed', 'defensive', 'exploring', 'experimenting', 'curious', 'visioning'];
         const kavyaStage = validKavyaStages.includes(stage) ? stage : 'overwhelmed';
         if (kavyaStage !== stage) {
-            console.warn('⚠️ Invalid stage for Kavya:', stage, '- defaulting to overwhelmed');
+            console.error(`⚠️⚠️⚠️ CRITICAL: Invalid stage "${stage}" for Kavya! Forcing "overwhelmed"`);
         }
         let basePrompt = exports.kavyaEvolutionLevels[kavyaStage] || exports.kavyaEvolutionLevels.overwhelmed;
         if (!basePrompt) {
             console.error('❌ ERROR: Kavya prompt is undefined! Stage:', kavyaStage);
             basePrompt = exports.kavyaEvolutionLevels.overwhelmed;
         }
+        // CRITICAL: Double-check prompt doesn't contain Jamie context - if it does, force correct one
+        if (basePrompt.includes('engineering') || basePrompt.includes('mechanical engineering') || basePrompt.includes('switching your major') || basePrompt.includes('design and creativity')) {
+            console.error('⚠️⚠️⚠️ CRITICAL: Kavya prompt contains Jamie context! Forcing correct overwhelmed prompt.');
+            basePrompt = exports.kavyaEvolutionLevels.overwhelmed;
+        }
         console.log('Kavya prompt preview (first 500 chars):', basePrompt.slice(0, 500));
-        console.log('Kavya prompt contains "corporate path":', basePrompt.includes('corporate path'));
+        console.log('Kavya prompt contains "CORPORATE JOB":', basePrompt.includes('CORPORATE JOB') || basePrompt.includes('corporate job'));
+        console.log('Kavya prompt contains "STARTING YOUR OWN":', basePrompt.includes('STARTING YOUR OWN') || basePrompt.includes('starting your own'));
         console.log('Kavya prompt contains "engineering":', basePrompt.includes('engineering'));
-        console.log('Kavya prompt contains "CRITICAL":', basePrompt.includes('CRITICAL'));
+        console.log('Kavya prompt contains "CRITICAL IDENTITY":', basePrompt.includes('CRITICAL IDENTITY'));
         // Add coaching style context if provided
         if (coachingStyle && exports.kavyaResponsePatterns) {
             const patternKey = coachingStyle === 'directive' ? 'toDirectiveCoaching' : 

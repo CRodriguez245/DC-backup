@@ -5,20 +5,39 @@ const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
-export async function getJamieResponse(userInput: string, systemPrompt: string): Promise<string> {
+export async function getJamieResponse(userInput: string, systemPrompt: string, persona?: string): Promise<string> {
+  // Check if this is Andres persona (6 sentence limit)
+  // Check both the persona parameter and the system prompt content
+  const isAndres = (persona?.toLowerCase() === 'andres') || 
+                   systemPrompt.includes('Andres') || 
+                   systemPrompt.includes('andres') ||
+                   systemPrompt.includes('RESPONSE LENGTH: You MUST respond with EXACTLY 6 sentences');
+  
+  if (isAndres) {
+    console.log('🔒 Applying 200 token limit for Andres persona');
+  }
+  
   const chat = await openai.chat.completions.create({
     model: "gpt-4o",
     messages: [
       { role: "system", content: systemPrompt },
       { role: "user", content: userInput }
     ],
+    // Limit tokens for Andres to encourage shorter responses (approximately 6 sentences = ~150 tokens)
+    max_tokens: isAndres ? 200 : undefined,
   });
 
-  return chat.choices[0]?.message?.content || '';
+  const response = chat.choices[0]?.message?.content || '';
+  if (isAndres) {
+    const sentenceCount = (response.match(/[.!?]+/g) || []).length;
+    console.log(`📊 Andres response: ${sentenceCount} sentences, ${chat.usage?.completion_tokens || 'unknown'} tokens`);
+  }
+  
+  return response;
 }
 
-export async function scoreDQ(userInput: string) {
-  const prompt = dqScoringPrompt(userInput);
+export async function scoreDQ(userInput: string, conversationHistory: string = '', coachResponse?: string) {
+  const prompt = dqScoringPrompt(userInput, conversationHistory, coachResponse);
 
   const chat = await openai.chat.completions.create({
     model: "gpt-4o",

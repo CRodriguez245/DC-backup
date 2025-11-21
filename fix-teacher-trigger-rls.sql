@@ -54,3 +54,4 @@ FROM public.users u
 LEFT JOIN public.teachers t ON u.id = t.id
 WHERE u.role = 'teacher';
 
+

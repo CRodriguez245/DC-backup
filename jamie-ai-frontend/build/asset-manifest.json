@@ -1,0 +1,14 @@
+{
+  "files": {
+    "main.css": "/static/css/main.76ce1b97.css",
+    "main.js": "/static/js/main.cdd12568.js",
+    "static/media/PPEditorialNewLight.ttf": "/static/media/PPEditorialNewLight.c92b7c4b5e774655396b.ttf",
+    "index.html": "/index.html",
+    "main.76ce1b97.css.map": "/static/css/main.76ce1b97.css.map",
+    "main.cdd12568.js.map": "/static/js/main.cdd12568.js.map"
+  },
+  "entrypoints": [
+    "static/css/main.76ce1b97.css",
+    "static/js/main.cdd12568.js"
+  ]
+}

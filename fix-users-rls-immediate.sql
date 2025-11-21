@@ -53,3 +53,4 @@ ALTER TABLE public.users ENABLE ROW LEVEL SECURITY;
 -- Step 6: Test query (should work now)
 -- SELECT * FROM public.users WHERE id = auth.uid();
 
+

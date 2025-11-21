@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Debug Supabase Authentication</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+    <h1>Supabase Auth Debug</h1>
+    
+    <div id="status">Loading...</div>
+    
+    <div id="userInfo" style="margin-top: 20px; padding: 10px; border: 1px solid #ccc; background: #f9f9f9;">
+        <h3>User Information:</h3>
+        <div id="userDetails"></div>
+    </div>
+    
+    <div id="actions" style="margin-top: 20px;">
+        <button onclick="checkAuth()">Check Auth Status</button>
+        <button onclick="getUserProfile()">Get User Profile</button>
+        <button onclick="signOut()">Sign Out</button>
+    </div>
+    
+    <div id="logs" style="margin-top: 20px; padding: 10px; border: 1px solid #ccc; background: #f0f0f0; max-height: 300px; overflow-y: auto;">
+        <h3>Debug Logs:</h3>
+        <div id="logContent"></div>
+    </div>
+
+    <script>
+        // Replace with your actual Supabase credentials
+        const SUPABASE_URL = 'YOUR_SUPABASE_URL';
+        const SUPABASE_ANON_KEY = 'YOUR_SUPABASE_ANON_KEY';
+        
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        
+        function log(message) {
+            const logContent = document.getElementById('logContent');
+            const timestamp = new Date().toLocaleTimeString();
+            logContent.innerHTML += `<div>[${timestamp}] ${message}</div>`;
+            logContent.scrollTop = logContent.scrollHeight;
+        }
+        
+        async function checkAuth() {
+            log('Checking authentication status...');
+            
+            try {
+                const { data: { user }, error } = await supabase.auth.getUser();
+                
+                if (error) {
+                    log(`Error getting user: ${error.message}`);
+                    document.getElementById('status').textContent = 'Error: ' + error.message;
+                    return;
+                }
+                
+                if (user) {
+                    log(`User found: ${user.email} (ID: ${user.id})`);
+                    log(`Email confirmed: ${user.email_confirmed_at ? 'Yes' : 'No'}`);
+                    document.getElementById('status').textContent = 'User is authenticated';
+                    document.getElementById('userDetails').innerHTML = `
+                        <p><strong>Email:</strong> ${user.email}</p>
+                        <p><strong>ID:</strong> ${user.id}</p>
+                        <p><strong>Email Confirmed:</strong> ${user.email_confirmed_at ? 'Yes' : 'No'}</p>
+                        <p><strong>Created At:</strong> ${user.created_at}</p>
+                    `;
+                } else {
+                    log('No user found');
+                    document.getElementById('status').textContent = 'No user authenticated';
+                    document.getElementById('userDetails').innerHTML = '<p>No user data</p>';
+                }
+            } catch (error) {
+                log(`Exception: ${error.message}`);
+                document.getElementById('status').textContent = 'Exception: ' + error.message;
+            }
+        }
+        
+        async function getUserProfile() {
+            log('Getting user profile from database...');
+            
+            try {
+                const { data: { user }, error: authError } = await supabase.auth.getUser();
+                
+                if (authError) {
+                    log(`Auth error: ${authError.message}`);
+                    return;
+                }
+                
+                if (!user) {
+                    log('No authenticated user');
+                    return;
+                }
+                
+                const { data: profile, error: profileError } = await supabase
+                    .from('users')
+                    .select('*')
+                    .eq('id', user.id)
+                    .single();
+                
+                if (profileError) {
+                    log(`Profile error: ${profileError.message}`);
+                    log('User profile not found in database - this might be the issue!');
+                } else {
+                    log(`Profile found: ${JSON.stringify(profile, null, 2)}`);
+                }
+            } catch (error) {
+                log(`Exception: ${error.message}`);
+            }
+        }
+        
+        async function signOut() {
+            log('Signing out...');
+            const { error } = await supabase.auth.signOut();
+            if (error) {
+                log(`Sign out error: ${error.message}`);
+            } else {
+                log('Signed out successfully');
+                document.getElementById('status').textContent = 'Signed out';
+                document.getElementById('userDetails').innerHTML = '<p>No user data</p>';
+            }
+        }
+        
+        // Check auth on page load
+        window.onload = function() {
+            log('Page loaded, checking initial auth status...');
+            checkAuth();
+        };
+        
+        // Listen for auth changes
+        supabase.auth.onAuthStateChange((event, session) => {
+            log(`Auth state changed: ${event}`);
+            if (session) {
+                log(`Session user: ${session.user.email}`);
+            } else {
+                log('No session');
+            }
+        });
+    </script>
+</body>
+</html>
+
+

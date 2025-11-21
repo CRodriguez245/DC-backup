@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Manual Auth Handler</title>
+</head>
+<body>
+    <h1>Authentication Handler</h1>
+    <p>Paste your access token here to complete authentication:</p>
+    
+    <textarea id="tokenInput" placeholder="Paste the access_token from the URL here" style="width: 100%; height: 100px;"></textarea>
+    <br><br>
+    <button onclick="handleAuth()">Complete Authentication</button>
+    
+    <div id="result"></div>
+
+    <script>
+        function handleAuth() {
+            const token = document.getElementById('tokenInput').value;
+            if (!token) {
+                alert('Please paste the access token');
+                return;
+            }
+            
+            // Store the token in localStorage
+            localStorage.setItem('supabase.auth.token', token);
+            
+            // Redirect to your app
+            window.location.href = 'http://localhost:3000';
+        }
+        
+        // Auto-extract token from URL if present
+        const urlParams = new URLSearchParams(window.location.search);
+        const accessToken = urlParams.get('access_token');
+        if (accessToken) {
+            document.getElementById('tokenInput').value = accessToken;
+            handleAuth();
+        }
+    </script>
+</body>
+</html>
+
+

@@ -1362,11 +1362,23 @@ const MainApp = () => {
     const messageText = currentMessage.trim();
     setCurrentMessage('');
     
-    // Decrement attempts
-    setAttemptsRemaining(prev => {
-      const newAttempts = prev - 1;
-      return newAttempts;
-    });
+    // CRITICAL: Check if this is a new session BEFORE adding user message
+    // If messages array is empty OR isNewSession flag is set, this is a reset/new session
+    const wasEmptyBeforeMessage = messages.length === 0;
+    const shouldReset = isNewSession || wasEmptyBeforeMessage;
+    
+    // Decrement attempts (but only if not a reset - reset will be handled by backend)
+    if (!shouldReset) {
+      setAttemptsRemaining(prev => {
+        const newAttempts = prev - 1;
+        return newAttempts;
+      });
+    }
+    
+    // Clear the new session flag after using it
+    if (shouldReset) {
+      setIsNewSession(false);
+    }
     
     // Add user message immediately with smooth transition
     const userMessage = {
@@ -1553,9 +1565,7 @@ const MainApp = () => {
         ? `session-${userInfo.id}-${currentCharacter}` 
         : `anon-session-${currentCharacter}`;
       
-      // CRITICAL: Use isNewSession flag (set when reset is clicked) or check if messages array was empty before adding user message
-      const shouldReset = isNewSession || messages.length === 0;
-      
+      // CRITICAL: Use shouldReset that was determined BEFORE adding user message
       const requestBody = {
         message: messageText,
         session_id: sessionId,
@@ -1563,11 +1573,6 @@ const MainApp = () => {
         character: currentCharacter,
         reset: shouldReset // Send reset flag if this is a new session
       };
-      
-      // Clear the new session flag after using it
-      if (shouldReset) {
-        setIsNewSession(false);
-      }
       
       debugLog('Request body:', requestBody);
       

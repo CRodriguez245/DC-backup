@@ -437,6 +437,7 @@ const MainApp = () => {
   });
   const [animatedProgress, setAnimatedProgress] = useState(0);
   const [isProgressAnimating, setIsProgressAnimating] = useState(false);
+  const [isNewSession, setIsNewSession] = useState(true); // Track if next message should trigger reset
   
   // Refs
   const messagesEndRef = useRef(null);
@@ -540,6 +541,7 @@ const MainApp = () => {
       // Reset chat state for new session
       setMessages([]);
       setAttemptsRemaining(getMaxAttempts(currentCharacter));
+      setIsNewSession(true); // Mark as new session when starting fresh
     }
     
     setCurrentMessage('');
@@ -734,6 +736,7 @@ const MainApp = () => {
     setIsTyping(false);
     setAnimatedProgress(0);
     setIsProgressAnimating(false);
+    setIsNewSession(true); // Mark that next message should trigger reset on backend
   };
 
   // Auto-save in-progress session whenever messages change
@@ -1550,16 +1553,21 @@ const MainApp = () => {
         ? `session-${userInfo.id}-${currentCharacter}` 
         : `anon-session-${currentCharacter}`;
       
-      // CRITICAL: If messages array is empty, this is a new/reset session - send reset flag
-      const isNewSession = messages.length === 0;
+      // CRITICAL: Use isNewSession flag (set when reset is clicked) or check if messages array was empty before adding user message
+      const shouldReset = isNewSession || messages.length === 0;
       
       const requestBody = {
         message: messageText,
         session_id: sessionId,
         user_id: userInfo ? userInfo.id : 'anon-user',
         character: currentCharacter,
-        reset: isNewSession // Send reset flag if this is a new session
+        reset: shouldReset // Send reset flag if this is a new session
       };
+      
+      // Clear the new session flag after using it
+      if (shouldReset) {
+        setIsNewSession(false);
+      }
       
       debugLog('Request body:', requestBody);
       

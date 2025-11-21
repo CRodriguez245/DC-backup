@@ -1603,7 +1603,13 @@ const MainApp = () => {
         if (data.isWaitingForFinalResponse) {
           setAttemptsRemaining(1); // Allow one more response
         } else {
-          setAttemptsRemaining(data.turnsRemaining);
+          // CRITICAL: Validate turnsRemaining doesn't exceed max for this character
+          const maxForCharacter = getMaxAttempts(currentCharacter);
+          const validatedTurnsRemaining = Math.min(data.turnsRemaining, maxForCharacter);
+          if (validatedTurnsRemaining !== data.turnsRemaining) {
+            console.warn(`⚠️ Backend returned turnsRemaining=${data.turnsRemaining} for ${currentCharacter}, but max is ${maxForCharacter}. Using ${validatedTurnsRemaining}.`);
+          }
+          setAttemptsRemaining(validatedTurnsRemaining);
         }
       } else {
         // Fallback: decrement attempts remaining if not in response

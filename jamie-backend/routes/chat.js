@@ -455,6 +455,20 @@ router.post('/', async (req, res) => {
         } else {
             jamieReply = await (0, openai_1.getJamieResponse)(userMessage, systemPrompt, persona, conversationHistory);
             console.log("Persona reply:", jamieReply);
+            
+            // CRITICAL: Post-response contamination check for Kavya
+            if (persona === 'kavya') {
+                const jamieKeywords = /\b(engineering|mechanical engineering|design\s*(?:course|program|school)|switching\s*(?:your|my)\s*major|majoring\s*in|art\s*school|ux\s*design|parent[^s]|mom|dad|disappointing\s*(?:my|your)\s*(?:parent|mom|dad))/i;
+                if (jamieKeywords.test(jamieReply)) {
+                    console.error('⚠️⚠️⚠️ CRITICAL: Kavya response contains Jamie keywords! Clearing history and regenerating.');
+                    // Clear contaminated history
+                    sessionState[sessionId].conversationHistory = [];
+                    sessionState[sessionId].turnsUsed = 1; // Reset to 1 since we're processing this turn
+                    // Regenerate with clean history
+                    jamieReply = await (0, openai_1.getJamieResponse)(userMessage, systemPrompt, persona, '');
+                    console.log("✅ Regenerated Kavya reply (clean history):", jamieReply);
+                }
+            }
         }
         
         // Update conversation history
@@ -464,7 +478,9 @@ router.post('/', async (req, res) => {
                 sessionState[sessionId].dqCoverage[dimension] = true;
             }
         }
+        const turnsUsed = sessionState[sessionId].turnsUsed;
         const turnsRemaining = maxTurnsForPersona - turnsUsed;
+        console.log(`📊 Turn tracking: persona="${persona}", turnsUsed=${turnsUsed}, maxTurns=${maxTurnsForPersona}, turnsRemaining=${turnsRemaining}`);
         const dqCoverage = sessionState[sessionId].dqCoverage;
         
         // CRITICAL: For Kavya, if we just sent the closing message, allow one more turn for response

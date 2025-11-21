@@ -28,9 +28,14 @@ router.post('/', async (req, res) => {
     console.log('Normalized persona:', persona);
     console.log('Session ID:', sessionId);
     
-    const personaConfig = prompts_1.personaStageConfigs[persona] || prompts_1.personaStageConfigs['jamie'];
+    let personaConfig = prompts_1.personaStageConfigs[persona];
+    if (!personaConfig) {
+        console.error(`⚠️⚠️⚠️ CRITICAL ERROR: Persona "${persona}" not found in personaStageConfigs! Defaulting to jamie.`);
+        personaConfig = prompts_1.personaStageConfigs['jamie'];
+    }
     console.log('Persona config found:', !!personaConfig);
     console.log('Persona config stages:', personaConfig.stages.map(s => s.key));
+    console.log('✅ Persona config validated - persona:', persona, 'defaultStage:', personaConfig.defaultStage);
     
     // CRITICAL: Check if this is a reset/new session - if conversation history contains wrong persona context, clear it
     const isReset = req.body.reset === true || req.body.reset === 'true';
@@ -121,13 +126,21 @@ router.post('/', async (req, res) => {
     sessionState[sessionId].turnsUsed += 1;
     const ensurePersonaState = () => {
         if (!sessionState[sessionId].personaStages[persona]) {
+            // CRITICAL: Initialize with correct default stage (index 0) for this persona
+            console.log(`🔄 Initializing persona state for "${persona}" - default stage: ${personaConfig.stages[0].key}`);
             sessionState[sessionId].personaStages[persona] = {
                 currentIndex: 0,
                 maxAchievedIndex: 0,
                 sampleCounts: new Array(personaConfig.stages.length).fill(0)
             };
         }
-        return sessionState[sessionId].personaStages[persona];
+        // CRITICAL: Validate that the stored state matches the persona's config
+        const personaState = sessionState[sessionId].personaStages[persona];
+        if (personaState.currentIndex >= personaConfig.stages.length) {
+            console.error(`⚠️⚠️⚠️ CRITICAL ERROR: Persona state currentIndex ${personaState.currentIndex} is out of bounds for persona "${persona}" (${personaConfig.stages.length} stages). Resetting to 0.`);
+            personaState.currentIndex = 0;
+        }
+        return personaState;
     };
     const determineStageKey = (score) => {
         const personaState = ensurePersonaState();
@@ -190,7 +203,9 @@ router.post('/', async (req, res) => {
                 }
             }
             personaState.currentIndex = chosenIndex;
-            return personaConfig.stages[chosenIndex].key;
+            const returnedStageKey = personaConfig.stages[chosenIndex].key;
+            console.log(`📊 determineStageKey result: persona="${persona}", score=${score.toFixed(3)}, chosenIndex=${chosenIndex}, stageKey="${returnedStageKey}"`);
+            return returnedStageKey;
         }
     };
     try {

@@ -199,7 +199,12 @@ router.post('/', async (req, res) => {
     console.log("DQ Score (weighted avg):", weightedAvgScore, "DQ Score (avg top 5):", avgTop5Score, "from top 5:", top5Scores);
 
     // Determine persona stage and get appropriate system prompt
-    const personaConfig = personaStageConfigs[persona] || personaStageConfigs['jamie'];
+    let personaConfig = personaStageConfigs[persona];
+    if (!personaConfig) {
+      console.error(`⚠️⚠️⚠️ CRITICAL ERROR: Persona "${persona}" not found in personaStageConfigs! Defaulting to jamie.`);
+      personaConfig = personaStageConfigs['jamie'];
+    }
+    console.log('✅ Persona config validated - persona:', persona, 'defaultStage:', personaConfig.defaultStage);
     let stageKey: PersonaStageKey = personaConfig.defaultStage;
     
     // Apply light smoothing: use exponential moving average to prevent rapid jumps
@@ -224,6 +229,7 @@ router.post('/', async (req, res) => {
     console.log("Coaching style detected:", coachingStyle);
 
     if (!sessionState[sessionId].personaStages[persona]) {
+      console.log(`🔄 Initializing persona state for "${persona}" - default stage: ${personaConfig.stages[0].key}`);
       sessionState[sessionId].personaStages[persona] = {
         currentIndex: 0,
         maxAchievedIndex: 0,
@@ -232,6 +238,12 @@ router.post('/', async (req, res) => {
     }
 
     const personaState = sessionState[sessionId].personaStages[persona];
+    
+    // CRITICAL: Validate that the stored state matches the persona's config
+    if (personaState.currentIndex >= personaConfig.stages.length) {
+      console.error(`⚠️⚠️⚠️ CRITICAL ERROR: Persona state currentIndex ${personaState.currentIndex} is out of bounds for persona "${persona}" (${personaConfig.stages.length} stages). Resetting to 0.`);
+      personaState.currentIndex = 0;
+    }
 
     if (personaConfig.lockOnceAchieved) {
       // Locked progression: can only move forward
@@ -246,7 +258,20 @@ router.post('/', async (req, res) => {
           }
         }
       }
-      stageKey = personaConfig.stages[personaState.currentIndex].key;
+      // CRITICAL: Final validation before returning for locked progression
+      const currentIndex = personaState.currentIndex;
+      if (currentIndex < 0 || currentIndex >= personaConfig.stages.length) {
+        console.error(`⚠️⚠️⚠️ CRITICAL ERROR: Invalid currentIndex ${currentIndex} for persona "${persona}" with ${personaConfig.stages.length} stages. Defaulting to index 0.`);
+        stageKey = personaConfig.defaultStage || personaConfig.stages[0].key;
+      } else {
+        stageKey = personaConfig.stages[currentIndex].key;
+        const validStageKeys = personaConfig.stages.map(s => s.key);
+        if (!validStageKeys.includes(stageKey)) {
+          console.error(`⚠️⚠️⚠️ CRITICAL ERROR: Invalid stage "${stageKey}" for persona "${persona}". Defaulting to: ${personaConfig.defaultStage || personaConfig.stages[0].key}`);
+          stageKey = personaConfig.defaultStage || personaConfig.stages[0].key;
+        }
+        console.log(`📊 determineStageKey (locked) result: persona="${persona}", score=${stageScore.toFixed(3)}, currentIndex=${currentIndex}, stageKey="${stageKey}"`);
+      }
     } else {
       // Unlocked progression: can regress if score drops significantly
       let chosenIndex = personaState.currentIndex;
@@ -294,9 +319,36 @@ router.post('/', async (req, res) => {
       }
 
       personaState.currentIndex = chosenIndex;
+      
+      // CRITICAL: Final validation before returning - ensure index is valid
+      if (chosenIndex < 0 || chosenIndex >= personaConfig.stages.length) {
+        console.error(`⚠️⚠️⚠️ CRITICAL ERROR: Invalid chosenIndex ${chosenIndex} for persona "${persona}" with ${personaConfig.stages.length} stages. Defaulting to index 0.`);
+        chosenIndex = 0;
+        personaState.currentIndex = 0;
+      }
+      
       stageKey = personaConfig.stages[chosenIndex].key;
+      const validStageKeys = personaConfig.stages.map(s => s.key);
+      
+      // CRITICAL: Double-check that the returned stage key is valid for this persona
+      if (!validStageKeys.includes(stageKey)) {
+        console.error(`⚠️⚠️⚠️ CRITICAL ERROR: Invalid stage "${stageKey}" for persona "${persona}". Valid stages:`, validStageKeys);
+        stageKey = personaConfig.defaultStage || personaConfig.stages[0].key;
+        console.error(`⚠️ Defaulting to: ${stageKey}`);
+      }
+      
+      console.log(`📊 determineStageKey result: persona="${persona}", score=${stageScore.toFixed(3)}, chosenIndex=${chosenIndex}, stageKey="${stageKey}"`);
     }
-
+    
+    // CRITICAL: Final validation after stage determination
+    const validStagesForPersona = personaConfig.stages.map(s => s.key);
+    if (!validStagesForPersona.includes(stageKey)) {
+      console.error(`⚠️⚠️⚠️ CRITICAL ERROR: Invalid stage "${stageKey}" for persona "${persona}". Valid stages:`, validStagesForPersona);
+      stageKey = personaConfig.defaultStage || personaConfig.stages[0].key;
+      console.error(`⚠️ Defaulting to persona's default stage: ${stageKey}`);
+    }
+    
+    console.log('✅ Validated stage key:', stageKey, 'for persona:', persona);
     const systemPrompt = getPersonaSystemPrompt(persona, stageKey, coachingStyle);
     console.log('Persona selection:', {
       persona,

@@ -360,7 +360,17 @@ router.post('/', async (req, res) => {
             isDirective ? 'directive' :
                 isExplorative ? 'explorative' : 'mixed';
         console.log("Coaching style detected:", coachingStyle);
-        const stageKey = determineStageKey(smoothedScore);
+        let stageKey = determineStageKey(smoothedScore);
+        
+        // CRITICAL: Validate that stageKey is valid for this persona
+        const validStagesForPersona = personaConfig.stages.map(s => s.key);
+        if (!validStagesForPersona.includes(stageKey)) {
+            console.error(`⚠️⚠️⚠️ CRITICAL ERROR: Invalid stage "${stageKey}" for persona "${persona}". Valid stages:`, validStagesForPersona);
+            console.error(`⚠️ Defaulting to persona's default stage: ${personaConfig.defaultStage || personaConfig.stages[0].key}`);
+            stageKey = personaConfig.defaultStage || personaConfig.stages[0].key;
+        }
+        
+        console.log('✅ Validated stage key:', stageKey, 'for persona:', persona);
         const systemPrompt = (0, prompts_1.getPersonaSystemPrompt)(persona, stageKey, coachingStyle);
         console.log('=== PERSONA SELECTION DEBUG ===');
         console.log('Persona from request:', persona);

@@ -160,8 +160,8 @@ export class User {
     // Mark as completed: assessment mode = always complete after first session, game mode = score >= 0.8 (raw)
     if (sessionData.mode === 'assessment') {
       characterProgress.completed = true; // Assessment mode always completes after first session
-    } else if (rawScore >= 0.8) {
-      characterProgress.completed = true; // Game mode needs 0.8+ raw score
+    } else if (rawScore >= 0.7) {
+      characterProgress.completed = true; // Game mode needs 0.7+ raw score
     }
 
     // Store session data including chat messages
@@ -187,7 +187,7 @@ export class User {
       attempts: sessionData.attemptsUsed,
       mode: sessionData.mode || 'assessment',
       dqScores: sessionData.dqScores || {},
-      completed: sessionData.completed || (sessionData.mode === 'assessment' ? true : rawScore >= 0.8),
+      completed: sessionData.completed || (sessionData.mode === 'assessment' ? true : rawScore >= 0.7),
       stage: characterProgress.stage,
       stageMinScore: characterProgress.stageMinScore,
       messages: cleanMessages // Store the cleaned chat transcript

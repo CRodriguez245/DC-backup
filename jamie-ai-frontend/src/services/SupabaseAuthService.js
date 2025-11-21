@@ -464,7 +464,7 @@ export class SupabaseAuthService {
         if (charProgress.sessions && charProgress.sessions.length > 0) {
           // Check if any session has 0.8+ score
           const hasHighScoreSession = charProgress.sessions.some(session => 
-            session.score >= 0.8 && session.mode === 'game'
+            session.score >= 0.7 && session.mode === 'game'
           );
           
           if (hasHighScoreSession && !charProgress.completed) {

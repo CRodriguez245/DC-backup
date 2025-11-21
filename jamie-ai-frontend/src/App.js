@@ -425,7 +425,16 @@ const MainApp = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [showCharacterInfo, setShowCharacterInfo] = useState(false);
   const [demoMode, setDemoMode] = useState(false); // Start with real backend
-  const [attemptsRemaining, setAttemptsRemaining] = useState(20);
+  
+  // Helper function to get max attempts based on character
+  const getMaxAttempts = (character) => {
+    return character === 'kavya' ? 10 : 20;
+  };
+  
+  const [attemptsRemaining, setAttemptsRemaining] = useState(() => {
+    const savedCharacter = getSavedCharacter();
+    return getMaxAttempts(savedCharacter);
+  });
   const [animatedProgress, setAnimatedProgress] = useState(0);
   const [isProgressAnimating, setIsProgressAnimating] = useState(false);
   
@@ -530,7 +539,7 @@ const MainApp = () => {
     } else {
       // Reset chat state for new session
       setMessages([]);
-      setAttemptsRemaining(20);
+      setAttemptsRemaining(getMaxAttempts(currentCharacter));
     }
     
     setCurrentMessage('');
@@ -560,7 +569,7 @@ const MainApp = () => {
       setAttemptsRemaining(savedSession.attemptsRemaining);
     } else {
       setMessages([]);
-      setAttemptsRemaining(20);
+      setAttemptsRemaining(getMaxAttempts(characterId));
     }
   };
 
@@ -610,7 +619,7 @@ const MainApp = () => {
           setCurrentMessage('');
           setCurrentCharacter('jamie');
           setGameMode('game');
-          setAttemptsRemaining(20);
+          setAttemptsRemaining(getMaxAttempts('jamie'));
           setAnimatedProgress(0);
           setIsProgressAnimating(false);
           setIsLoadingProgress(false);
@@ -635,7 +644,7 @@ const MainApp = () => {
         setCurrentMessage('');
         setCurrentCharacter('jamie');
         setGameMode('game');
-        setAttemptsRemaining(20);
+        setAttemptsRemaining(getMaxAttempts('jamie'));
         setAnimatedProgress(0);
         setIsProgressAnimating(false);
         setIsLoadingProgress(false);
@@ -719,7 +728,7 @@ const MainApp = () => {
     
     clearInProgressSession(currentCharacter);
     setMessages([]);
-    setAttemptsRemaining(20);
+    setAttemptsRemaining(getMaxAttempts(currentCharacter));
     setCurrentMessage('');
     setIsLoading(false);
     setIsTyping(false);
@@ -735,6 +744,20 @@ const MainApp = () => {
     }
   }, [messages, attemptsRemaining]);
 
+  // Restore chat session from localStorage on refresh when entering chat view
+  useEffect(() => {
+    if (currentView === 'chat' && userInfo && messages.length === 0 && !isLoading && !isTyping) {
+      const savedSession = loadInProgressSession(currentCharacter);
+      if (savedSession && savedSession.messages && savedSession.messages.length > 0) {
+        debugLog('Restoring chat session from localStorage:', savedSession);
+        setMessages(savedSession.messages);
+        if (savedSession.attemptsRemaining !== undefined) {
+          setAttemptsRemaining(savedSession.attemptsRemaining);
+        }
+      }
+    }
+  }, [currentView, userInfo, currentCharacter]); // Only run when these change, not on every render
+
   // Add initial Andres opening message when starting a new chat session
   useEffect(() => {
     // Only add opening message if:
@@ -742,23 +765,60 @@ const MainApp = () => {
     // 2. Current character is Andres
     // 3. Messages array is empty (new session, not a saved one)
     // 4. Not currently loading
+    // 5. No saved session exists (check explicitly to avoid adding after restoration)
     if (
       currentView === 'chat' &&
       currentCharacter === 'andres' &&
       messages.length === 0 &&
       !isLoading &&
-      !isTyping
+      !isTyping &&
+      userInfo // Make sure userInfo is available before checking for saved session
     ) {
-      const andresOpeningMessage = {
-        id: `andres-opening-${Date.now()}`,
-        message: "Honestly, I'm just wiped out. Every sprint feels the same and I don't even know if switching makes sense. It all feels like too much sometimes.",
-        isUser: false,
-        timestamp: new Date().toISOString()
-      };
-      
-      setMessages([andresOpeningMessage]);
+      // Double-check that no saved session exists
+      const savedSession = loadInProgressSession(currentCharacter);
+      if (!savedSession || !savedSession.messages || savedSession.messages.length === 0) {
+        const andresOpeningMessage = {
+          id: `andres-opening-${Date.now()}`,
+          message: "Honestly, I'm just wiped out. Every sprint feels the same and I don't even know if switching makes sense. It all feels like too much sometimes.",
+          isUser: false,
+          timestamp: new Date().toISOString()
+        };
+        
+        setMessages([andresOpeningMessage]);
+      }
     }
-  }, [currentView, currentCharacter, messages.length, isLoading, isTyping]);
+  }, [currentView, currentCharacter, messages.length, isLoading, isTyping, userInfo]);
+
+  // Add initial Kavya opening message when starting a new chat session
+  useEffect(() => {
+    // Only add opening message if:
+    // 1. We're in chat view
+    // 2. Current character is Kavya
+    // 3. Messages array is empty (new session, not a saved one)
+    // 4. Not currently loading
+    // 5. No saved session exists (check explicitly to avoid adding after restoration)
+    if (
+      currentView === 'chat' &&
+      currentCharacter === 'kavya' &&
+      messages.length === 0 &&
+      !isLoading &&
+      !isTyping &&
+      userInfo // Make sure userInfo is available before checking for saved session
+    ) {
+      // Double-check that no saved session exists
+      const savedSession = loadInProgressSession(currentCharacter);
+      if (!savedSession || !savedSession.messages || savedSession.messages.length === 0) {
+        const kavyaOpeningMessage = {
+          id: `kavya-opening-${Date.now()}`,
+          message: "Honestly, I'm just exhausted trying to figure out what to do after graduation. I keep going back and forth between the corporate path—you know, stability, benefits, clear career progression—and the idea of starting my own business where I could actually have work-life balance and make a meaningful impact. But every corporate job I look at seems like it'll eat my soul, and starting something on my own feels impossible with student loans and no real experience. I feel like I'm supposed to just know what I want, but I don't. It's all just too much pressure right now.",
+          isUser: false,
+          timestamp: new Date().toISOString()
+        };
+        
+        setMessages([kavyaOpeningMessage]);
+      }
+    }
+  }, [currentView, currentCharacter, messages.length, isLoading, isTyping, userInfo]);
 
   // Calculate progress percentage for current character
   const getJamieProgress = () => {
@@ -866,8 +926,14 @@ const MainApp = () => {
       if (progressDecimal >= 0.15) return 'Defensive';
       return 'Overwhelmed';
     } else if (currentCharacter === 'kavya') {
-      // Kavya only has one stage for now
-      return 'Reflective';
+      // Kavya stages: overwhelmed (0), defensive (0.15), exploring (0.3), experimenting (0.5), curious (0.65), visioning (0.8)
+      // Same thresholds as Andres
+      if (progressDecimal >= 0.8) return 'Visioning';
+      if (progressDecimal >= 0.65) return 'Curious';
+      if (progressDecimal >= 0.5) return 'Experimenting';
+      if (progressDecimal >= 0.3) return 'Exploring';
+      if (progressDecimal >= 0.15) return 'Defensive';
+      return 'Overwhelmed';
     } else {
       // Jamie stages: confused (0), uncertain (0.3), thoughtful (0.6), confident (0.8)
       if (progressDecimal >= 0.8) return 'Confident';
@@ -1415,9 +1481,9 @@ const MainApp = () => {
             const latestMessage = jamieMessages.length > 0 ? jamieMessages[jamieMessages.length - 1] : null;
             const finalDqScore = latestMessage?.dqScore || demoDqScore;
             
-            // Check if user achieved 0.8 or higher score
+            // Check if user achieved 0.7 or higher score
             const currentProgress = getJamieProgress();
-            const hasWon = currentProgress >= 80; // 80% = 0.8 score
+            const hasWon = currentProgress >= 70; // 70% = 0.7 score
             
             // Different messages for assessment vs game mode
             const isAssessment = characterData[currentCharacter].gameMode === 'assessment';
@@ -1427,10 +1493,10 @@ const MainApp = () => {
               message: isAssessment 
                 ? hasWon 
                   ? `🎉 Congratulations! You've completed Jamie's assessment with a strong performance! Your coaching helped Jamie make progress in their decision-making. Here's your final Decision Quality Score:`
-                  : `Assessment complete! You've finished Jamie's coaching session. While you didn't reach the target score of 80%, you've helped Jamie think through their decision. Here's your final Decision Quality Score:`
+                  : `Assessment complete! You've finished Jamie's coaching session. While you didn't reach the target score of 70%, you've helped Jamie think through their decision. Here's your final Decision Quality Score:`
                 : hasWon 
                   ? `🎉 Congratulations! You achieved ${currentProgress}% progress! You've successfully helped ${characterData[currentCharacter].name} improve their decision-making skills. Click 'Start New Session' to begin again.`
-                  : `Session ended. You've used all 20 attempts but didn't reach the target score of 80%. ${characterData[currentCharacter].name}'s current progress is ${currentProgress}%. Click 'Start New Session' to try again.`,
+                  : `Session ended. You've used all ${getMaxAttempts(currentCharacter)} attempts but didn't reach the target score of 70%. ${characterData[currentCharacter].name}'s current progress is ${currentProgress}%. Click 'Start New Session' to try again.`,
               isUser: false,
               timestamp: new Date().toISOString(),
               isSessionEnd: true,
@@ -1447,10 +1513,10 @@ const MainApp = () => {
                 finalScore: rawFinalScore,
                 rawScore: rawFinalScore,
                 stage: personaStage,
-                attemptsUsed: 20, // All 20 attempts were used when session ends
+                attemptsUsed: getMaxAttempts(currentCharacter), // All attempts were used when session ends
                 mode: characterData[currentCharacter].gameMode,
                 dqScores: finalDqScore,
-                completed: characterData[currentCharacter].gameMode === 'assessment' ? true : (rawFinalScore >= 0.8),
+                completed: characterData[currentCharacter].gameMode === 'assessment' ? true : (rawFinalScore >= 0.7),
                 messages: [...messages, sessionEndMessage] // Include the full chat transcript with end message
               };
               // Use the correct auth service based on USE_SUPABASE_AUTH flag
@@ -1479,9 +1545,13 @@ const MainApp = () => {
       const backendUrl = isDevelopment ? 'http://localhost:3001/chat' : 'https://jamie-backend.onrender.com/chat';
       
       // Prepare request body with user information
+      // CRITICAL: Include character in session_id to prevent cross-contamination between personas
+      const sessionId = userInfo 
+        ? `session-${userInfo.id}-${currentCharacter}` 
+        : `anon-session-${currentCharacter}`;
       const requestBody = {
         message: messageText,
-        session_id: userInfo ? `session-${userInfo.id}` : 'anon-session',
+        session_id: sessionId,
         user_id: userInfo ? userInfo.id : 'anon-user',
         character: currentCharacter
       };
@@ -1527,6 +1597,19 @@ const MainApp = () => {
         userId: data.user_id
       };
 
+      // Update attempts remaining from backend response
+      if (data.turnsRemaining !== undefined) {
+        // If waiting for final response (closing message just sent), ensure user can still respond
+        if (data.isWaitingForFinalResponse) {
+          setAttemptsRemaining(1); // Allow one more response
+        } else {
+          setAttemptsRemaining(data.turnsRemaining);
+        }
+      } else {
+        // Fallback: decrement attempts remaining if not in response
+        setAttemptsRemaining(prev => Math.max(0, prev - 1));
+      }
+      
       // Add small delay before showing Jamie's response for smoother transition
       setTimeout(() => {
         setMessages(prev => [...prev, jamieMessage]);
@@ -1562,7 +1645,9 @@ const MainApp = () => {
         }
         
         // Check if session should end after Jamie's response
-        if (attemptsRemaining - 1 <= 0) {
+        // Don't end if we're waiting for a final response to the closing message
+        const isWaitingForFinalResponse = data.isWaitingForFinalResponse || false;
+        if (!isWaitingForFinalResponse && attemptsRemaining - 1 <= 0) {
           setTimeout(() => {
             // Get the latest DQ scores
             const allMessages = [...messages, jamieMessage];
@@ -1570,9 +1655,9 @@ const MainApp = () => {
             const latestMessage = characterMessages.length > 0 ? characterMessages[characterMessages.length - 1] : null;
             const finalDqScore = latestMessage?.dqScore || data.dq_score;
             
-            // Check if user achieved 0.8 or higher score
+            // Check if user achieved 0.7 or higher score
             const currentProgress = getJamieProgress();
-            const hasWon = currentProgress >= 80; // 80% = 0.8 score
+            const hasWon = currentProgress >= 70; // 70% = 0.7 score
             
             // Different messages for assessment vs game mode
             const isAssessment = characterData[currentCharacter].gameMode === 'assessment';
@@ -1582,10 +1667,10 @@ const MainApp = () => {
               message: isAssessment 
                 ? hasWon 
                   ? `🎉 Congratulations! You've completed Jamie's assessment with a strong performance! Your coaching helped Jamie make progress in their decision-making. Here's your final Decision Quality Score:`
-                  : `Assessment complete! You've finished Jamie's coaching session. While you didn't reach the target score of 80%, you've helped Jamie think through their decision. Here's your final Decision Quality Score:`
+                  : `Assessment complete! You've finished Jamie's coaching session. While you didn't reach the target score of 70%, you've helped Jamie think through their decision. Here's your final Decision Quality Score:`
                 : hasWon 
                   ? `🎉 Congratulations! You achieved ${currentProgress}% progress! You've successfully helped ${characterData[currentCharacter].name} improve their decision-making skills. Click 'Start New Session' to begin again.`
-                  : `Session ended. You've used all 20 attempts but didn't reach the target score of 80%. ${characterData[currentCharacter].name}'s current progress is ${currentProgress}%. Click 'Start New Session' to try again.`,
+                  : `Session ended. You've used all ${getMaxAttempts(currentCharacter)} attempts but didn't reach the target score of 70%. ${characterData[currentCharacter].name}'s current progress is ${currentProgress}%. Click 'Start New Session' to try again.`,
               isUser: false,
               timestamp: new Date().toISOString(),
               isSessionEnd: true,
@@ -1602,10 +1687,10 @@ const MainApp = () => {
                 finalScore: rawFinalScore,
                 rawScore: rawFinalScore,
                 stage: personaStage,
-                attemptsUsed: 20, // All 20 attempts were used when session ends
+                attemptsUsed: getMaxAttempts(currentCharacter), // All attempts were used when session ends
                 mode: characterData[currentCharacter].gameMode,
                 dqScores: finalDqScore,
-                completed: characterData[currentCharacter].gameMode === 'assessment' ? true : (rawFinalScore >= 0.8),
+                completed: characterData[currentCharacter].gameMode === 'assessment' ? true : (rawFinalScore >= 0.7),
                 messages: [...messages, sessionEndMessage] // Include the full chat transcript with end message
               };
               // Use the correct auth service based on USE_SUPABASE_AUTH flag

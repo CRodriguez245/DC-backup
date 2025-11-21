@@ -11,13 +11,98 @@ const andresResponsePatterns = prompts_1.andresResponsePatterns;
 const router = express_1.default.Router();
 const sessionState = {};
 const MAX_TURNS = 20;
+// Persona-specific turn limits
+const getMaxTurns = (persona) => {
+    const normalizedPersona = (persona || '').toLowerCase();
+    return normalizedPersona === 'kavya' ? 10 : 20;
+};
 router.post('/', async (req, res) => {
+    console.log('=== INCOMING REQUEST ===');
+    console.log('Request body:', JSON.stringify(req.body, null, 2));
+    console.log('Character from body:', req.body.character);
+    
     const userMessage = req.body.message;
     const sessionId = req.body.session_id || 'anon-session';
     const userId = req.body.user_id || 'anon-user';
     const persona = (req.body.character || 'jamie').toLowerCase();
+    console.log('Normalized persona:', persona);
+    console.log('Session ID:', sessionId);
+    
     const personaConfig = prompts_1.personaStageConfigs[persona] || prompts_1.personaStageConfigs['jamie'];
-    if (!sessionState[sessionId]) {
+    console.log('Persona config found:', !!personaConfig);
+    console.log('Persona config stages:', personaConfig.stages.map(s => s.key));
+    
+    // CRITICAL: Check if this is a reset/new session - if conversation history contains wrong persona context, clear it
+    const isReset = req.body.reset === true || req.body.reset === 'true';
+    const hasExistingHistory = sessionState[sessionId] && sessionState[sessionId].conversationHistory && sessionState[sessionId].conversationHistory.length > 0;
+    
+    console.log('🔍 Session check - hasExistingHistory:', hasExistingHistory, 'sessionId:', sessionId, 'persona:', persona);
+    
+    // Always check for contamination on EVERY request BEFORE using conversation history
+    if (hasExistingHistory) {
+        // Check if conversation history is contaminated with wrong persona context
+        const historyText = sessionState[sessionId].conversationHistory
+            .map(function (msg) { return msg.content || ''; })
+            .join(' ');
+        
+        console.log('🔍 Checking for contamination - history length:', historyText.length, 'preview:', historyText.substring(0, 200));
+        
+        // CRITICAL: Detect contamination by checking for keywords that belong to OTHER personas
+        const hasWrongContext = 
+            (persona === 'kavya' && (
+                /\bengineering\b/i.test(historyText) || 
+                /\bdesign\b/i.test(historyText) || 
+                /\bmajor\b/i.test(historyText) || 
+                /\bmom\b/i.test(historyText) ||
+                /\bart\s*school/i.test(historyText) ||
+                /\bdesign\s*program/i.test(historyText) ||
+                /\bux\s*design/i.test(historyText) ||
+                /\bindustrial\s*design/i.test(historyText) ||
+                /\bdrawing/i.test(historyText) ||
+                /\bart\b/i.test(historyText) ||
+                /\bcreative\s*major/i.test(historyText) ||
+                /\bmechanical\s*engineering/i.test(historyText) ||
+                /\bswitching\s*major/i.test(historyText)
+            )) ||
+            (persona === 'jamie' && (
+                /\bcorporate\s*path/i.test(historyText) || 
+                /\bentrepreneurship/i.test(historyText) || 
+                /\bstartup/i.test(historyText) ||
+                /\bstarting\s*my\s*own\s*business/i.test(historyText)
+            )) ||
+            (persona === 'andres' && (
+                /\bmom\b/i.test(historyText) || 
+                /\bdrawing/i.test(historyText) || 
+                /\bart\s*school/i.test(historyText)
+            ));
+        
+        if (hasWrongContext) {
+            console.log('⚠️⚠️⚠️ CONVERSATION HISTORY CONTAMINATION DETECTED! Clearing contaminated history for persona:', persona);
+            console.log('⚠️ Contaminated history preview (first 500 chars):', historyText.substring(0, 500));
+            // Reset everything - treat as new session
+            sessionState[sessionId] = {
+                turnsUsed: 0,
+                dqCoverage: {
+                    framing: false,
+                    alternatives: false,
+                    information: false,
+                    values: false,
+                    reasoning: false,
+                    commitment: false
+                },
+                personaStages: {},
+                conversationHistory: []
+            };
+            console.log('✅ Session cleared - ready for fresh start');
+        } else {
+            console.log('✅ No contamination detected - using existing history');
+        }
+    }
+    
+    // Initialize fresh session if it doesn't exist or was reset
+    if (isReset || (!sessionState[sessionId])) {
+        // New session or reset - initialize fresh state
+        console.log('🔄 Initializing fresh session state (reset:', isReset, ')');
         sessionState[sessionId] = {
             turnsUsed: 0,
             dqCoverage: {
@@ -32,6 +117,7 @@ router.post('/', async (req, res) => {
             conversationHistory: []
         };
     }
+    
     sessionState[sessionId].turnsUsed += 1;
     const ensurePersonaState = () => {
         if (!sessionState[sessionId].personaStages[persona]) {
@@ -110,9 +196,15 @@ router.post('/', async (req, res) => {
     try {
         console.log("Received message:", userMessage);
         // Build conversation history string from previous messages
-        const conversationHistory = sessionState[sessionId].conversationHistory
+        // CRITICAL: Only use conversation history if it's NOT contaminated
+        const conversationHistoryArray = sessionState[sessionId].conversationHistory || [];
+        const conversationHistory = conversationHistoryArray
             .map(function (msg) { return (msg.role === 'user' ? 'Client' : 'Coach') + ": " + msg.content; })
             .join('\n\n');
+        
+        // Log conversation history for debugging
+        console.log('📜 Conversation history length:', conversationHistory.length);
+        console.log('📜 Conversation history preview (first 500 chars):', conversationHistory.substring(0, 500));
         // PRE-CHECK: Catch truly minimal messages (exact phrases only, not substantive content)
         const minimalMessagePatterns = [
             /^tell me more\s*$/i,
@@ -270,14 +362,45 @@ router.post('/', async (req, res) => {
         console.log("Coaching style detected:", coachingStyle);
         const stageKey = determineStageKey(smoothedScore);
         const systemPrompt = (0, prompts_1.getPersonaSystemPrompt)(persona, stageKey, coachingStyle);
-        console.log('Persona selection:', {
+        console.log('=== PERSONA SELECTION DEBUG ===');
+        console.log('Persona from request:', persona);
+        console.log('Stage key:', stageKey);
+        console.log('Coaching style:', coachingStyle);
+        console.log('Conversation history length:', conversationHistory ? conversationHistory.length : 0);
+        console.log('Prompt preview (first 300 chars):', systemPrompt.slice(0, 300));
+        console.log('Prompt contains "Kavya":', systemPrompt.includes('Kavya') || systemPrompt.includes('kavya'));
+        console.log('Prompt contains "corporate path":', systemPrompt.includes('corporate path'));
+        console.log('Prompt contains "engineering":', systemPrompt.includes('engineering'));
+        console.log('================================');
+        
+        // CRITICAL: Validate persona is correct - log warning if mismatch detected
+        if (persona === 'kavya' && (systemPrompt.includes('engineering') || systemPrompt.includes('design') || systemPrompt.includes('major'))) {
+            console.error('⚠️⚠️⚠️ CRITICAL WARNING: Kavya prompt contains Jamie context! Prompt may be incorrect.');
+            console.error('Prompt snippet with Jamie content:', systemPrompt.match(/engineering|design|major/gi));
+        }
+        if (persona === 'kavya' && !systemPrompt.includes('corporate path') && !systemPrompt.includes('starting your own business')) {
+            console.error('⚠️⚠️⚠️ CRITICAL WARNING: Kavya prompt missing her core context (corporate vs entrepreneurship)!');
+        }
+        
+        // CRITICAL: For Kavya at turn 10, inject closing message INSTEAD OF generating response
+        const maxTurnsForPersona = getMaxTurns(persona);
+        const shouldInjectClosing = persona === 'kavya' && sessionState[sessionId].turnsUsed === maxTurnsForPersona;
+        console.log('🔍 Closing message check:', {
             persona,
-            stageKey,
-            coachingStyle,
-            promptPreview: systemPrompt.slice(0, 120)
+            turnsUsed: sessionState[sessionId].turnsUsed,
+            maxTurnsForPersona,
+            shouldInjectClosing
         });
-        const jamieReply = await (0, openai_1.getJamieResponse)(userMessage, systemPrompt, persona);
-        console.log("Persona reply:", jamieReply);
+        
+        let jamieReply;
+        if (shouldInjectClosing) {
+            jamieReply = "I have to go. Is there anything else you want to say before we wrap up?";
+            console.log('🔚 Kavya closing message injected at turn 10 - skipping AI generation');
+        } else {
+            jamieReply = await (0, openai_1.getJamieResponse)(userMessage, systemPrompt, persona, conversationHistory);
+            console.log("Persona reply:", jamieReply);
+        }
+        
         // Update conversation history
         sessionState[sessionId].conversationHistory.push({ role: 'user', content: userMessage }, { role: 'coach', content: jamieReply });
         for (const dimension of Object.keys(dqScoreComponents)) {
@@ -285,13 +408,24 @@ router.post('/', async (req, res) => {
                 sessionState[sessionId].dqCoverage[dimension] = true;
             }
         }
-        const turnsRemaining = MAX_TURNS - turnsUsed;
+        const turnsRemaining = maxTurnsForPersona - turnsUsed;
         const dqCoverage = sessionState[sessionId].dqCoverage;
+        
+        // CRITICAL: For Kavya, if we just sent the closing message, allow one more turn for response
+        const isWaitingForFinalResponse = persona === 'kavya' && shouldInjectClosing;
+        const effectiveTurnsRemaining = isWaitingForFinalResponse ? 1 : turnsRemaining;
+        
         let conversationStatus = 'in-progress';
         if (Object.values(dqCoverage).every(Boolean)) {
             conversationStatus = 'dq-complete';
         }
-        else if (turnsRemaining <= 0) {
+        // For Kavya, if we just sent closing message, stay in-progress to allow final response
+        // Otherwise, end if turns are exhausted
+        else if (!isWaitingForFinalResponse && turnsRemaining <= 0) {
+            conversationStatus = 'turn-limit-reached';
+        }
+        // After the user responds to the closing message, end the session
+        else if (persona === 'kavya' && sessionState[sessionId].turnsUsed > maxTurnsForPersona) {
             conversationStatus = 'turn-limit-reached';
         }
         const sessionSummary = (conversationStatus !== 'in-progress') ? {
@@ -311,10 +445,11 @@ router.post('/', async (req, res) => {
             dq_score: dqScoreComponents,
             dq_score_minimum: finalDqScore,
             turnsUsed,
-            turnsRemaining,
+            turnsRemaining: effectiveTurnsRemaining,
             dqCoverage,
             conversationStatus,
             sessionSummary,
+            isWaitingForFinalResponse: isWaitingForFinalResponse,
             timestamp: new Date().toISOString(),
             persona_stage: stageKey,
             persona,

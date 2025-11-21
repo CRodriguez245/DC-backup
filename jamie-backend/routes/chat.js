@@ -121,9 +121,18 @@ router.post('/', async (req, res) => {
             personaStages: {},
             conversationHistory: []
         };
+        console.log('✅ Session state initialized - turnsUsed:', sessionState[sessionId].turnsUsed);
     }
     
-    sessionState[sessionId].turnsUsed += 1;
+    // CRITICAL: Only increment turnsUsed if this is NOT a reset (reset already sets it to 0)
+    // If it's a reset, we'll set it to 1 after initialization
+    if (!isReset) {
+        sessionState[sessionId].turnsUsed += 1;
+    } else {
+        // Reset case: set to 1 since we're processing the first message
+        sessionState[sessionId].turnsUsed = 1;
+        console.log('✅ Reset session - turnsUsed set to 1 for first message');
+    }
     const ensurePersonaState = () => {
         if (!sessionState[sessionId].personaStages[persona]) {
             // CRITICAL: Initialize with correct default stage (index 0) for this persona

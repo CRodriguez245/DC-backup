@@ -1549,11 +1549,16 @@ const MainApp = () => {
       const sessionId = userInfo 
         ? `session-${userInfo.id}-${currentCharacter}` 
         : `anon-session-${currentCharacter}`;
+      
+      // CRITICAL: If messages array is empty, this is a new/reset session - send reset flag
+      const isNewSession = messages.length === 0;
+      
       const requestBody = {
         message: messageText,
         session_id: sessionId,
         user_id: userInfo ? userInfo.id : 'anon-user',
-        character: currentCharacter
+        character: currentCharacter,
+        reset: isNewSession // Send reset flag if this is a new session
       };
       
       debugLog('Request body:', requestBody);

@@ -12,6 +12,37 @@ dotenv_1.default.config();
 const openai = new openai_1.default({
     apiKey: process.env.OPENAI_API_KEY,
 });
+/**
+ * Helper function to retry OpenAI API calls with exponential backoff for rate limit errors
+ */
+async function retryWithBackoff(fn, maxRetries, baseDelay) {
+    if (maxRetries === void 0) { maxRetries = 3; }
+    if (baseDelay === void 0) { baseDelay = 1000; }
+    for (let attempt = 0; attempt < maxRetries; attempt++) {
+        try {
+            return await fn();
+        }
+        catch (error) {
+            // Check if it's a rate limit error
+            const isRateLimitError = (error === null || error === void 0 ? void 0 : error.status) === 429 ||
+                (error === null || error === void 0 ? void 0 : error.code) === 'rate_limit_exceeded' ||
+                ((error === null || error === void 0 ? void 0 : error.message) === null || (error === null || error === void 0 ? void 0 : error.message) === void 0 ? void 0 : error.message.includes('rate limit'));
+            if (!isRateLimitError || attempt === maxRetries - 1) {
+                // Not a rate limit error, or we've exhausted retries
+                throw error;
+            }
+            // Calculate delay with exponential backoff
+            // Use retry-after header if available, otherwise use exponential backoff
+            const retryAfterMs = (error === null || error === void 0 ? void 0 : error.headers) && error.headers['retry-after-ms']
+                ? parseInt(error.headers['retry-after-ms'])
+                : baseDelay * Math.pow(2, attempt);
+            const delay = Math.min(retryAfterMs, 30000); // Cap at 30 seconds
+            console.log("⏳ Rate limit hit, retrying in " + (delay / 1000).toFixed(1) + "s (attempt " + (attempt + 1) + "/" + maxRetries + ")");
+            await new Promise(function (resolve) { return setTimeout(resolve, delay); });
+        }
+    }
+    throw new Error('Max retries exceeded');
+}
 async function getJamieResponse(userInput, systemPrompt, persona, conversationHistory) {
     if (conversationHistory === void 0) { conversationHistory = ''; }
     // Check if this is Andres or Kavya persona (6 sentence limit)
@@ -61,11 +92,13 @@ async function getJamieResponse(userInput, systemPrompt, persona, conversationHi
     // Add the current user message
     messages.push({ role: "user", content: userInput });
     
-    const chat = await openai.chat.completions.create({
-        model: "gpt-4o",
-        messages: messages,
-        // Limit tokens for Andres/Kavya to encourage shorter responses (approximately 6 sentences = ~150 tokens)
-        max_tokens: hasSixSentenceLimit ? 200 : undefined,
+    const chat = await retryWithBackoff(async function () {
+        return await openai.chat.completions.create({
+            model: "gpt-4o",
+            messages: messages,
+            // Limit tokens for Andres/Kavya to encourage shorter responses (approximately 6 sentences = ~150 tokens)
+            max_tokens: hasSixSentenceLimit ? 200 : undefined,
+        });
     });
     const response = chat.choices[0]?.message?.content || '';
     if (hasSixSentenceLimit) {
@@ -78,9 +111,11 @@ async function getJamieResponse(userInput, systemPrompt, persona, conversationHi
 async function scoreDQ(userInput, conversationHistory, coachResponse) {
     if (conversationHistory === void 0) { conversationHistory = ''; }
     const prompt = (0, prompts_1.dqScoringPrompt)(userInput, conversationHistory, coachResponse);
-    const chat = await openai.chat.completions.create({
-        model: "gpt-4o",
-        messages: [{ role: "user", content: prompt }]
+    const chat = await retryWithBackoff(async function () {
+        return await openai.chat.completions.create({
+            model: "gpt-4o",
+            messages: [{ role: "user", content: prompt }]
+        });
     });
     let text = chat.choices[0]?.message?.content || '{}';
     // Remove markdown fences like ```json or ```

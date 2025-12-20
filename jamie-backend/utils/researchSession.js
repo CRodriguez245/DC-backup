@@ -14,10 +14,22 @@ const { createClient } = require('@supabase/supabase-js');
 require('dotenv').config();
 
 // Initialize Supabase client with service role key (for admin operations)
-const supabase = createClient(
-  process.env.SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_ROLE_KEY
-);
+// Use lazy initialization to avoid errors if env vars aren't set during module load
+let supabase = null;
+
+function getSupabaseClient() {
+  if (!supabase) {
+    const supabaseUrl = process.env.SUPABASE_URL;
+    const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+    
+    if (!supabaseUrl || !supabaseKey) {
+      throw new Error('Supabase environment variables not configured. SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY are required.');
+    }
+    
+    supabase = createClient(supabaseUrl, supabaseKey);
+  }
+  return supabase;
+}
 
 /**
  * Calculate duration in seconds between two timestamps
@@ -60,7 +72,7 @@ async function saveResearchSession(researchCode, sessionData) {
       : null;
 
     // Insert research session
-    const { data: session, error: sessionError } = await supabase
+    const { data: session, error: sessionError } = await getSupabaseClient()
       .from('research_sessions')
       .insert({
         research_code: researchCode,
@@ -143,7 +155,7 @@ async function saveResearchMessages(researchSessionId, messages) {
     });
 
     // Insert all messages
-    const { data: insertedMessages, error: messagesError } = await supabase
+    const { data: insertedMessages, error: messagesError } = await getSupabaseClient()
       .from('research_messages')
       .insert(messagesToInsert)
       .select();

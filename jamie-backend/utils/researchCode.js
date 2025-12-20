@@ -14,10 +14,22 @@ const { createClient } = require('@supabase/supabase-js');
 require('dotenv').config();
 
 // Initialize Supabase client with service role key (for admin operations)
-const supabase = createClient(
-  process.env.SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_ROLE_KEY
-);
+// Use lazy initialization to avoid errors if env vars aren't set during module load
+let supabase = null;
+
+function getSupabaseClient() {
+  if (!supabase) {
+    const supabaseUrl = process.env.SUPABASE_URL;
+    const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+    
+    if (!supabaseUrl || !supabaseKey) {
+      throw new Error('Supabase environment variables not configured. SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY are required.');
+    }
+    
+    supabase = createClient(supabaseUrl, supabaseKey);
+  }
+  return supabase;
+}
 
 /**
  * Generate a random research code
@@ -79,7 +91,7 @@ async function hasResearchCode(userId, characterName = 'jamie') {
   try {
     // Note: This query uses service role, so it can bypass RLS
     // Regular users cannot query this table (RLS blocks SELECT)
-    const { data, error } = await supabase
+    const { data, error } = await getSupabaseClient()
       .from('research_code_mappings')
       .select('research_code')
       .eq('user_id', userId)
@@ -133,7 +145,7 @@ async function createResearchCode(userId, characterName = 'jamie', maxRetries = 
     if (!exists) {
       // Code is unique - try to insert
       try {
-        const { data, error } = await supabase
+        const { data, error } = await getSupabaseClient()
           .from('research_code_mappings')
           .insert({
             user_id: userId,

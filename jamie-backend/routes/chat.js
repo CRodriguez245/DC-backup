@@ -11,6 +11,10 @@ const andresResponsePatterns = prompts_1.andresResponsePatterns;
 const router = express_1.default.Router();
 const sessionState = {};
 const MAX_TURNS = 20;
+
+// Research functions (IRB compliance)
+const { createResearchCode, hasResearchCode } = require('../utils/researchCode');
+const { saveCompleteResearchSession, convertConversationHistoryToMessages } = require('../utils/researchSession');
 // Persona-specific turn limits
 const getMaxTurns = (persona) => {
     const normalizedPersona = (persona || '').toLowerCase();
@@ -96,7 +100,9 @@ router.post('/', async (req, res) => {
                     commitment: false
                 },
                 personaStages: {},
-                conversationHistory: []
+                conversationHistory: [],
+                sessionStartTime: new Date().toISOString(), // Reset session start time
+                dqScores: [] // Reset DQ scores
             };
             console.log('✅ Session cleared - ready for fresh start');
         } else {
@@ -119,7 +125,9 @@ router.post('/', async (req, res) => {
                 commitment: false
             },
             personaStages: {},
-            conversationHistory: []
+            conversationHistory: [],
+            sessionStartTime: new Date().toISOString(), // Track session start for research
+            dqScores: [] // Track DQ scores for research messages
         };
         console.log('✅ Session state initialized - turnsUsed:', sessionState[sessionId].turnsUsed);
     }
@@ -473,6 +481,7 @@ router.post('/', async (req, res) => {
                     // Clear contaminated history
                     sessionState[sessionId].conversationHistory = [];
                     sessionState[sessionId].turnsUsed = 1; // Reset to 1 since we're processing this turn
+                    sessionState[sessionId].dqScores = []; // Reset DQ scores
                     // Regenerate with clean history
                     jamieReply = await (0, openai_1.getJamieResponse)(userMessage, systemPrompt, persona, '');
                     console.log("✅ Regenerated Kavya reply (clean history):", jamieReply);
@@ -482,6 +491,13 @@ router.post('/', async (req, res) => {
         
         // Update conversation history
         sessionState[sessionId].conversationHistory.push({ role: 'user', content: userMessage }, { role: 'coach', content: jamieReply });
+        
+        // Store DQ score for research (only for user messages)
+        if (!sessionState[sessionId].dqScores) {
+            sessionState[sessionId].dqScores = [];
+        }
+        sessionState[sessionId].dqScores.push(dqScoreComponents);
+        
         for (const dimension of Object.keys(dqScoreComponents)) {
             if (dqScoreComponents[dimension] >= 0.3) {
                 sessionState[sessionId].dqCoverage[dimension] = true;
@@ -518,6 +534,75 @@ router.post('/', async (req, res) => {
             persona,
             persona_prompt_preview: systemPrompt.slice(0, 200)
         } : null;
+        
+        // ============================================================================
+        // IRB Research Data Saving (STEP 5 Integration)
+        // Save research session when Jamie session completes (first attempt only)
+        // ============================================================================
+        let researchCode = null;
+        if (conversationStatus !== 'in-progress' && persona === 'jamie' && userId !== 'anon-user') {
+            try {
+                console.log('🔬 IRB: Session completed - checking if first attempt for user:', userId);
+                
+                // Check if this is the user's first attempt
+                const { hasCode, code: existingCode } = await hasResearchCode(userId, 'jamie');
+                
+                if (!hasCode) {
+                    // First attempt - generate research code and save session
+                    console.log('🔬 IRB: First attempt detected - generating research code and saving session');
+                    
+                    // Generate research code
+                    researchCode = await createResearchCode(userId, 'jamie');
+                    console.log('🔬 IRB: Generated research code:', researchCode);
+                    
+                    // Prepare session data (use session start time or fallback to current time)
+                    // If sessionStartTime doesn't exist, estimate from conversation history or use fallback
+                    let sessionStartTime = sessionState[sessionId].sessionStartTime;
+                    if (!sessionStartTime && sessionState[sessionId].conversationHistory && sessionState[sessionId].conversationHistory.length > 0) {
+                        // Estimate: assume 1 minute per turn on average
+                        const estimatedMinutesAgo = turnsUsed;
+                        sessionStartTime = new Date(Date.now() - estimatedMinutesAgo * 60 * 1000).toISOString();
+                    }
+                    if (!sessionStartTime) {
+                        // Final fallback: assume 30 minutes ago
+                        sessionStartTime = new Date(Date.now() - 30 * 60 * 1000).toISOString();
+                    }
+                    const sessionEndTime = new Date().toISOString();
+                    
+                    // Convert conversation history to messages format
+                    const messages = convertConversationHistoryToMessages(
+                        sessionState[sessionId].conversationHistory,
+                        sessionState[sessionId].dqScores || [],
+                        sessionStartTime
+                    );
+                    
+                    // Determine session status for research table
+                    let researchSessionStatus = 'completed';
+                    if (conversationStatus === 'turn-limit-reached') {
+                        researchSessionStatus = 'completed'; // Still completed, just reached turn limit
+                    }
+                    
+                    // Save research session
+                    await saveCompleteResearchSession(researchCode, {
+                        startedAt: sessionStartTime,
+                        completedAt: sessionEndTime,
+                        turnsUsed: turnsUsed,
+                        maxTurns: maxTurnsForPersona,
+                        sessionStatus: researchSessionStatus
+                    }, messages);
+                    
+                    console.log('🔬 IRB: Research session saved successfully');
+                } else {
+                    // Not first attempt - just log
+                    console.log('🔬 IRB: Not first attempt (existing code:', existingCode, ') - skipping research save');
+                }
+            } catch (error) {
+                // Log error but don't fail the request
+                console.error('🔬 IRB: Error saving research session:', error);
+                console.error('🔬 IRB: Continuing with normal response despite research save error');
+            }
+        }
+        
         const response = {
             session_id: sessionId,
             user_id: userId,
@@ -534,7 +619,8 @@ router.post('/', async (req, res) => {
             timestamp: new Date().toISOString(),
             persona_stage: stageKey,
             persona,
-            persona_prompt_preview: systemPrompt.slice(0, 200)
+            persona_prompt_preview: systemPrompt.slice(0, 200),
+            researchCode: researchCode || undefined // Include research code if generated
         };
         res.status(200).json(response);
     }

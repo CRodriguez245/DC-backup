@@ -55,7 +55,7 @@ function generateResearchCode() {
  */
 async function codeExists(code) {
   try {
-    const { data, error } = await supabase
+    const { data, error } = await getSupabaseClient()
       .from('research_code_mappings')
       .select('research_code')
       .eq('research_code', code)

@@ -688,8 +688,10 @@ const MainApp = () => {
       isSessionEnd: msg.isSessionEnd,
       showFinalScore: msg.showFinalScore,
       dqScore: msg.dqScore,
+      avgDqScore: msg.avgDqScore,
       sessionId: msg.sessionId,
-      userId: msg.userId
+      userId: msg.userId,
+      personaStage: msg.personaStage || null // Include personaStage for avatar selection
       // Exclude userInfo to avoid circular reference
     }));
     
@@ -753,6 +755,14 @@ const MainApp = () => {
       const savedSession = loadInProgressSession(currentCharacter);
       if (savedSession && savedSession.messages && savedSession.messages.length > 0) {
         debugLog('Restoring chat session from localStorage:', savedSession);
+        console.log('[Restore Session] Messages being restored:', savedSession.messages.map((msg, idx) => ({
+          index: idx,
+          id: msg.id,
+          isUser: msg.isUser,
+          hasPersonaStage: 'personaStage' in msg,
+          personaStage: msg.personaStage,
+          allKeys: Object.keys(msg)
+        })));
         setMessages(savedSession.messages);
         if (savedSession.attemptsRemaining !== undefined) {
           setAttemptsRemaining(savedSession.attemptsRemaining);
@@ -784,7 +794,8 @@ const MainApp = () => {
           id: `andres-opening-${Date.now()}`,
           message: "Honestly, I'm just wiped out. Every sprint feels the same and I don't even know if switching makes sense. It all feels like too much sometimes.",
           isUser: false,
-          timestamp: new Date().toISOString()
+          timestamp: new Date().toISOString(),
+          personaStage: 'overwhelmed' // Opening message is always overwhelmed
         };
         
         setMessages([andresOpeningMessage]);
@@ -815,7 +826,8 @@ const MainApp = () => {
           id: `kavya-opening-${Date.now()}`,
           message: "Honestly, I'm just exhausted trying to figure out what to do after graduation. I keep going back and forth between the corporate path—you know, stability, benefits, clear career progression—and the idea of starting my own business where I could actually have work-life balance and make a meaningful impact. But every corporate job I look at seems like it'll eat my soul, and starting something on my own feels impossible with student loans and no real experience. I feel like I'm supposed to just know what I want, but I don't. It's all just too much pressure right now.",
           isUser: false,
-          timestamp: new Date().toISOString()
+          timestamp: new Date().toISOString(),
+          personaStage: 'overwhelmed' // Kavya starts at overwhelmed stage
         };
         
         setMessages([kavyaOpeningMessage]);
@@ -912,6 +924,93 @@ const MainApp = () => {
       requestAnimationFrame(animate);
     }
   }, [messages]); // Only depend on messages - this ensures we react to new DQ scores immediately
+
+  // Helper function to get effective stage for a message
+  // If message doesn't have personaStage, look forward/backward to find it
+  const getEffectiveStage = (messageIndex, messages) => {
+    const msg = messages[messageIndex];
+    
+    // If this message has a stage, use it
+    if (msg && msg.personaStage) {
+      return msg.personaStage;
+    }
+    
+    // Look forward to find next message with a stage
+    for (let i = messageIndex + 1; i < messages.length; i++) {
+      if (!messages[i].isUser && messages[i].personaStage) {
+        return messages[i].personaStage;
+      }
+    }
+    
+    // Look backward to find previous message with a stage
+    for (let i = messageIndex - 1; i >= 0; i--) {
+      if (!messages[i].isUser && messages[i].personaStage) {
+        return messages[i].personaStage;
+      }
+    }
+    
+    // Default to overwhelmed if no stage found
+    return null;
+  };
+
+  // Get avatar image path based on character and stage
+  const getAvatarImage = (character, stage = null, message = null, messageIndex = null) => {
+    // For Andres, use stage-based images
+    if (character === 'andres') {
+      // Normalize stage to lowercase for consistent matching
+      const normalizedStage = stage ? stage.toLowerCase().trim() : null;
+      
+      // Map stage names to image filenames (API returns lowercase)
+      const stageMap = {
+        'overwhelmed': 'Overwhelmed',
+        'defensive': 'Defensive',
+        'exploring': 'Exploring',
+        'experimenting': 'Experimenting',
+        'curious': 'Curious',
+        'visioning': 'Envisioning' // Note: file is "Envisioning" but stage is "visioning"
+      };
+      
+      // If no stage provided, default to Overwhelmed for empty state
+      const imageStage = normalizedStage ? (stageMap[normalizedStage] || 'Overwhelmed') : 'Overwhelmed';
+      
+      // Debug logging (can be removed later)
+      if (process.env.NODE_ENV === 'development') {
+        console.log('[Avatar] Character:', character, 'Stage:', stage, 'Normalized:', normalizedStage, 'Image:', imageStage, 'messageIndex:', messageIndex);
+      }
+      
+      return `/images/DC Images/Andres/Andres_${imageStage}.png`;
+    }
+    
+    // For Kavya, use stage-based images (same stages as Andres)
+    if (character === 'kavya') {
+      // Normalize stage to lowercase for consistent matching
+      const normalizedStage = stage ? stage.toLowerCase().trim() : null;
+      
+      // Map stage names to image filenames (Kavya uses "Visioning" not "Envisioning")
+      const stageMap = {
+        'overwhelmed': 'Overwhelmed',
+        'defensive': 'Defensive',
+        'exploring': 'Exploring',
+        'experimenting': 'Experimenting',
+        'curious': 'Curious',
+        'visioning': 'Visioning' // Note: Kavya file is "Visioning" (not "Envisioning")
+      };
+      
+      // If no stage provided, default to Overwhelmed for empty state
+      const imageStage = normalizedStage ? (stageMap[normalizedStage] || 'Overwhelmed') : 'Overwhelmed';
+      
+      // Debug logging (can be removed later)
+      if (process.env.NODE_ENV === 'development') {
+        console.log('[Avatar] Character:', character, 'Stage:', stage, 'Normalized:', normalizedStage, 'Image:', imageStage, 'messageIndex:', messageIndex);
+      }
+      
+      return `/images/DC Images/Kavya/Kavya_${imageStage}.png`;
+    }
+    
+    // Default avatars for other characters
+    if (character === 'jamie') return "/images/cu-JAMIE.png";
+    return "/images/cu-JAMIE.png"; // Default
+  };
 
   // Get character's current state based on progress percentage
   const getCharacterState = () => {
@@ -1369,10 +1468,10 @@ const MainApp = () => {
     
     // Decrement attempts (but only if not a reset - reset will be handled by backend)
     if (!shouldReset) {
-      setAttemptsRemaining(prev => {
-        const newAttempts = prev - 1;
-        return newAttempts;
-      });
+    setAttemptsRemaining(prev => {
+      const newAttempts = prev - 1;
+      return newAttempts;
+    });
     }
     
     // Clear the new session flag after using it
@@ -1475,7 +1574,8 @@ const MainApp = () => {
           avgDqScore: demoAvgDqScore,
           timestamp: new Date().toISOString(),
           sessionId: "demo-session",
-          userId: "demo-user"
+          userId: "demo-user",
+          personaStage: null // Demo mode doesn't have stages
         };
 
         setMessages(prev => [...prev, jamieMessage]);
@@ -1576,6 +1676,9 @@ const MainApp = () => {
       
       debugLog('Request body:', requestBody);
       
+      console.log('[API Call] Sending request to:', backendUrl, 'Body:', requestBody);
+      const apiCallStartTime = Date.now();
+      
       const response = await fetch(backendUrl, {
         method: 'POST',
         headers: {
@@ -1585,7 +1688,9 @@ const MainApp = () => {
         body: JSON.stringify(requestBody),
       });
 
+      const apiCallDuration = Date.now() - apiCallStartTime;
       debugLog('Response status:', response.status);
+      console.log('[API Call] Response received, status:', response.status, 'Duration:', apiCallDuration + 'ms');
 
       if (!response.ok) {
         const errorText = await response.text();
@@ -1595,6 +1700,18 @@ const MainApp = () => {
 
       const data = await response.json();
       debugLog('API Response:', data);
+      console.log('[API Response] Full data:', {
+        persona_stage: data.persona_stage,
+        character: currentCharacter,
+        hasPersonaStage: 'persona_stage' in data,
+        allKeys: Object.keys(data),
+        fullResponse: data // Log full response for debugging
+      });
+      
+      // Warn if persona_stage is missing for Andres
+      if (currentCharacter === 'andres' && !data.persona_stage) {
+        console.warn('⚠️ [API Response] persona_stage is MISSING for Andres! Backend should return this. Response keys:', Object.keys(data));
+      }
       
       // Update user message with DQ score components and minimum
       setMessages(prev => prev.map(msg => 
@@ -1604,6 +1721,45 @@ const MainApp = () => {
       ));
 
       // Add Jamie's response
+      // For Andres/Kavya, use current progress-based stage to match progress bar
+      // Calculate progress from the new message's DQ score (matching getJamieProgress logic)
+      let messagePersonaStage = data.persona_stage || null;
+      if (currentCharacter === 'andres' || currentCharacter === 'kavya') {
+        // Calculate progress from DQ score (matching getJamieProgress logic - average of top 5 dimensions)
+        let progressDecimal = 0;
+        if (data.dq_score && typeof data.dq_score === 'object') {
+          const coreDimensions = ['framing', 'alternatives', 'information', 'values', 'reasoning', 'commitment'];
+          const values = coreDimensions
+            .map(dim => data.dq_score[dim])
+            .filter(v => typeof v === 'number' && !isNaN(v) && isFinite(v) && v >= 0 && v <= 1)
+            .sort((a, b) => b - a); // Sort descending
+          
+          if (values.length > 0) {
+            // Use average of top 5 dimensions (matching getJamieProgress)
+            const topValues = values.slice(0, Math.min(5, values.length));
+            progressDecimal = topValues.reduce((sum, val) => sum + val, 0) / topValues.length;
+          }
+        } else if (typeof data.dq_score_minimum === 'number') {
+          progressDecimal = data.dq_score_minimum;
+        }
+        
+        // Determine stage based on progress (matching getCharacterState logic)
+        if (progressDecimal >= 0.8) messagePersonaStage = 'visioning';
+        else if (progressDecimal >= 0.65) messagePersonaStage = 'curious';
+        else if (progressDecimal >= 0.5) messagePersonaStage = 'experimenting';
+        else if (progressDecimal >= 0.3) messagePersonaStage = 'exploring';
+        else if (progressDecimal >= 0.15) messagePersonaStage = 'defensive';
+        else messagePersonaStage = 'overwhelmed';
+        
+        console.log('[Message Stage] Calculated stage from DQ score:', {
+          dqScore: data.dq_score,
+          dqScoreMinimum: data.dq_score_minimum,
+          progressDecimal: progressDecimal,
+          progressPercent: Math.round(progressDecimal * 100),
+          stage: messagePersonaStage
+        });
+      }
+      
       const jamieMessage = {
         id: Date.now() + 1,
         message: data.jamie_reply,
@@ -1612,8 +1768,15 @@ const MainApp = () => {
         avgDqScore: data.dq_score_minimum,
         timestamp: data.timestamp,
         sessionId: data.session_id,
-        userId: data.user_id
+        userId: data.user_id,
+        personaStage: messagePersonaStage // Store persona stage for avatar selection (progress-based for Andres/Kavya)
       };
+      
+      console.log('[Message Created] personaStage:', jamieMessage.personaStage, 'message id:', jamieMessage.id, 'hasPersonaStage:', 'personaStage' in jamieMessage, 'progress:', getJamieProgress() + '%');
+      
+      if ((currentCharacter === 'andres' || currentCharacter === 'kavya') && !jamieMessage.personaStage) {
+        console.error(`❌ [Message Created] CRITICAL: ${currentCharacter} message created WITHOUT personaStage! This will cause avatar issues.`);
+      }
 
       // Update attempts remaining from backend response
       if (data.turnsRemaining !== undefined) {
@@ -1633,10 +1796,19 @@ const MainApp = () => {
         // Fallback: decrement attempts remaining if not in response
         setAttemptsRemaining(prev => Math.max(0, prev - 1));
       }
-      
+
       // Add small delay before showing Jamie's response for smoother transition
       setTimeout(() => {
-        setMessages(prev => [...prev, jamieMessage]);
+        console.log('[Adding Message to State] jamieMessage:', {
+          id: jamieMessage.id,
+          personaStage: jamieMessage.personaStage,
+          messagePreview: jamieMessage.message.substring(0, 50)
+        });
+        setMessages(prev => {
+          const newMessages = [...prev, jamieMessage];
+          console.log('[State Update] Total messages:', newMessages.length, 'Latest personaStage:', jamieMessage.personaStage);
+          return newMessages;
+        });
         setConnectionStatus('connected');
         setIsLoading(false);
         setIsTyping(false);
@@ -2127,17 +2299,21 @@ const MainApp = () => {
           <div className="max-w-[866px] mx-auto px-3 py-6 sm:px-0 sm:py-[76px] flex flex-col gap-4 sm:gap-[46px] pt-20">
             {messages.length === 0 && (
               <div className="text-center py-8 sm:py-16">
-                <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-[#2C73EB] flex items-end justify-center mx-auto mb-4 sm:mb-6 shadow-lg overflow-hidden">
-                  <img 
-                    src={
-                      currentCharacter === 'jamie' ? "/images/cu-JAMIE.png" : 
-                      currentCharacter === 'andres' ? "/images/cu-Andres.png" :
-                      "/images/cu-GIRL-2.png"
-                    } 
-                    alt={characterData[currentCharacter].name} 
-                    className={`w-16 h-16 sm:w-20 sm:h-20 object-cover object-bottom ${currentCharacter === 'andres' || currentCharacter === 'kavya' ? 'scale-x-[-1]' : ''}`}
-                  />
-                </div>
+                  <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-[#2C73EB] flex items-end justify-center mx-auto mb-4 sm:mb-6 shadow-lg overflow-hidden">
+                    <img 
+                      src={getAvatarImage(
+                        currentCharacter,
+                        (currentCharacter === 'andres' || currentCharacter === 'kavya') 
+                          ? getCharacterState()?.toLowerCase() || 'overwhelmed'
+                          : null,
+                        null, // No message object for empty state
+                        null // No message index for empty state
+                      )} 
+                      alt={characterData[currentCharacter].name} 
+                      className={`w-16 h-16 sm:w-20 sm:h-20 object-cover object-bottom`}
+                      style={(currentCharacter === 'andres' || currentCharacter === 'kavya') ? { opacity: 0.9 } : {}}
+                    />
+                  </div>
                 <div className="absolute top-6 left-6 sm:top-8 sm:left-8 z-10">
                   <h2 className="text-xl sm:text-2xl font-bold text-gray-800" style={{ fontFamily: 'Futura, -apple-system, BlinkMacSystemFont, sans-serif', fontWeight: 400 }}>
                     Start coaching {characterData[currentCharacter].name} {demoMode && <span className="text-xs sm:text-sm font-medium text-blue-600 bg-blue-100 px-2 sm:px-3 py-1 rounded-full ml-2">Demo Mode</span>}
@@ -2182,8 +2358,26 @@ const MainApp = () => {
               </div>
             )}
 
-            {messages.map((msg) => (
-              <React.Fragment key={msg.id}>
+            {messages.map((msg, index) => {
+              // Debug: Log message details for Andres and Kavya
+              if ((currentCharacter === 'andres' || currentCharacter === 'kavya') && !msg.isUser) {
+                const effectiveStage = getEffectiveStage(index, messages);
+                if (!msg.personaStage || !('personaStage' in msg)) {
+                  console.warn(`[Message ${index}] ⚠️ MISSING personaStage!`, {
+                    id: msg.id,
+                    isUser: msg.isUser,
+                    hasPersonaStage: 'personaStage' in msg,
+                    personaStage: msg.personaStage,
+                    effectiveStage: effectiveStage,
+                    allKeys: Object.keys(msg),
+                    fullMessage: msg
+                  });
+                } else {
+                  console.log(`[Message ${index}] ✅ personaStage:`, msg.personaStage, 'effectiveStage:', effectiveStage, 'msg.id:', msg.id);
+                }
+              }
+              return (
+                <React.Fragment key={msg.id}>
                 {msg.isUser ? (
                   // User messages - blue bubble
                   <div className="flex justify-end message-enter" data-message-id={msg.id}>
@@ -2199,13 +2393,33 @@ const MainApp = () => {
                   {/* Character Avatar */}
                   <div className="w-8 h-8 sm:w-[70px] sm:h-[70px] rounded-full bg-[#2C73EB] flex items-end justify-center flex-shrink-0 overflow-hidden">
                     <img 
-                      src={
-                        currentCharacter === 'jamie' ? "/images/cu-JAMIE.png" : 
-                        currentCharacter === 'andres' ? "/images/cu-Andres.png" :
-                        "/images/cu-GIRL-2.png"
-                      } 
+                      src={getAvatarImage(
+                        currentCharacter, 
+                        (() => {
+                          // For Andres/Kavya: Latest message uses current progress-based stage, older messages use their personaStage
+                          if (currentCharacter === 'andres' || currentCharacter === 'kavya') {
+                            // Find the index of the last Andres/Kavya message
+                            const andresMessages = messages.filter(m => !m.isUser);
+                            const isLatestMessage = andresMessages.length > 0 && andresMessages[andresMessages.length - 1].id === msg.id;
+                            
+                            if (isLatestMessage) {
+                              // Latest message: Use current progress-based stage to match progress bar
+                              const currentStage = getCharacterState();
+                              return currentStage ? currentStage.toLowerCase() : 'overwhelmed';
+                            } else {
+                              // Older messages: Use their personaStage if available, otherwise default to overwhelmed
+                              return msg.personaStage || 'overwhelmed';
+                            }
+                          }
+                          // For other characters, use personaStage
+                          return msg.personaStage || null;
+                        })(),
+                        msg, // Pass message object
+                        index // Pass message index
+                      )} 
                       alt={characterData[currentCharacter].name} 
-                      className={`w-8 h-8 sm:w-[70px] sm:h-[70px] object-cover object-bottom ${currentCharacter === 'andres' || currentCharacter === 'kavya' ? 'scale-x-[-1]' : ''}`}
+                      className={`w-8 h-8 sm:w-[70px] sm:h-[70px] object-cover object-bottom`}
+                      style={(currentCharacter === 'andres' || currentCharacter === 'kavya') ? { opacity: 0.9 } : {}}
                     />
                   </div>
                     
@@ -2357,20 +2571,28 @@ const MainApp = () => {
                     </div>
                   </div>
                 )}
-              </React.Fragment>
-            ))}
+                </React.Fragment>
+              );
+            })}
             
               {isTyping && (
                 <div className="flex gap-2 sm:gap-[30px] items-start">
                   <div className="w-8 h-8 sm:w-[70px] sm:h-[70px] rounded-full bg-[#2C73EB] flex items-end justify-center flex-shrink-0 overflow-hidden">
                     <img 
-                      src={
-                        currentCharacter === 'jamie' ? "/images/cu-JAMIE.png" : 
-                        currentCharacter === 'andres' ? "/images/cu-Andres.png" :
-                        "/images/cu-GIRL-2.png"
-                      } 
+                      src={getAvatarImage(
+                        currentCharacter, 
+                        // For typing indicator (current/latest state), use progress-based stage to match progress bar
+                        (currentCharacter === 'andres' || currentCharacter === 'kavya')
+                          ? getCharacterState()?.toLowerCase() || 'overwhelmed'
+                          : (messages.filter(m => !m.isUser && m.personaStage).length > 0 
+                              ? messages.filter(m => !m.isUser && m.personaStage).slice(-1)[0].personaStage 
+                              : null),
+                        null,
+                        null // No message index for typing indicator
+                      )} 
                       alt={characterData[currentCharacter].name} 
-                      className={`w-8 h-8 sm:w-[70px] sm:h-[70px] object-cover object-bottom ${currentCharacter === 'andres' || currentCharacter === 'kavya' ? 'scale-x-[-1]' : ''}`}
+                      className={`w-8 h-8 sm:w-[70px] sm:h-[70px] object-cover object-bottom`}
+                      style={(currentCharacter === 'andres' || currentCharacter === 'kavya') ? { opacity: 0.9 } : {}}
                     />
                   </div>
                   <div className="bg-white rounded-[5px] shadow-[0px_6px_20px_10px_rgba(200,201,201,0.11)] px-4 py-4 sm:px-[33px] sm:py-6 mx-4 sm:mx-0">

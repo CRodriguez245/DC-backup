@@ -7,7 +7,7 @@ const SharedVisual = () => {
       name: 'Jamie',
       status: 'Completed',
       dqScore: 0.8,
-      avatar: '/images/cu-JAMIE.png',
+      avatar: '/images/DC Images/Jamie/Jamie_LandingPage.png',
       description: 'Sophomore Mechanical Engineering student considering switching to Art/Design',
       position: { x: 700, y: 120 },
       completed: true
@@ -17,7 +17,7 @@ const SharedVisual = () => {
       name: 'Andres',
       status: 'Completed',
       dqScore: 0.6,
-      avatar: '/images/cu-Andres.png',
+      avatar: '/images/DC Images/Andres/Andres_LandingPage.png',
       description: 'Software engineer considering a career pivot',
       position: { x: 1100, y: 320 },
       completed: true
@@ -27,7 +27,7 @@ const SharedVisual = () => {
       name: 'Kavya',
       status: 'Completed',
       dqScore: 0.8,
-      avatar: '/images/cu-GIRL-2.png',
+      avatar: '/images/DC Images/Kavya/Kavya_LandingPage.png',
       description: 'Recent graduate exploring career options',
       position: { x: 700, y: 520 },
       completed: true
@@ -37,7 +37,7 @@ const SharedVisual = () => {
       name: 'Daniel',
       status: 'Available',
       dqScore: null,
-      avatar: '/images/Daniel-2P.png',
+      avatar: '/images/DC Images/Persona4/Persona4_LandingPage.png',
       description: 'Sophomore Mechanical Engineering student considering switching to Art/Design',
       position: { x: 1100, y: 720 },
       completed: false
@@ -163,10 +163,9 @@ const SharedVisual = () => {
                           src={level.avatar} 
                           alt={level.name}
                           className={`w-full h-full object-cover rounded-full ${
-                            level.id === 'andres' ? 'scale-x-[-1]' : 
-                            level.id === 'kavya' ? 'scale-x-[-1]' : ''
+                            level.id === 'andres' ? 'scale-x-[-1]' : ''
                           }`}
-                          style={{ opacity: 0.5 }}
+                          style={{ opacity: 0.8 }}
                         />
                       ) : (
                         level.avatar

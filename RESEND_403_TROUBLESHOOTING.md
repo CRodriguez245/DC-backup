@@ -15,7 +15,7 @@
 1. **Go to Resend Dashboard**
 2. **Click "API Keys"** (in sidebar)
 3. **Verify your API key exists:**
-   - Key: `re_UkuY2EVe_EytLvXCuUzJ6CfdqXoeV96fr`
+   - Key: `[REDACTED_RESEND_API_KEY]`
    - Status: Should be "Active" or "Valid"
    - Permissions: Should allow sending emails
 
@@ -79,7 +79,7 @@ resend
 
 **Password:**
 ```
-re_UkuY2EVe_EytLvXCuUzJ6CfdqXoeV96fr
+[REDACTED_RESEND_API_KEY]
 ```
 (Your API key - NO spaces)
 

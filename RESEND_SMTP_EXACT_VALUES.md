@@ -40,7 +40,7 @@ resend
 
 **6. Password:**
 ```
-re_UkuY2EVe_EytLvXCuUzJ6CfdqXoeV96fr
+[REDACTED_RESEND_API_KEY]
 ```
 (NO spaces before or after)
 
@@ -80,7 +80,7 @@ re_UkuY2EVe_EytLvXCuUzJ6CfdqXoeV96fr
 `resend`
 
 **Password:**
-`re_UkuY2EVe_EytLvXCuUzJ6CfdqXoeV96fr`
+`[REDACTED_RESEND_API_KEY]`
 
 **Minimum interval:**
 `60`

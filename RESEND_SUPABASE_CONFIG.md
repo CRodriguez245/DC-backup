@@ -1,7 +1,7 @@
 # Configure Supabase with Resend
 
 ## ✅ You Have:
-- **API Key:** `re_UkuY2EVe_EytLvXCuUzJ6CfdqXoeV96fr`
+- **API Key:** `[REDACTED_RESEND_API_KEY]`
 - **Now we need:** Your Resend domain/sender email
 
 ---
@@ -40,7 +40,7 @@
 SMTP Host: smtp.resend.com
 SMTP Port: 587
 SMTP User: resend
-SMTP Password: re_UkuY2EVe_EytLvXCuUzJ6CfdqXoeV96fr
+SMTP Password: [REDACTED_RESEND_API_KEY]
 Sender Email: onboarding@resend.dev
   (OR use your custom domain email if you have one)
 Sender Name: Decision Coach
@@ -48,7 +48,7 @@ Sender Name: Decision Coach
 
 **IMPORTANT:** 
 - **SMTP User is always:** `resend` (not your API key!)
-- **SMTP Password is your API key:** `re_UkuY2EVe_EytLvXCuUzJ6CfdqXoeV96fr`
+- **SMTP Password is your API key:** `[REDACTED_RESEND_API_KEY]`
 
 4. **Click "Save"**
 
@@ -115,7 +115,7 @@ Sender Name: Decision Coach
 (Always "resend" for Resend - not your API key!)
 
 **Password:**
-`re_UkuY2EVe_EytLvXCuUzJ6CfdqXoeV96fr`
+`[REDACTED_RESEND_API_KEY]`
 (Your API key)
 
 **Minimum interval per user:**

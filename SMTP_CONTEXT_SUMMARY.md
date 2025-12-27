@@ -73,7 +73,7 @@
 ## 🎯 Key Information Preserved
 
 ### Resend Configuration
-- **API Key:** `re_UkuY2EVe_EytLvXCuUzJ6CfdqXoeV96fr`
+- **API Key:** `[REDACTED_RESEND_API_KEY]`
 - **SMTP Settings in Supabase:**
   - Host: `smtp.resend.com`
   - Port: `587`

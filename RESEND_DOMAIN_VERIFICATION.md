@@ -103,7 +103,7 @@ Value: [CNAME value from Resend]
    - Host: `smtp.resend.com`
    - Port: `587`
    - Username: `resend`
-   - Password: `re_UkuY2EVe_EytLvXCuUzJ6CfdqXoeV96fr`
+   - Password: `[REDACTED_RESEND_API_KEY]`
 
 4. **Save**
 

@@ -411,6 +411,20 @@ const MainApp = () => {
       context: 'Kavya is a recent graduate exploring career options. She\'s torn between pursuing a traditional corporate path or starting her own business. She values work-life balance and wants to make a meaningful impact. How would you coach her?',
       progressLabel: 'Kavya\'s Progress',
       gameMode: 'game' // Kavya uses game mode
+    },
+    daniel: {
+      name: 'Daniel',
+      title: 'Relocation Decision',
+      context: 'Daniel is a mid-career professional facing a relocation decision. He\'s been offered an exciting job opportunity in a different city that would advance his career, but he\'s torn between relocating for the opportunity or staying in his current city for personal and community reasons. How would you coach him?',
+      progressLabel: 'Daniel\'s Progress',
+      gameMode: 'game' // Daniel uses game mode
+    },
+    sarah: {
+      name: 'Sarah',
+      title: 'Returning to Work',
+      context: 'Sarah is a professional returning to work after a career break. She\'s choosing between returning to her previous field where she has existing skills and experience, or starting in a new field/career direction that might be more aligned with her current life priorities. How would you coach her?',
+      progressLabel: 'Sarah\'s Progress',
+      gameMode: 'game' // Sarah uses game mode
     }
   };
   
@@ -428,7 +442,10 @@ const MainApp = () => {
   
   // Helper function to get max attempts based on character
   const getMaxAttempts = (character) => {
-    return character === 'kavya' ? 10 : 20;
+    if (character === 'kavya') return 10;
+    if (character === 'daniel') return 10;
+    if (character === 'sarah') return 10;
+    return 20; // Default for jamie, andres, and others
   };
   
   const [attemptsRemaining, setAttemptsRemaining] = useState(() => {
@@ -835,6 +852,70 @@ const MainApp = () => {
     }
   }, [currentView, currentCharacter, messages.length, isLoading, isTyping, userInfo]);
 
+  // Add initial Daniel opening message when starting a new chat session
+  useEffect(() => {
+    // Only add opening message if:
+    // 1. We're in chat view
+    // 2. Current character is Daniel
+    // 3. Messages array is empty (new session, not a saved one)
+    // 4. Not currently loading or typing
+    // 5. User info is available
+    if (
+      currentView === 'chat' &&
+      currentCharacter === 'daniel' &&
+      messages.length === 0 &&
+      !isLoading &&
+      !isTyping &&
+      userInfo // Make sure userInfo is available before checking for saved session
+    ) {
+      // Double-check that no saved session exists
+      const savedSession = loadInProgressSession(currentCharacter);
+      if (!savedSession || !savedSession.messages || savedSession.messages.length === 0) {
+        const danielOpeningMessage = {
+          id: `daniel-opening-${Date.now()}`,
+          message: "Honestly I'm just exhausted trying to figure out what to do. I keep going back and forth between taking this amazing opportunity in a new city and staying here where I have my whole life built. Every time I think about leaving, I feel guilty about abandoning everyone, but staying feels like I'm limiting my potential. It's all just too much pressure right now.",
+          isUser: false,
+          timestamp: new Date().toISOString(),
+          personaStage: 'overwhelmed' // Daniel starts at overwhelmed stage
+        };
+        
+        setMessages([danielOpeningMessage]);
+      }
+    }
+  }, [currentView, currentCharacter, messages.length, isLoading, isTyping, userInfo]);
+
+  // Add initial Sarah opening message when starting a new chat session
+  useEffect(() => {
+    // Only add opening message if:
+    // 1. We're in chat view
+    // 2. Current character is Sarah
+    // 3. Messages array is empty (new session, not a saved one)
+    // 4. Not currently loading or typing
+    // 5. User info is available
+    if (
+      currentView === 'chat' &&
+      currentCharacter === 'sarah' &&
+      messages.length === 0 &&
+      !isLoading &&
+      !isTyping &&
+      userInfo // Make sure userInfo is available before checking for saved session
+    ) {
+      // Double-check that no saved session exists
+      const savedSession = loadInProgressSession(currentCharacter);
+      if (!savedSession || !savedSession.messages || savedSession.messages.length === 0) {
+        const sarahOpeningMessage = {
+          id: `sarah-opening-${Date.now()}`,
+          message: "Honestly I'm just exhausted trying to figure out what to do. I've been away from work for several years, and now I'm torn between returning to my previous field where I have experience and skills, or starting fresh in a new direction that might better align with where I am in my life now. Every time I think about going back, I worry my skills are outdated and I'll be behind. But starting over feels impossible when I have financial responsibilities and ongoing personal commitments. It's all just too much pressure right now.",
+          isUser: false,
+          timestamp: new Date().toISOString(),
+          personaStage: 'overwhelmed' // Sarah starts at overwhelmed stage
+        };
+        
+        setMessages([sarahOpeningMessage]);
+      }
+    }
+  }, [currentView, currentCharacter, messages.length, isLoading, isTyping, userInfo]);
+
   // Calculate progress percentage for current character
   const getJamieProgress = () => {
     if (messages.length === 0) return 0; // Start at 0%
@@ -1007,6 +1088,61 @@ const MainApp = () => {
       return `/images/DC Images/Kavya/Kavya_${imageStage}.png`;
     }
     
+    // For Daniel, use stage-based images (same stages as Andres/Kavya, using Persona4 images)
+    if (character === 'daniel') {
+      // Normalize stage to lowercase for consistent matching
+      const normalizedStage = stage ? stage.toLowerCase().trim() : null;
+      
+      // Map stage names to image filenames (Daniel uses Persona4 images)
+      const stageMap = {
+        'overwhelmed': 'Overwhelmed',
+        'defensive': 'Defensive',
+        'exploring': 'Exploring',
+        'experimenting': 'Experimenting',
+        'curious': 'Curious',
+        'visioning': 'Visioning'
+      };
+      
+      // If no stage provided, default to Overwhelmed for empty state
+      const imageStage = normalizedStage ? (stageMap[normalizedStage] || 'Overwhelmed') : 'Overwhelmed';
+      
+      // Debug logging (can be removed later)
+      if (process.env.NODE_ENV === 'development') {
+        console.log('[Avatar] Character:', character, 'Stage:', stage, 'Normalized:', normalizedStage, 'Image:', imageStage, 'messageIndex:', messageIndex);
+      }
+      
+      return `/images/DC Images/Persona4/Persona4_${imageStage}.png`;
+    }
+    
+    // For Sarah, use stage-based images (Persona5 images)
+    if (character === 'sarah') {
+      // Normalize stage to lowercase for consistent matching
+      const normalizedStage = stage ? stage.toLowerCase().trim() : null;
+      
+      // Map stage names to image filenames (Sarah uses Persona5 images)
+      // Note: Some files use "Person5_" prefix (Curious, Overwhelmed) while others use "Persona5_"
+      const stageMap = {
+        'overwhelmed': 'Overwhelmed',
+        'defensive': 'Defensive',
+        'exploring': 'Exploring',
+        'experimenting': 'Experimenting',
+        'curious': 'Curious',
+        'visioning': 'Visioning'
+      };
+      
+      // If no stage provided, default to Overwhelmed for empty state
+      const imageStage = normalizedStage ? (stageMap[normalizedStage] || 'Overwhelmed') : 'Overwhelmed';
+      
+      // Debug logging (can be removed later)
+      if (process.env.NODE_ENV === 'development') {
+        console.log('[Avatar] Character:', character, 'Stage:', stage, 'Normalized:', normalizedStage, 'Image:', imageStage, 'messageIndex:', messageIndex);
+      }
+      
+      // Handle naming inconsistency: Curious and Overwhelmed use "Person5_" prefix, others use "Persona5_"
+      const baseName = (imageStage === 'Curious' || imageStage === 'Overwhelmed') ? 'Person5' : 'Persona5';
+      return `/images/DC Images/Persona5/${baseName}_${imageStage}.png`;
+    }
+    
     // Default avatars for other characters
     if (character === 'jamie') return "/images/cu-JAMIE.png";
     return "/images/cu-JAMIE.png"; // Default
@@ -1030,6 +1166,24 @@ const MainApp = () => {
     } else if (currentCharacter === 'kavya') {
       // Kavya stages: overwhelmed (0), defensive (0.15), exploring (0.3), experimenting (0.5), curious (0.65), visioning (0.8)
       // Same thresholds as Andres
+      if (progressDecimal >= 0.8) return 'Visioning';
+      if (progressDecimal >= 0.65) return 'Curious';
+      if (progressDecimal >= 0.5) return 'Experimenting';
+      if (progressDecimal >= 0.3) return 'Exploring';
+      if (progressDecimal >= 0.15) return 'Defensive';
+      return 'Overwhelmed';
+    } else if (currentCharacter === 'daniel') {
+      // Daniel stages: overwhelmed (0), defensive (0.15), exploring (0.3), experimenting (0.5), curious (0.65), visioning (0.8)
+      // Same thresholds as Andres/Kavya
+      if (progressDecimal >= 0.8) return 'Visioning';
+      if (progressDecimal >= 0.65) return 'Curious';
+      if (progressDecimal >= 0.5) return 'Experimenting';
+      if (progressDecimal >= 0.3) return 'Exploring';
+      if (progressDecimal >= 0.15) return 'Defensive';
+      return 'Overwhelmed';
+    } else if (currentCharacter === 'sarah') {
+      // Sarah stages: overwhelmed (0), defensive (0.15), exploring (0.3), experimenting (0.5), curious (0.65), visioning (0.8)
+      // Same thresholds as Andres/Kavya/Daniel
       if (progressDecimal >= 0.8) return 'Visioning';
       if (progressDecimal >= 0.65) return 'Curious';
       if (progressDecimal >= 0.5) return 'Experimenting';
@@ -1724,7 +1878,7 @@ const MainApp = () => {
       // For Andres/Kavya, use current progress-based stage to match progress bar
       // Calculate progress from the new message's DQ score (matching getJamieProgress logic)
       let messagePersonaStage = data.persona_stage || null;
-      if (currentCharacter === 'andres' || currentCharacter === 'kavya') {
+      if (currentCharacter === 'andres' || currentCharacter === 'kavya' || currentCharacter === 'daniel' || currentCharacter === 'sarah') {
         // Calculate progress from DQ score (matching getJamieProgress logic - average of top 5 dimensions)
         let progressDecimal = 0;
         if (data.dq_score && typeof data.dq_score === 'object') {
@@ -1774,7 +1928,7 @@ const MainApp = () => {
       
       console.log('[Message Created] personaStage:', jamieMessage.personaStage, 'message id:', jamieMessage.id, 'hasPersonaStage:', 'personaStage' in jamieMessage, 'progress:', getJamieProgress() + '%');
       
-      if ((currentCharacter === 'andres' || currentCharacter === 'kavya') && !jamieMessage.personaStage) {
+      if ((currentCharacter === 'andres' || currentCharacter === 'kavya' || currentCharacter === 'daniel') && !jamieMessage.personaStage) {
         console.error(`❌ [Message Created] CRITICAL: ${currentCharacter} message created WITHOUT personaStage! This will cause avatar issues.`);
       }
 
@@ -2303,7 +2457,7 @@ const MainApp = () => {
                     <img 
                       src={getAvatarImage(
                         currentCharacter,
-                        (currentCharacter === 'andres' || currentCharacter === 'kavya') 
+                        (currentCharacter === 'andres' || currentCharacter === 'kavya' || currentCharacter === 'daniel' || currentCharacter === 'sarah') 
                           ? getCharacterState()?.toLowerCase() || 'overwhelmed'
                           : null,
                         null, // No message object for empty state
@@ -2311,7 +2465,7 @@ const MainApp = () => {
                       )} 
                       alt={characterData[currentCharacter].name} 
                       className={`w-16 h-16 sm:w-20 sm:h-20 object-cover object-bottom`}
-                      style={(currentCharacter === 'andres' || currentCharacter === 'kavya') ? { opacity: 0.9 } : {}}
+                      style={(currentCharacter === 'andres' || currentCharacter === 'kavya' || currentCharacter === 'daniel' || currentCharacter === 'sarah') ? { opacity: 0.9 } : {}}
                     />
                   </div>
                 <div className="absolute top-6 left-6 sm:top-8 sm:left-8 z-10">
@@ -2360,7 +2514,7 @@ const MainApp = () => {
 
             {messages.map((msg, index) => {
               // Debug: Log message details for Andres and Kavya
-              if ((currentCharacter === 'andres' || currentCharacter === 'kavya') && !msg.isUser) {
+              if ((currentCharacter === 'andres' || currentCharacter === 'kavya' || currentCharacter === 'daniel') && !msg.isUser) {
                 const effectiveStage = getEffectiveStage(index, messages);
                 if (!msg.personaStage || !('personaStage' in msg)) {
                   console.warn(`[Message ${index}] ⚠️ MISSING personaStage!`, {
@@ -2397,7 +2551,7 @@ const MainApp = () => {
                         currentCharacter, 
                         (() => {
                           // For Andres/Kavya: Latest message uses current progress-based stage, older messages use their personaStage
-                          if (currentCharacter === 'andres' || currentCharacter === 'kavya') {
+                          if (currentCharacter === 'andres' || currentCharacter === 'kavya' || currentCharacter === 'daniel' || currentCharacter === 'sarah') {
                             // Find the index of the last Andres/Kavya message
                             const andresMessages = messages.filter(m => !m.isUser);
                             const isLatestMessage = andresMessages.length > 0 && andresMessages[andresMessages.length - 1].id === msg.id;
@@ -2419,7 +2573,7 @@ const MainApp = () => {
                       )} 
                       alt={characterData[currentCharacter].name} 
                       className={`w-8 h-8 sm:w-[70px] sm:h-[70px] object-cover object-bottom`}
-                      style={(currentCharacter === 'andres' || currentCharacter === 'kavya') ? { opacity: 0.9 } : {}}
+                      style={(currentCharacter === 'andres' || currentCharacter === 'kavya' || currentCharacter === 'daniel' || currentCharacter === 'sarah') ? { opacity: 0.9 } : {}}
                     />
                   </div>
                     
@@ -2582,7 +2736,7 @@ const MainApp = () => {
                       src={getAvatarImage(
                         currentCharacter, 
                         // For typing indicator (current/latest state), use progress-based stage to match progress bar
-                        (currentCharacter === 'andres' || currentCharacter === 'kavya')
+                        (currentCharacter === 'andres' || currentCharacter === 'kavya' || currentCharacter === 'daniel' || currentCharacter === 'sarah')
                           ? getCharacterState()?.toLowerCase() || 'overwhelmed'
                           : (messages.filter(m => !m.isUser && m.personaStage).length > 0 
                               ? messages.filter(m => !m.isUser && m.personaStage).slice(-1)[0].personaStage 
@@ -2592,7 +2746,7 @@ const MainApp = () => {
                       )} 
                       alt={characterData[currentCharacter].name} 
                       className={`w-8 h-8 sm:w-[70px] sm:h-[70px] object-cover object-bottom`}
-                      style={(currentCharacter === 'andres' || currentCharacter === 'kavya') ? { opacity: 0.9 } : {}}
+                      style={(currentCharacter === 'andres' || currentCharacter === 'kavya' || currentCharacter === 'daniel' || currentCharacter === 'sarah') ? { opacity: 0.9 } : {}}
                     />
                   </div>
                   <div className="bg-white rounded-[5px] shadow-[0px_6px_20px_10px_rgba(200,201,201,0.11)] px-4 py-4 sm:px-[33px] sm:py-6 mx-4 sm:mx-0">

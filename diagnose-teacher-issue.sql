@@ -51,3 +51,4 @@ WHERE tc.constraint_type = 'FOREIGN KEY'
     AND kcu.column_name = 'teacher_id';
 
 
+

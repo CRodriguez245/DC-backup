@@ -226,3 +226,4 @@ GRANT ALL ON public.messages TO anon, authenticated;
 GRANT ALL ON public.student_progress TO anon, authenticated;
 GRANT ALL ON public.dq_analytics TO anon, authenticated;
 
+

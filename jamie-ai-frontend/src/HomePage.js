@@ -71,6 +71,10 @@ const HomePage = ({ userInfo, gameMode, onStartCoaching, onLogout, onSettings, o
       onCharacterClick('andres');
     } else if (character.id === 'kavya') {
       onCharacterClick('kavya');
+    } else if (character.id === 'daniel') {
+      onCharacterClick('daniel');
+    } else if (character.id === 'sarah') {
+      onCharacterClick('sarah');
     }
   };
 
@@ -111,17 +115,17 @@ const HomePage = ({ userInfo, gameMode, onStartCoaching, onLogout, onSettings, o
       status: 'Available',
       dqScore: null,
       avatar: '/images/DC Images/Persona4/Persona4_LandingPage.png',
-      description: 'Sophomore Mechanical Engineering student considering switching to Art/Design',
+      description: 'Mid-career professional facing a relocation decision',
       position: { x: 1100, y: 720 },
       completed: false
     },
     {
       id: 'sarah',
       name: 'Sarah',
-      status: 'Locked',
+      status: 'Available',
       dqScore: null,
-      avatar: '👩‍🎓',
-      description: 'Coming soon...',
+      avatar: '/images/DC Images/Persona5/Persona5_LandingPage.png',
+      description: 'Professional returning to work after a career break',
       position: { x: 700, y: 920 },
       completed: false
     }
@@ -275,19 +279,19 @@ const HomePage = ({ userInfo, gameMode, onStartCoaching, onLogout, onSettings, o
                         : 'cursor-pointer hover:scale-110 hover:shadow-xl'
                     } ${
                       level.completed 
-                        ? (level.id === 'jamie' || level.id === 'andres' || level.id === 'kavya') ? 'hover:opacity-90' : 'border-2 border-blue-300 hover:opacity-90'
+                        ? (level.id === 'jamie' || level.id === 'andres' || level.id === 'kavya' || level.id === 'daniel' || level.id === 'sarah') ? 'hover:opacity-90' : 'border-2 border-blue-300 hover:opacity-90'
+                        : level.status === 'Available' && level.avatar.startsWith('/')
+                        ? 'hover:opacity-90'
                         : level.status === 'Available'
                         ? 'bg-gray-300 hover:bg-gray-400'
                         : 'bg-gray-300'
                     }`}
-                    style={(level.id === 'jamie' || level.id === 'andres' || level.id === 'kavya') && level.completed ? { backgroundColor: '#2C73EB', opacity: 1 } : {}}
+                    style={(level.id === 'jamie' || level.id === 'andres' || level.id === 'kavya' || level.id === 'daniel' || level.id === 'sarah') && (level.completed || (level.status === 'Available' && level.avatar.startsWith('/'))) ? { backgroundColor: '#2C73EB', opacity: 1 } : {}}
                     onClick={() => handleCharacterClick(level)}
                   >
                     {isLoadingProgress ? (
                       <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-white"></div>
                     ) : level.status === 'Locked' ? (
-                      ''
-                    ) : level.status === 'Available' ? (
                       ''
                     ) : level.avatar.startsWith('/') ? (
                       <img 
@@ -350,6 +354,24 @@ const HomePage = ({ userInfo, gameMode, onStartCoaching, onLogout, onSettings, o
               fill="none"
               style={{ animation: 'drawLineSmooth 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) 0.6s both' }}
             />
+            {/* Kavya to Daniel - downward curve */}
+            <path
+              d="M 700 520 Q 900 580 1100 720"
+              stroke="#3B82F6"
+              strokeWidth="2"
+              strokeDasharray="5,5"
+              fill="none"
+              style={{ animation: 'drawLineSmooth 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) 0.8s both' }}
+            />
+            {/* Daniel to Sarah - matches Kavya to Andres pattern (reversed direction) */}
+            <path
+              d="M 720 910 Q 900 870 1100 710"
+              stroke="#3B82F6"
+              strokeWidth="2"
+              strokeDasharray="5,5"
+              fill="none"
+              style={{ animation: 'drawLineSmooth 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) 1.0s both' }}
+            />
           </svg>
 
           {/* Character nodes */}
@@ -362,7 +384,7 @@ const HomePage = ({ userInfo, gameMode, onStartCoaching, onLogout, onSettings, o
                 top: `${level.position.y}px`,
                 transform: 'translate(-50%, -50%)',
                 zIndex: 10,
-                animation: `elementFadeIn 0.2s cubic-bezier(0.2, 0.8, 0.2, 1) ${level.id === 'jamie' ? '0.1' : level.id === 'andres' ? '0.2' : level.id === 'kavya' ? '0.6' : level.id === 'daniel' ? '0.8' : '1.0'}s both`
+                animation: `elementFadeIn 0.2s cubic-bezier(0.2, 0.8, 0.2, 1) ${level.id === 'jamie' ? '0.1' : level.id === 'andres' ? '0.2' : level.id === 'kavya' ? '0.6' : level.id === 'daniel' ? '0.8' : level.id === 'sarah' ? '1.0' : '1.0'}s both`
               }}
             >
               <div className="flex items-center space-x-4">
@@ -375,19 +397,19 @@ const HomePage = ({ userInfo, gameMode, onStartCoaching, onLogout, onSettings, o
                   <div 
                     className={`w-28 h-28 rounded-full flex items-center justify-center text-2xl cursor-pointer overflow-hidden transition-all duration-300 ease-in-out hover:scale-110 hover:shadow-xl ${
                       level.completed 
-                        ? (level.id === 'jamie' || level.id === 'andres' || level.id === 'kavya') ? 'hover:opacity-90' : 'border-2 border-blue-300 hover:opacity-90'
+                        ? (level.id === 'jamie' || level.id === 'andres' || level.id === 'kavya' || level.id === 'daniel' || level.id === 'sarah') ? 'hover:opacity-90' : 'border-2 border-blue-300 hover:opacity-90'
+                        : level.status === 'Available' && level.avatar.startsWith('/')
+                        ? 'hover:opacity-90'
                         : level.status === 'Available'
                         ? 'bg-gray-300 hover:bg-gray-400'
                         : 'bg-gray-300'
                     }`}
-                    style={(level.id === 'jamie' || level.id === 'andres' || level.id === 'kavya') && level.completed ? { backgroundColor: '#2C73EB', opacity: 1 } : {}}
+                    style={(level.id === 'jamie' || level.id === 'andres' || level.id === 'kavya' || level.id === 'daniel' || level.id === 'sarah') && (level.completed || (level.status === 'Available' && level.avatar.startsWith('/'))) ? { backgroundColor: '#2C73EB', opacity: 1 } : {}}
                     onClick={() => handleCharacterClick(level)}
                   >
                     {isLoadingProgress ? (
                       <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-white"></div>
                     ) : level.status === 'Locked' ? (
-                      ''
-                    ) : level.status === 'Available' ? (
                       ''
                     ) : level.avatar.startsWith('/') ? (
                       <img 

@@ -94,7 +94,7 @@ async function getJamieResponse(userInput, systemPrompt, persona, conversationHi
     
     const chat = await retryWithBackoff(async function () {
         return await openai.chat.completions.create({
-            model: "gpt-4o",
+        model: "gpt-4o",
             messages: messages,
             // Limit tokens for Andres/Kavya to encourage shorter responses (approximately 6 sentences = ~150 tokens)
             max_tokens: hasSixSentenceLimit ? 200 : undefined,
@@ -113,8 +113,8 @@ async function scoreDQ(userInput, conversationHistory, coachResponse) {
     const prompt = (0, prompts_1.dqScoringPrompt)(userInput, conversationHistory, coachResponse);
     const chat = await retryWithBackoff(async function () {
         return await openai.chat.completions.create({
-            model: "gpt-4o",
-            messages: [{ role: "user", content: prompt }]
+        model: "gpt-4o",
+        messages: [{ role: "user", content: prompt }]
         });
     });
     let text = chat.choices[0]?.message?.content || '{}';

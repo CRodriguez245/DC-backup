@@ -31,3 +31,4 @@ CREATE TRIGGER trigger_auto_create_teacher
 GRANT EXECUTE ON FUNCTION public.auto_create_teacher() TO authenticated, anon;
 
 
+

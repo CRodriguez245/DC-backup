@@ -66,3 +66,4 @@ FROM public.users
 WHERE id = auth.uid();
 
 
+

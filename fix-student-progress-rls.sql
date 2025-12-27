@@ -37,3 +37,4 @@ FOR SELECT USING (
 -- Grant necessary permissions
 GRANT ALL ON public.student_progress TO anon, authenticated;
 
+

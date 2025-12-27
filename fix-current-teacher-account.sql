@@ -28,3 +28,4 @@ FROM public.teachers t
 WHERE t.id = auth.uid();
 
 
+

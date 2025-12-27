@@ -17,3 +17,4 @@ WHERE email = 'c.a.rodriguez1999@gmail.com';
 -- we need to create the profile manually
 
 
+

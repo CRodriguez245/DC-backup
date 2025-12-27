@@ -16,14 +16,37 @@ export const STAGE_THRESHOLDS = {
     visioning: 0.8       // Original suggested threshold
   },
   kavya: {
-    reflective: 0
+    overwhelmed: 0,
+    defensive: 0.15,
+    exploring: 0.3,
+    experimenting: 0.5,
+    curious: 0.65,
+    visioning: 0.8
+  },
+  daniel: {
+    overwhelmed: 0,
+    defensive: 0.15,
+    exploring: 0.3,
+    experimenting: 0.5,
+    curious: 0.65,
+    visioning: 0.8
+  },
+  sarah: {
+    overwhelmed: 0,
+    defensive: 0.15,
+    exploring: 0.3,
+    experimenting: 0.5,
+    curious: 0.65,
+    visioning: 0.8
   }
 };
 
 export const DEFAULT_STAGE = {
   jamie: 'confused',
   andres: 'overwhelmed',
-  kavya: 'reflective'
+  kavya: 'overwhelmed',
+  daniel: 'overwhelmed',
+  sarah: 'overwhelmed'
 };
 
 export function resolveStageForScore(character, score = 0) {
@@ -82,7 +105,9 @@ export class User {
     this.progress = {
       jamie: buildCharacterProgress('jamie'),
       andres: buildCharacterProgress('andres'),
-      kavya: buildCharacterProgress('kavya')
+      kavya: buildCharacterProgress('kavya'),
+      daniel: buildCharacterProgress('daniel'),
+      sarah: buildCharacterProgress('sarah')
     };
     
     // Learning analytics
@@ -228,7 +253,7 @@ export class User {
   }
 
   getCompletionStatus() {
-    const characters = ['jamie', 'andres', 'kavya'];
+    const characters = ['jamie', 'andres', 'kavya', 'daniel', 'sarah'];
     const completedCharacters = characters.filter(char => this.progress[char]?.completed);
     const completionRate = (completedCharacters.length / characters.length) * 100;
 

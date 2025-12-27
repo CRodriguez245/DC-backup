@@ -22,3 +22,4 @@ ALTER COLUMN email_confirmed_at SET DEFAULT NULL;
 -- 4. Set up custom SMTP if needed
 
 
+

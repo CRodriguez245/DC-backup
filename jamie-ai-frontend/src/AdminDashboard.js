@@ -187,17 +187,17 @@ const AdminDashboard = ({ onBackToHome, onLogout, onSettings, currentView, userI
     console.log('AdminDashboard: Student progress:', student.progress);
     
     setSelectedStudent(student);
-    // Find the most recent Jamie assessment session (or first available)
-    const jamieSession = student.progress?.jamie?.sessions?.[student.progress.jamie.sessions.length - 1];
+    // IRB COMPLIANCE: Jamie sessions are research data and not available for teacher viewing
+    // Only show Andres and Kavya sessions (non-research personas)
     const andresSession = student.progress?.andres?.sessions?.[student.progress.andres.sessions.length - 1];
     const kavyaSession = student.progress?.kavya?.sessions?.[student.progress.kavya.sessions.length - 1];
     
-    console.log('AdminDashboard: jamieSession:', jamieSession);
     console.log('AdminDashboard: andresSession:', andresSession);
     console.log('AdminDashboard: kavyaSession:', kavyaSession);
+    console.log('AdminDashboard: Jamie sessions excluded (IRB compliance - research data only)');
     
-    // Use the most recent session
-    const recentSession = jamieSession || andresSession || kavyaSession;
+    // Use the most recent non-research session (exclude Jamie)
+    const recentSession = andresSession || kavyaSession;
     
     console.log('AdminDashboard: recentSession selected:', recentSession);
     console.log('AdminDashboard: recentSession messages:', recentSession?.messages);
@@ -463,10 +463,11 @@ const AdminDashboard = ({ onBackToHome, onLogout, onSettings, currentView, userI
             ) : filteredStudents.length > 0 ? (
               filteredStudents.map((student, index) => {
                 // Get the latest assessment session score (minimum DQ component, same as student sees)
+                // IRB COMPLIANCE: Exclude Jamie sessions (research data) from teacher view
                 let assessmentScore = 0;
                 
-                // Check all characters for assessment mode sessions
-                ['jamie', 'andres', 'kavya'].forEach(character => {
+                // Check only non-research characters for assessment mode sessions
+                ['andres', 'kavya'].forEach(character => {
                   const charProgress = student.progress?.[character];
                   if (charProgress?.sessions) {
                     // Find the most recent assessment session
@@ -544,7 +545,19 @@ const AdminDashboard = ({ onBackToHome, onLogout, onSettings, currentView, userI
           console.log('AdminDashboard Modal: Condition check:', selectedSession && selectedSession.messages && selectedSession.messages.length > 0);
           return null;
         })()}
-        {selectedSession && selectedSession.messages && selectedSession.messages.length > 0 ? (
+        {!selectedSession ? (
+          <div className="text-center py-12">
+            <p className="text-gray-500 text-lg mb-2">No session available</p>
+            <p className="text-gray-400 text-sm">
+              This student hasn't completed any coaching sessions available for teacher viewing.
+            </p>
+            <div className="mt-4 p-4 bg-blue-50 rounded-lg border border-blue-200 max-w-md mx-auto">
+              <p className="text-sm text-blue-800">
+                <strong>Note:</strong> Jamie sessions are used for research purposes and are not available for teacher viewing to maintain IRB compliance.
+              </p>
+            </div>
+          </div>
+        ) : selectedSession && selectedSession.messages && selectedSession.messages.length > 0 ? (
                 <>
                   {/* Session Info Bar */}
                   <div className="bg-white rounded-lg p-4 mb-4 shadow-sm">
@@ -631,7 +644,12 @@ const AdminDashboard = ({ onBackToHome, onLogout, onSettings, currentView, userI
               ) : (
             <div className="text-center py-12">
               <p className="text-gray-500 text-lg">No session data available</p>
-              <p className="text-gray-400 text-sm mt-2">This student hasn't completed any coaching sessions yet</p>
+              <p className="text-gray-400 text-sm mt-2">This student hasn't completed any coaching sessions available for teacher viewing.</p>
+              <div className="mt-4 p-4 bg-blue-50 rounded-lg border border-blue-200 max-w-md mx-auto">
+                <p className="text-sm text-blue-800">
+                  <strong>Note:</strong> Jamie sessions are used for research purposes and are not available for teacher viewing to maintain IRB compliance.
+                </p>
+              </div>
             </div>
           )}
         </div>

@@ -38,17 +38,17 @@ const SharedVisual = () => {
       status: 'Available',
       dqScore: null,
       avatar: '/images/DC Images/Persona4/Persona4_LandingPage.png',
-      description: 'Sophomore Mechanical Engineering student considering switching to Art/Design',
+      description: 'Mid-career professional facing a relocation decision',
       position: { x: 1100, y: 720 },
       completed: false
     },
     {
       id: 'sarah',
       name: 'Sarah',
-      status: 'Locked',
+      status: 'Available',
       dqScore: null,
-      avatar: '👩‍🎓',
-      description: 'Coming soon...',
+      avatar: '/images/DC Images/Persona5/Persona5_LandingPage.png',
+      description: 'Professional returning to work after a career break',
       position: { x: 700, y: 920 },
       completed: false
     }
@@ -107,9 +107,9 @@ const SharedVisual = () => {
                 fill="none"
                 style={{ animation: 'drawLineSmooth 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) 1.0s both' }}
               />
-              {/* Daniel to Sarah */}
+              {/* Daniel to Sarah - matches Kavya to Andres pattern (reversed direction) */}
               <path
-                d="M 700 920 Q 900 880 1100 720"
+                d="M 720 910 Q 900 870 1100 710"
                 stroke="#9CBDF5"
                 strokeWidth="2"
                 strokeDasharray="5,5"
@@ -147,7 +147,7 @@ const SharedVisual = () => {
                       style={
                         (level.id === 'jamie' || level.id === 'andres' || level.id === 'kavya') && level.completed 
                           ? { backgroundColor: '#9CBDF5', opacity: 1 } 
-                          : level.id === 'daniel' && level.status === 'Available'
+                          : (level.id === 'daniel' || level.id === 'sarah') && level.status === 'Available'
                           ? { backgroundColor: '#9CBDF5', opacity: 1 }
                           : level.status === 'Locked'
                           ? { backgroundColor: '#D1D5DB' }

@@ -2,7 +2,8 @@ services:
   - type: web
     name: jamie-backend
     env: node
-    plan: free
+    plan: standard
+    numInstances: 1  # Minimum instances (autoscaling will increase as needed)
     buildCommand: cd jamie-backend && npm install
     startCommand: cd jamie-backend && npm start
     rootDir: jamie-backend

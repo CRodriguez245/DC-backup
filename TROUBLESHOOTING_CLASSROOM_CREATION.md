@@ -101,3 +101,4 @@ RETURNING id, name;
 3. Check that `teacher_id = auth.uid()` in the insert
 
 
+

@@ -41,3 +41,4 @@ FROM information_schema.triggers
 WHERE trigger_name = 'trigger_auto_create_teacher';
 
 
+

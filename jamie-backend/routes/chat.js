@@ -18,7 +18,10 @@ const { saveCompleteResearchSession, convertConversationHistoryToMessages } = re
 // Persona-specific turn limits
 const getMaxTurns = (persona) => {
     const normalizedPersona = (persona || '').toLowerCase();
-    return normalizedPersona === 'kavya' ? 10 : 20;
+    if (normalizedPersona === 'kavya') return 10;
+    if (normalizedPersona === 'daniel') return 10;
+    if (normalizedPersona === 'sarah') return 10;
+    return 20; // Default for jamie, andres, and others
 };
 router.post('/', async (req, res) => {
     console.log('=== INCOMING REQUEST ===');
@@ -71,18 +74,66 @@ router.post('/', async (req, res) => {
                 /\bart\b/i.test(historyText) ||
                 /\bcreative\s*major/i.test(historyText) ||
                 /\bmechanical\s*engineering/i.test(historyText) ||
-                /\bswitching\s*major/i.test(historyText)
+                /\bswitching\s*major/i.test(historyText) ||
+                /\brelocating\b/i.test(historyText) ||
+                /\brelocation\b/i.test(historyText) ||
+                /\bdifferent\s*city\b/i.test(historyText) ||
+                /\bstaying\s*in\s*current\s*city\b/i.test(historyText)
             )) ||
             (persona === 'jamie' && (
                 /\bcorporate\s*path/i.test(historyText) || 
                 /\bentrepreneurship/i.test(historyText) || 
                 /\bstartup/i.test(historyText) ||
-                /\bstarting\s*my\s*own\s*business/i.test(historyText)
+                /\bstarting\s*my\s*own\s*business/i.test(historyText) ||
+                /\brelocating\b/i.test(historyText) ||
+                /\brelocation\b/i.test(historyText) ||
+                /\bdifferent\s*city\b/i.test(historyText) ||
+                /\bstaying\s*in\s*current\s*city\b/i.test(historyText)
             )) ||
             (persona === 'andres' && (
                 /\bmom\b/i.test(historyText) || 
                 /\bdrawing/i.test(historyText) || 
-                /\bart\s*school/i.test(historyText)
+                /\bart\s*school/i.test(historyText) ||
+                /\brelocating\b/i.test(historyText) ||
+                /\brelocation\b/i.test(historyText) ||
+                /\bdifferent\s*city\b/i.test(historyText) ||
+                /\bstaying\s*in\s*current\s*city\b/i.test(historyText)
+            )) ||
+            (persona === 'daniel' && (
+                /\bengineering\b/i.test(historyText) || 
+                /\bdesign\b/i.test(historyText) || 
+                /\bmajor\b/i.test(historyText) || 
+                /\bswitching\s*major/i.test(historyText) ||
+                /\bchanging\s*major/i.test(historyText) ||
+                /\bchanging my major/i.test(historyText) ||
+                /\bcreative\s*major/i.test(historyText) ||
+                /\bmechanical\s*engineering/i.test(historyText) ||
+                /\bparents.*expectations/i.test(historyText) ||
+                /\bimmigrant\s*parents/i.test(historyText) ||
+                /\bdisappointing\s*parents/i.test(historyText) ||
+                /\bart\s*school/i.test(historyText) ||
+                /\bdesign\s*program/i.test(historyText) ||
+                /\bux\s*design/i.test(historyText) ||
+                /\bindustrial\s*design/i.test(historyText) ||
+                /\bdrawing/i.test(historyText) ||
+                /\bart\b/i.test(historyText) ||
+                /\bcorporate\s*path/i.test(historyText) || 
+                /\bentrepreneurship/i.test(historyText) || 
+                /\bstartup/i.test(historyText) ||
+                /\bstarting\s*my\s*own\s*business/i.test(historyText) ||
+                /\bsophomore\b/i.test(historyText) ||
+                /\buniversity\b/i.test(historyText) ||
+                /\bcollege\b/i.test(historyText) ||
+                /\bwhat.*study/i.test(historyText) ||
+                /\bwanna study/i.test(historyText) ||
+                /\bat my university/i.test(historyText) ||
+                /\bat university/i.test(historyText) ||
+                /\bparent[^s]\b/i.test(historyText) ||
+                /\bparents\b/i.test(historyText) ||
+                /\bsacrifice/i.test(historyText) ||
+                /\bsacrificed/i.test(historyText) ||
+                /\bpassion for design/i.test(historyText) ||
+                /\bpursued.*design/i.test(historyText)
             ));
         
         if (hasWrongContext) {
@@ -135,7 +186,7 @@ router.post('/', async (req, res) => {
     // CRITICAL: Only increment turnsUsed if this is NOT a reset (reset already sets it to 0)
     // If it's a reset, we'll set it to 1 after initialization
     if (!isReset) {
-        sessionState[sessionId].turnsUsed += 1;
+    sessionState[sessionId].turnsUsed += 1;
     } else {
         // Reset case: set to 1 since we're processing the first message
         sessionState[sessionId].turnsUsed = 1;
@@ -454,10 +505,18 @@ router.post('/', async (req, res) => {
         if (persona === 'kavya' && !systemPrompt.includes('corporate path') && !systemPrompt.includes('starting your own business')) {
             console.error('⚠️⚠️⚠️ CRITICAL WARNING: Kavya prompt missing her core context (corporate vs entrepreneurship)!');
         }
+        // CRITICAL: Validate Daniel prompt doesn't contain Jamie context
+        if (persona === 'daniel' && (systemPrompt.includes('engineering') || systemPrompt.includes('design') || systemPrompt.includes('major') || systemPrompt.includes('switching major') || systemPrompt.includes('changing major') || systemPrompt.includes('sophomore') || systemPrompt.includes('university') || systemPrompt.includes('college'))) {
+            console.error('⚠️⚠️⚠️ CRITICAL WARNING: Daniel prompt contains Jamie context! Prompt may be incorrect.');
+            console.error('Prompt snippet with Jamie content:', systemPrompt.match(/engineering|design|major|sophomore|university|college/gi));
+        }
+        if (persona === 'daniel' && (!systemPrompt.includes('RELOCATING') && !systemPrompt.includes('relocating') && !systemPrompt.includes('different city') && !systemPrompt.includes('staying in your current city'))) {
+            console.error('⚠️⚠️⚠️ CRITICAL WARNING: Daniel prompt missing his core context (relocation decision)!');
+        }
         
-        // CRITICAL: For Kavya at turn 10, inject closing message INSTEAD OF generating response
+        // CRITICAL: For Kavya, Daniel, and Sarah at turn 10, inject closing message INSTEAD OF generating response
         const maxTurnsForPersona = getMaxTurns(persona);
-        const shouldInjectClosing = persona === 'kavya' && sessionState[sessionId].turnsUsed === maxTurnsForPersona;
+        const shouldInjectClosing = (persona === 'kavya' || persona === 'daniel' || persona === 'sarah') && sessionState[sessionId].turnsUsed === maxTurnsForPersona;
         console.log('🔍 Closing message check:', {
             persona,
             turnsUsed: sessionState[sessionId].turnsUsed,
@@ -465,27 +524,85 @@ router.post('/', async (req, res) => {
             shouldInjectClosing
         });
         
+        // CRITICAL: For Daniel, if user message contains Jamie keywords, use fallback response immediately
         let jamieReply;
         if (shouldInjectClosing) {
             jamieReply = "I have to go. Is there anything else you want to say before we wrap up?";
-            console.log('🔚 Kavya closing message injected at turn 10 - skipping AI generation');
+            const personaNames = { kavya: 'Kavya', daniel: 'Daniel', sarah: 'Sarah' };
+            console.log(`🔚 ${personaNames[persona] || persona} closing message injected at turn 10 - skipping AI generation`);
+        } else if (persona === 'daniel') {
+            // Comprehensive regex to catch ALL Jamie keywords - including variations with hyphens, spaces, and different word orders
+            const jamieKeywordsInMessage = /\b(engineering|mechanical\s*engineering|design(?:\s*|-)*(?:course|program|school|work|focused|and|creative|creativeity)|switching.*major|changing.*major|major(?:ing|s)?\b|art\s*school|ux\s*design|parent[^s]|parents(?:'|\s+expectations)|mom|dad|disappointing\s*(?:my|your)?\s*(?:parent|mom|dad)|sophomore|university|college|creative\s*major|studying|studies|study\b|sacrifice|sacrificed|passion\s+for\s+design|pursued.*design|upbringing)/i;
+            if (jamieKeywordsInMessage.test(userMessage)) {
+                console.error(`⚠️⚠️⚠️ CRITICAL: User message contains Jamie keywords. Using fallback response to prevent contamination.`);
+                console.error(`Jamie keywords detected in user message:`, userMessage.match(jamieKeywordsInMessage));
+                // Use safe fallback response that redirects to Daniel's actual context
+                jamieReply = "I'm weighing whether to relocate for this career opportunity or stay where I am. It's a difficult decision that involves balancing my career goals with my personal life and relationships here.";
+            } else {
+                jamieReply = await (0, openai_1.getJamieResponse)(userMessage, systemPrompt, persona, conversationHistory);
+            }
+        } else if (persona === 'sarah') {
+            // Comprehensive regex to catch ALL wrong persona keywords - Jamie, Kavya, Daniel contexts
+            // Catch "switch" standalone or "switching major", "change major", etc.
+            const wrongKeywordsInMessage = /\b(engineering|mechanical\s*engineering|design(?:\s*|-)*(?:course|program|school|work|focused|and|creative|creativity|stuff)|switch(?:ing)?.*(?:to|major|career|field)?|changing.*major|major(?:ing|s)?\b|art\s*school|ux\s*design|parent[^s]|parents(?:'|\s+expectations|\s+really\s+value|\s+value)|mom|dad|disappointing\s*(?:my|your)?\s*(?:parent|mom|dad)|sophomore|university|college|creative\s*major|studying|studies|study\b|sacrifice|sacrificed|passion\s+for\s+design|pursued.*design|upbringing|corporate\s*path|entrepreneurship|startup|relocating|relocation|different\s*city|staying\s*in\s*current\s*city)/i;
+            if (wrongKeywordsInMessage.test(userMessage)) {
+                console.error(`⚠️⚠️⚠️ CRITICAL: User message contains wrong persona keywords (Jamie/Daniel/Kavya). Using fallback response to prevent contamination.`);
+                console.error(`Contaminated keywords detected in user message:`, userMessage.match(wrongKeywordsInMessage));
+                // Use safe fallback response that redirects to Sarah's actual context
+                jamieReply = "I'm trying to figure out whether to return to my previous field or start in a new direction after my career break. It's a difficult decision that involves balancing my existing skills with my current life priorities.";
+                // Clear history to prevent further contamination
+                sessionState[sessionId].conversationHistory = [];
+                sessionState[sessionId].turnsUsed = 1; // Reset to 1 since we're processing this turn
+                sessionState[sessionId].dqScores = []; // Reset DQ scores
+            } else {
+                jamieReply = await (0, openai_1.getJamieResponse)(userMessage, systemPrompt, persona, conversationHistory);
+            }
         } else {
             jamieReply = await (0, openai_1.getJamieResponse)(userMessage, systemPrompt, persona, conversationHistory);
-            console.log("Persona reply:", jamieReply);
+        }
+        
+        console.log("Persona reply:", jamieReply);
+        
+        // CRITICAL: Post-response contamination check for Kavya, Daniel, and Sarah (runs for ALL personas)
+        if ((persona === 'kavya' || persona === 'daniel' || persona === 'sarah') && !shouldInjectClosing) {
+            // Comprehensive regex to catch ALL Jamie keywords - including variations with hyphens, spaces, and different word orders
+            // Catch "switch" standalone or "switching major", "change major", etc.
+            const jamieKeywords = /\b(engineering|mechanical\s*engineering|design(?:\s*|-)*(?:course|program|school|work|focused|and|creative|creativity|stuff)|switch(?:ing)?.*(?:to|major|career|field)?|changing.*major|major(?:ing|s)?\b|art\s*school|ux\s*design|parent[^s]|parents(?:'|\s+expectations|\s+really\s+value|\s+value)|mom|dad|disappointing\s*(?:my|your)?\s*(?:parent|mom|dad)|sophomore|university|college|creative\s*major|studying|studies|study\b|at\s+my\s+university|at\s+university|sacrifice|sacrificed|passion\s+for\s+design|design\s+that|design\s+makes|pursued.*design|upbringing)/i;
+            const jamieFillerWords = /\b(um\b|well\b|like\b|you know\b|I guess\b|I mean\b|kinda\b|sorta\b)/i;
+            const hasContamination = jamieKeywords.test(jamieReply);
+            const hasFillerWords = jamieFillerWords.test(jamieReply);
             
-            // CRITICAL: Post-response contamination check for Kavya
-            if (persona === 'kavya') {
-                const jamieKeywords = /\b(engineering|mechanical engineering|design\s*(?:course|program|school)|switching\s*(?:your|my)\s*major|majoring\s*in|art\s*school|ux\s*design|parent[^s]|mom|dad|disappointing\s*(?:my|your)\s*(?:parent|mom|dad))/i;
-                if (jamieKeywords.test(jamieReply)) {
-                    console.error('⚠️⚠️⚠️ CRITICAL: Kavya response contains Jamie keywords! Clearing history and regenerating.');
-                    // Clear contaminated history
-                    sessionState[sessionId].conversationHistory = [];
-                    sessionState[sessionId].turnsUsed = 1; // Reset to 1 since we're processing this turn
-                    sessionState[sessionId].dqScores = []; // Reset DQ scores
-                    // Regenerate with clean history
-                    jamieReply = await (0, openai_1.getJamieResponse)(userMessage, systemPrompt, persona, '');
-                    console.log("✅ Regenerated Kavya reply (clean history):", jamieReply);
+            if (hasContamination || hasFillerWords) {
+                console.error(`⚠️⚠️⚠️ CRITICAL: ${persona} response contains Jamie contamination!`);
+                if (hasContamination) {
+                    console.error(`Context contamination detected. Contaminated text:`, jamieReply.match(jamieKeywords));
                 }
+                if (hasFillerWords) {
+                    console.error(`Style contamination detected (filler words). Contaminated text:`, jamieReply.match(jamieFillerWords));
+                }
+                // Clear contaminated history
+                sessionState[sessionId].conversationHistory = [];
+                sessionState[sessionId].turnsUsed = 1; // Reset to 1 since we're processing this turn
+                sessionState[sessionId].dqScores = []; // Reset DQ scores
+                
+                // CRITICAL: For Daniel and Sarah, immediately use fallback - do NOT try to regenerate
+                // Regeneration doesn't work reliably, so use safe fallback response
+                console.error(`⚠️⚠️⚠️ Using safe fallback response instead of regeneration for ${persona}`);
+                if (persona === 'daniel') {
+                    jamieReply = "I'm weighing whether to relocate for this career opportunity or stay where I am. It's a difficult decision that involves balancing my career goals with my personal life and relationships here.";
+                } else if (persona === 'sarah') {
+                    jamieReply = "I'm trying to figure out whether to return to my previous field or start in a new direction after my career break. It's a difficult decision that involves balancing my existing skills with my current life priorities.";
+                }
+            }
+            
+            // CRITICAL: Enforce 6-sentence limit for Kavya, Daniel, and Sarah
+            const sentences = jamieReply.split(/[.!?]+/).filter(s => s.trim().length > 0);
+            if (sentences.length > 6) {
+                console.warn(`⚠️ ${persona} response exceeded 6 sentences (${sentences.length}). Truncating to 6 sentences.`);
+                const truncatedReply = sentences.slice(0, 6).join('. ').trim();
+                // Add period if it doesn't end with punctuation
+                jamieReply = truncatedReply + (truncatedReply.match(/[.!?]$/) ? '' : '.');
+                console.log(`✅ Truncated ${persona} reply to 6 sentences:`, jamieReply);
             }
         }
         
@@ -508,21 +625,21 @@ router.post('/', async (req, res) => {
         console.log(`📊 Turn tracking: persona="${persona}", turnsUsed=${turnsUsed}, maxTurns=${maxTurnsForPersona}, turnsRemaining=${turnsRemaining}`);
         const dqCoverage = sessionState[sessionId].dqCoverage;
         
-        // CRITICAL: For Kavya, if we just sent the closing message, allow one more turn for response
-        const isWaitingForFinalResponse = persona === 'kavya' && shouldInjectClosing;
+        // CRITICAL: For Kavya, Daniel, and Sarah, if we just sent the closing message, allow one more turn for response
+        const isWaitingForFinalResponse = (persona === 'kavya' || persona === 'daniel' || persona === 'sarah') && shouldInjectClosing;
         const effectiveTurnsRemaining = isWaitingForFinalResponse ? 1 : turnsRemaining;
         
         let conversationStatus = 'in-progress';
         if (Object.values(dqCoverage).every(Boolean)) {
             conversationStatus = 'dq-complete';
         }
-        // For Kavya, if we just sent closing message, stay in-progress to allow final response
+        // For Kavya, Daniel, and Sarah, if we just sent closing message, stay in-progress to allow final response
         // Otherwise, end if turns are exhausted
         else if (!isWaitingForFinalResponse && turnsRemaining <= 0) {
             conversationStatus = 'turn-limit-reached';
         }
         // After the user responds to the closing message, end the session
-        else if (persona === 'kavya' && sessionState[sessionId].turnsUsed > maxTurnsForPersona) {
+        else if ((persona === 'kavya' || persona === 'daniel' || persona === 'sarah') && sessionState[sessionId].turnsUsed > maxTurnsForPersona) {
             conversationStatus = 'turn-limit-reached';
         }
         const sessionSummary = (conversationStatus !== 'in-progress') ? {

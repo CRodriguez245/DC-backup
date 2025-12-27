@@ -54,3 +54,4 @@ ALTER TABLE public.users ENABLE ROW LEVEL SECURITY;
 -- SELECT * FROM public.users WHERE id = auth.uid();
 
 
+

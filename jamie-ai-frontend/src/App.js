@@ -438,7 +438,21 @@ const MainApp = () => {
   const [connectionStatus, setConnectionStatus] = useState('untested');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [showCharacterInfo, setShowCharacterInfo] = useState(false);
+  const [showScenarioModal, setShowScenarioModal] = useState(false);
+  const [pendingCharacterId, setPendingCharacterId] = useState(null);
+  const [isModalClosing, setIsModalClosing] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
   const [demoMode, setDemoMode] = useState(false); // Start with real backend
+
+  // Detect mobile on mount and window resize
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 640);
+    };
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
   
   // Helper function to get max attempts based on character
   const getMaxAttempts = (character) => {
@@ -573,6 +587,12 @@ const MainApp = () => {
     debugLog('Character clicked:', characterId, 'Setting currentView to chat');
     debugLog('Current isLoadingProgress:', isLoadingProgress);
     
+    // Prevent clicking if progress is still loading
+    if (isLoadingProgress) {
+      console.log('Progress is still loading, preventing character click');
+      return;
+    }
+    
     // Save current session before switching
     if (messages.length > 0) {
       saveInProgressSession();
@@ -590,6 +610,31 @@ const MainApp = () => {
       setMessages([]);
       setAttemptsRemaining(getMaxAttempts(characterId));
     }
+    
+    // Set pending character to show scenario modal after chat loads
+    setPendingCharacterId(characterId);
+    setIsModalClosing(false);
+    // Show modal after a delay to let chat view render and messages load
+    // Use requestAnimationFrame twice to ensure DOM is ready and messages are set
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        setTimeout(() => {
+          setShowScenarioModal(true);
+        }, 150);
+      });
+    });
+  };
+
+  const handleStartChat = () => {
+    // Animate modal out
+    setIsModalClosing(true);
+    
+    // After animation completes, hide modal
+    setTimeout(() => {
+      setShowScenarioModal(false);
+      setIsModalClosing(false);
+      setPendingCharacterId(null);
+    }, 300); // Match animation duration
   };
 
   // Manual reset for stuck loading state
@@ -616,6 +661,49 @@ const MainApp = () => {
 
   // Global function to force reset loading
   window.forceResetLoading = resetLoadingState;
+
+  // Get progress for a specific character (used in scenario modal)
+  const getCharacterProgressForModal = (characterId) => {
+    // If we're currently in a chat session for this character, use the current session progress
+    // This ensures consistency - we show the progress from the active session, not stale data
+    if (currentCharacter === characterId && messages.length > 0) {
+      // Use getJamieProgress() directly since it already handles all the calculation logic correctly
+      return getJamieProgress();
+    }
+    
+    // Otherwise, use saved progress from userInfo (for when modal is shown but no active session)
+    if (!userInfo?.progress?.[characterId]) return 0;
+    
+    const charProgress = userInfo.progress[characterId];
+    const hasSessions = charProgress.sessions && charProgress.sessions.length > 0;
+    
+    if (!hasSessions) return 0;
+    
+    const latestSession = charProgress.lastSession || charProgress.sessions[charProgress.sessions.length - 1];
+    if (!latestSession || !latestSession.score) return 0;
+    
+    // Calculate progress percentage from score
+    // Score is a decimal (0-1), convert to percentage (0-100)
+    const score = typeof latestSession.score === 'number' ? latestSession.score : 0;
+    return Math.round(score * 100);
+  };
+
+  // Get character state for modal (used when character has progress)
+  const getCharacterStateForModal = (characterId, progress) => {
+    const progressDecimal = progress / 100; // Convert percentage to decimal (0-1)
+    
+    if (characterId === 'andres' || characterId === 'kavya' || characterId === 'daniel' || characterId === 'sarah') {
+      // Same stage thresholds for all game mode characters
+      if (progressDecimal >= 0.8) return 'Visioning';
+      if (progressDecimal >= 0.65) return 'Curious';
+      if (progressDecimal >= 0.5) return 'Experimenting';
+      if (progressDecimal >= 0.3) return 'Exploring';
+      if (progressDecimal >= 0.15) return 'Defensive';
+      return 'Overwhelmed';
+    }
+    
+    return 'Not Started';
+  };
 
   // Handle logout
   const handleLogout = async () => {
@@ -1533,8 +1621,8 @@ const MainApp = () => {
                     </div>
                     
                     <div className="bg-blue-50 rounded-lg p-3 border border-blue-200/50">
-                      <div className="flex items-center justify-between mb-3">
-                        <span className="text-xs font-medium text-gray-700">Decision Quality Score</span>
+                      <div className="mb-3">
+                        <span className="text-xs font-medium text-gray-700">Decision Quality Score: </span>
                         <span className="text-sm font-medium text-gray-800">{(avgDqScore !== undefined ? avgDqScore : safeMinDqScore(dqScore)).toFixed(1)}/1.0</span>
                       </div>
                       
@@ -2124,6 +2212,36 @@ const MainApp = () => {
 
   return (
     <div className="min-h-screen bg-white">
+      <style>{`
+        @keyframes fadeIn {
+          from {
+            opacity: 0;
+          }
+          to {
+            opacity: 1;
+          }
+        }
+        @keyframes slideDown {
+          from {
+            opacity: 0;
+            transform: translateY(-20px) scale(0.95);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+          }
+        }
+        @keyframes collapseToBottomRight {
+          from {
+            opacity: 1;
+            transform: translate(0, 0) scale(1);
+          }
+          to {
+            opacity: 0;
+            transform: translate(calc(50vw - 2rem), calc(50vh - 4.5rem)) scale(0.15);
+          }
+        }
+      `}</style>
       {/* Shared visual that persists across login and homepage */}
       {/* Don't render during loading to prevent flash */}
       {showSharedVisual && <SharedVisual />}
@@ -2138,19 +2256,22 @@ const MainApp = () => {
       ) : !userInfo ? (
         <LandingPage onLogin={handleLogin} onSignUp={handleLogin} />
       ) : currentView === 'homepage' ? (
-        <HomePage 
-          userInfo={userInfo}
-          gameMode={gameMode}
-          onStartCoaching={handleStartCoaching}
-          onLogout={handleLogout}
-          onSettings={handleSettings}
-          onCharacterClick={handleCharacterClick}
-          onAdminClick={() => setCurrentView('admin')}
-          currentView={currentView}
-          userProgress={userInfo?.progress}
-          isLoadingProgress={isLoadingProgress}
-          onResetLoading={resetLoadingState}
-        />
+        <>
+          <HomePage 
+            userInfo={userInfo}
+            gameMode={gameMode}
+            onStartCoaching={handleStartCoaching}
+            onLogout={handleLogout}
+            onSettings={handleSettings}
+            onCharacterClick={handleCharacterClick}
+            onAdminClick={() => setCurrentView('admin')}
+            currentView={currentView}
+            userProgress={userInfo?.progress}
+            isLoadingProgress={isLoadingProgress}
+            onResetLoading={resetLoadingState}
+          />
+          
+        </>
       ) : finalCurrentView === 'dashboard' ? (
         <UserDashboard 
           userInfo={userInfo}
@@ -2450,7 +2571,7 @@ const MainApp = () => {
         
         {/* Chat Messages Container */}
         <div ref={chatContainerRef} className="flex-1 bg-white sm:bg-[rgba(217,217,217,0.19)] overflow-y-auto relative pb-32 sm:pb-40">
-          <div className="max-w-[866px] mx-auto px-3 py-6 sm:px-0 sm:py-[76px] flex flex-col gap-4 sm:gap-[46px] pt-20">
+          <div className="max-w-[866px] mx-auto px-3 py-6 sm:px-0 sm:py-[76px] flex flex-col gap-4 sm:gap-[46px] pt-24 sm:pt-20">
             {messages.length === 0 && (
               <div className="text-center py-8 sm:py-16">
                   <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-[#2C73EB] flex items-end justify-center mx-auto mb-4 sm:mb-6 shadow-lg overflow-hidden">
@@ -2535,7 +2656,7 @@ const MainApp = () => {
                 {msg.isUser ? (
                   // User messages - blue bubble
                   <div className="flex justify-end message-enter" data-message-id={msg.id}>
-                    <div className="bg-[#e8f1f8] rounded-[5px] shadow-[0px_6px_20px_10px_rgba(200,201,201,0.11)] px-4 py-4 sm:px-6 sm:py-6 max-w-[605px] mx-4 sm:mx-0">
+                    <div className="bg-[#e8f1f8] rounded-[5px] shadow-[0px_6px_20px_10px_rgba(200,201,201,0.11)] px-4 py-4 sm:px-6 sm:py-6 max-w-[85%] sm:max-w-[605px] ml-8 mr-1 sm:mx-0">
                       <p className="text-sm sm:text-[16px] text-[#363636] leading-[22px] sm:leading-[26px]">
                         {msg.message}
                       </p>
@@ -2543,7 +2664,7 @@ const MainApp = () => {
                   </div>
                 ) : (
                   // Jamie's messages - white bubble with avatar and DQ scores
-                  <div className="flex gap-2 sm:gap-[30px] items-start message-enter" data-message-id={msg.id}>
+                  <div className="flex gap-1 sm:gap-[30px] items-start message-enter" data-message-id={msg.id}>
                   {/* Character Avatar */}
                   <div className="w-8 h-8 sm:w-[70px] sm:h-[70px] rounded-full bg-[#2C73EB] flex items-end justify-center flex-shrink-0 overflow-hidden">
                     <img 
@@ -2578,7 +2699,7 @@ const MainApp = () => {
                   </div>
                     
                     {/* Jamie's Message */}
-                    <div className="bg-white rounded-[5px] shadow-[0px_6px_20px_10px_rgba(200,201,201,0.11)] px-4 py-4 sm:px-[33px] sm:py-6 max-w-[597px] mx-4 sm:mx-0">
+                    <div className="bg-white rounded-[5px] shadow-[0px_6px_20px_10px_rgba(200,201,201,0.11)] px-4 py-4 sm:px-[33px] sm:py-6 max-w-[597px] ml-1 mr-8 sm:mx-0">
                       <div className="flex flex-col gap-[25px]">
                         {/* Message Text */}
                         <div className="text-sm sm:text-[16px] text-[#333333] leading-[22px] sm:leading-[26px]">
@@ -2686,12 +2807,9 @@ const MainApp = () => {
                         {msg.dqScore && characterData[currentCharacter].gameMode === 'game' && (
                           <div className="flex flex-col gap-[25px]">
                             {/* DQ Header */}
-                            <div className="flex flex-col">
+                            <div>
                               <p className="text-[16px] font-semibold text-[#797979] leading-[26px]">
-                                Decision Quality Score
-                              </p>
-                              <p className="text-[16px] font-semibold text-[#797979] leading-[26px]">
-                                {(msg.avgDqScore !== undefined ? msg.avgDqScore : safeMinDqScore(msg.dqScore)).toFixed(1)}/1.0
+                                Decision Quality Score: {(msg.avgDqScore !== undefined ? msg.avgDqScore : safeMinDqScore(msg.dqScore)).toFixed(1)}/1.0
                               </p>
                             </div>
                             
@@ -2730,7 +2848,7 @@ const MainApp = () => {
             })}
             
               {isTyping && (
-                <div className="flex gap-2 sm:gap-[30px] items-start">
+                <div className="flex gap-1 sm:gap-[30px] items-start">
                   <div className="w-8 h-8 sm:w-[70px] sm:h-[70px] rounded-full bg-[#2C73EB] flex items-end justify-center flex-shrink-0 overflow-hidden">
                     <img 
                       src={getAvatarImage(
@@ -2749,7 +2867,7 @@ const MainApp = () => {
                       style={(currentCharacter === 'andres' || currentCharacter === 'kavya' || currentCharacter === 'daniel' || currentCharacter === 'sarah') ? { opacity: 0.9 } : {}}
                     />
                   </div>
-                  <div className="bg-white rounded-[5px] shadow-[0px_6px_20px_10px_rgba(200,201,201,0.11)] px-4 py-4 sm:px-[33px] sm:py-6 mx-4 sm:mx-0">
+                  <div className="bg-white rounded-[5px] shadow-[0px_6px_20px_10px_rgba(200,201,201,0.11)] px-4 py-4 sm:px-[33px] sm:py-6 ml-1 mr-8 sm:mx-0">
                     <div className="flex items-center">
                       <span 
                         className="text-sm sm:text-[16px] text-[#6B7280] font-medium transition-all duration-200 ease-in-out"
@@ -2851,6 +2969,80 @@ const MainApp = () => {
                 </p>
               </div>
             )}
+          </div>
+        </div>
+      )}
+      
+      {/* Scenario Modal - shown after chat view loads when clicking on a character (MOBILE ONLY) */}
+      {showScenarioModal && pendingCharacterId && isMobile && (
+        <div 
+          className={`fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-[100] transition-opacity duration-300 ${
+            isModalClosing ? 'opacity-0' : 'opacity-100'
+          }`}
+          style={{ animation: isModalClosing ? 'none' : 'fadeIn 0.3s ease-out' }}
+        >
+          <div 
+            className={`bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 border border-gray-100 transition-all duration-300 ${
+              isModalClosing 
+                ? 'scale-95 opacity-0 translate-y-4 sm:scale-95 sm:opacity-0 sm:translate-y-4' 
+                : 'scale-100 opacity-100 translate-y-0'
+            }`}
+            style={{ 
+              animation: isModalClosing 
+                ? (isMobile 
+                    ? 'collapseToBottomRight 0.4s cubic-bezier(0.4, 0, 0.2, 1) forwards' 
+                    : 'none')
+                : 'slideDown 0.3s ease-out'
+            }}
+          >
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h2 className="text-2xl font-bold text-gray-800">{characterData[pendingCharacterId].name}</h2>
+                <p className="text-gray-600 text-sm mt-1">{characterData[pendingCharacterId].title}</p>
+              </div>
+              <button
+                onClick={handleStartChat}
+                className="w-8 h-8 flex items-center justify-center text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+                aria-label="Close"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            
+            <div className="mb-4">
+              <h3 className="text-sm font-semibold text-gray-800 mb-2">Scenario</h3>
+              <p className="text-sm text-gray-600 leading-relaxed">
+                {characterData[pendingCharacterId].context}
+              </p>
+            </div>
+            
+            {characterData[pendingCharacterId].gameMode === 'game' && (() => {
+              const progress = getCharacterProgressForModal(pendingCharacterId);
+              const state = getCharacterStateForModal(pendingCharacterId, progress);
+              
+              return (
+                <>
+                  <div className="mb-4">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-sm font-medium text-gray-600">{characterData[pendingCharacterId].progressLabel}</span>
+                      <span className="text-sm font-semibold text-gray-800">{progress}%</span>
+                    </div>
+                    <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
+                      <div 
+                        className="h-full bg-gradient-to-r from-orange-400 to-orange-500 rounded-full transition-all duration-1000 ease-out"
+                        style={{ width: `${progress}%` }}
+                      ></div>
+                    </div>
+                  </div>
+                  
+                  <div className="mb-4">
+                    <p className="text-sm text-gray-600">
+                      {state}
+                    </p>
+                  </div>
+                </>
+              );
+            })()}
           </div>
         </div>
       )}

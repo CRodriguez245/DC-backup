@@ -44,6 +44,17 @@ const HomePage = ({ userInfo, gameMode, onStartCoaching, onLogout, onSettings, o
   }, [userProgress]);
 
   useEffect(() => {
+    // Check if mobile (screen width < 640px, which is Tailwind's 'sm' breakpoint)
+    const isMobile = window.innerWidth < 640;
+    
+    if (isMobile) {
+      // On mobile, display full text immediately without animation
+      setDisplayedText(fullText);
+      setIsTyping(false);
+      return;
+    }
+    
+    // On desktop, use typing animation
     let index = 0;
     const typingInterval = setInterval(() => {
       if (index < fullText.length) {
@@ -260,11 +271,11 @@ const HomePage = ({ userInfo, gameMode, onStartCoaching, onLogout, onSettings, o
             </div>
           </div>
           
-          <div className="grid grid-cols-2 gap-6 py-6 px-4 mt-4">
+          <div className="grid grid-cols-2 gap-4 py-6 px-4 mt-4">
             {coachingLevels.map((level, index) => (
               <div
                 key={level.id}
-                className="flex flex-col items-center space-y-3"
+                className="flex flex-col items-center space-y-3 p-4 bg-white border border-gray-200 rounded-lg shadow-sm transition-all duration-300 hover:shadow-md"
                 style={{ animation: `elementFadeIn 0.2s cubic-bezier(0.2, 0.8, 0.2, 1) ${index * 0.1}s both` }}
               >
                 <div 
@@ -306,8 +317,8 @@ const HomePage = ({ userInfo, gameMode, onStartCoaching, onLogout, onSettings, o
                   </div>
                 </div>
                 
-                <div className="text-center">
-                  <h3 className="font-semibold text-gray-800 text-xs">{level.name}</h3>
+                <div className="text-center w-full">
+                  <h3 className="font-semibold text-gray-800 text-xs mb-2">{level.name}</h3>
                   {isLoadingProgress ? (
                     <div className="mt-1">
                       <p className="text-xs text-gray-500">Loading progress...</p>
@@ -320,9 +331,11 @@ const HomePage = ({ userInfo, gameMode, onStartCoaching, onLogout, onSettings, o
                     </div>
                   ) : (
                     <>
-                      <p className="text-xs text-gray-600 mt-1 leading-tight">{level.description}</p>
-                      {level.dqScore && (
-                        <p className="text-xs text-blue-600 mt-1">Score: {Math.round(level.dqScore * 100)}%</p>
+                      <p className="text-xs text-gray-600 mb-2">{getCharacterStatus(level.id).status}</p>
+                      {typeof getCharacterStatus(level.id).score === 'number' && (
+                        <p className="text-xs font-medium text-blue-600">
+                          DQ Score: {getCharacterStatus(level.id).score.toFixed(2)}
+                        </p>
                       )}
                     </>
                   )}

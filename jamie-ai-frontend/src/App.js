@@ -2537,7 +2537,7 @@ const MainApp = () => {
       </div>
 
       {/* Mobile Character Info Button - Fixed Position Above Input Bar */}
-      <div className="block sm:hidden fixed bottom-14 right-4 z-40">
+      <div className="block sm:hidden fixed bottom-12 right-4 z-40">
         <button
           onClick={() => setShowCharacterInfo(true)}
           className="w-8 h-8 flex items-center justify-center bg-[#EFF8FF] rounded-full shadow-sm hover:bg-[#E0F2FE] transition-colors"
@@ -2655,7 +2655,7 @@ const MainApp = () => {
                 <React.Fragment key={msg.id}>
                 {msg.isUser ? (
                   // User messages - blue bubble
-                  <div className="flex justify-end message-enter" data-message-id={msg.id}>
+                  <div className="flex justify-end message-enter mb-4 sm:mb-0" data-message-id={msg.id}>
                     <div className="bg-[#e8f1f8] rounded-[5px] shadow-[0px_6px_20px_10px_rgba(200,201,201,0.11)] px-4 py-4 sm:px-6 sm:py-6 max-w-[85%] sm:max-w-[605px] ml-8 mr-1 sm:mx-0">
                       <p className="text-sm sm:text-[16px] text-[#363636] leading-[22px] sm:leading-[26px]">
                         {msg.message}
@@ -2664,7 +2664,7 @@ const MainApp = () => {
                   </div>
                 ) : (
                   // Jamie's messages - white bubble with avatar and DQ scores
-                  <div className="flex gap-1 sm:gap-[30px] items-start message-enter" data-message-id={msg.id}>
+                  <div className="flex gap-1 sm:gap-[30px] items-start message-enter mb-4 sm:mb-0" data-message-id={msg.id}>
                   {/* Character Avatar */}
                   <div className="w-8 h-8 sm:w-[70px] sm:h-[70px] rounded-full bg-[#2C73EB] flex items-end justify-center flex-shrink-0 overflow-hidden">
                     <img 
@@ -2848,7 +2848,7 @@ const MainApp = () => {
             })}
             
               {isTyping && (
-                <div className="flex gap-1 sm:gap-[30px] items-start">
+                <div className="flex gap-1 sm:gap-[30px] items-start mb-4 sm:mb-0">
                   <div className="w-8 h-8 sm:w-[70px] sm:h-[70px] rounded-full bg-[#2C73EB] flex items-end justify-center flex-shrink-0 overflow-hidden">
                     <img 
                       src={getAvatarImage(
@@ -2889,7 +2889,7 @@ const MainApp = () => {
           <div className="fixed bottom-0 left-0 right-0 p-2 sm:p-6 z-10">
             <div className="max-w-[866px] mx-auto flex flex-col items-center sm:mr-32 relative">
               {/* Attempts Remaining - Above input, positioned above blue input bar */}
-              <div className="mb-1 sm:mb-0 self-start sm:ml-36 flex-shrink-0">
+              <div className="mb-0 sm:mb-0 self-start ml-3 sm:ml-36 flex-shrink-0">
                 <div className="bg-[#eff8ff] rounded-[16px] px-2 sm:px-3 py-1 w-fit">
                   <p className="text-xs sm:text-[14px] font-medium text-[#2c73eb] text-center">
                     {attemptsRemaining <= 0 ? "Session ended" : `${attemptsRemaining} attempts remaining`}
@@ -2905,7 +2905,7 @@ const MainApp = () => {
                   onChange={handleMessageChange}
                   onKeyPress={handleKeyPress}
                   placeholder={attemptsRemaining <= 0 ? "Session ended - Start new session" : "Start coaching"}
-                  className="bg-transparent text-white placeholder-white flex-1 outline-none text-xs sm:text-[14px] font-semibold resize-none min-h-[20px] max-h-[120px] overflow-y-auto"
+                  className="bg-transparent text-white placeholder-white/80 flex-1 outline-none text-xs sm:text-[14px] font-semibold resize-none min-h-[20px] max-h-[120px] overflow-y-auto"
                   disabled={isLoading || attemptsRemaining <= 0}
                   rows={1}
                 />

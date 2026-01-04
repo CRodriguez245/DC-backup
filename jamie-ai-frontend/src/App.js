@@ -459,7 +459,8 @@ const MainApp = () => {
     if (character === 'kavya') return 10;
     if (character === 'daniel') return 10;
     if (character === 'sarah') return 10;
-    return 20; // Default for jamie, andres, and others
+    if (character === 'jamie') return 10;
+    return 20; // Default for andres and others
   };
   
   const [attemptsRemaining, setAttemptsRemaining] = useState(() => {
@@ -474,6 +475,12 @@ const MainApp = () => {
   const messagesEndRef = useRef(null);
   const chatContainerRef = useRef(null);
   const messageInputRef = useRef(null);
+  const hasRestoredSessionRef = useRef(false);
+  
+  // Debug: Track when attemptsRemaining changes
+  useEffect(() => {
+    console.log(`[Attempts State] attemptsRemaining changed to: ${attemptsRemaining}`);
+  }, [attemptsRemaining]);
 
   const adjustMessageInputHeight = (element) => {
     if (!element) return;
@@ -846,19 +853,28 @@ const MainApp = () => {
     setIsNewSession(true); // Mark that next message should trigger reset on backend
   };
 
-  // Auto-save in-progress session whenever messages change
+  // DISABLED: Auto-save effect - we now save explicitly in setMessages callback to avoid race conditions
+  // The explicit save ensures we save with the correct attemptsRemaining value
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  useEffect(() => {
-    if (messages.length > 0) {
-      saveInProgressSession();
-    }
-  }, [messages, attemptsRemaining]);
+  // useEffect(() => {
+  //   if (messages.length > 0) {
+  //     saveInProgressSession();
+  //   }
+  // }, [messages]);
 
   // Restore chat session from localStorage on refresh when entering chat view
+  // CRITICAL: Only restore ONCE when entering chat view, not on every render
   useEffect(() => {
-    if (currentView === 'chat' && userInfo && messages.length === 0 && !isLoading && !isTyping) {
+    // Reset the restore flag when switching characters or views
+    if (currentView !== 'chat') {
+      hasRestoredSessionRef.current = false;
+      return;
+    }
+    
+    if (currentView === 'chat' && userInfo && messages.length === 0 && !isLoading && !isTyping && !hasRestoredSessionRef.current) {
       const savedSession = loadInProgressSession(currentCharacter);
       if (savedSession && savedSession.messages && savedSession.messages.length > 0) {
+        hasRestoredSessionRef.current = true; // Mark as restored to prevent multiple restores
         debugLog('Restoring chat session from localStorage:', savedSession);
         console.log('[Restore Session] Messages being restored:', savedSession.messages.map((msg, idx) => ({
           index: idx,
@@ -868,6 +884,7 @@ const MainApp = () => {
           personaStage: msg.personaStage,
           allKeys: Object.keys(msg)
         })));
+        console.log('[Restore Session] Restoring attemptsRemaining:', savedSession.attemptsRemaining);
         setMessages(savedSession.messages);
         if (savedSession.attemptsRemaining !== undefined) {
           setAttemptsRemaining(savedSession.attemptsRemaining);
@@ -904,6 +921,38 @@ const MainApp = () => {
         };
         
         setMessages([andresOpeningMessage]);
+      }
+    }
+  }, [currentView, currentCharacter, messages.length, isLoading, isTyping, userInfo]);
+
+  // Add initial Jamie opening message when starting a new chat session
+  useEffect(() => {
+    // Only add opening message if:
+    // 1. We're in chat view
+    // 2. Current character is Jamie
+    // 3. Messages array is empty (new session, not a saved one)
+    // 4. Not currently loading
+    // 5. No saved session exists (check explicitly to avoid adding after restoration)
+    if (
+      currentView === 'chat' &&
+      currentCharacter === 'jamie' &&
+      messages.length === 0 &&
+      !isLoading &&
+      !isTyping &&
+      userInfo // Make sure userInfo is available before checking for saved session
+    ) {
+      // Double-check that no saved session exists
+      const savedSession = loadInProgressSession(currentCharacter);
+      if (!savedSession || !savedSession.messages || savedSession.messages.length === 0) {
+        const jamieOpeningMessage = {
+          id: `jamie-opening-${Date.now()}`,
+          message: "I'm really confused about everything right now. I want to do design but I also don't want to disappoint my parents. I don't even know where to start thinking about this. Every time I try to figure it out, I just feel more stuck. I keep going back and forth between what I want and what feels responsible. It's all just too much pressure right now.",
+          isUser: false,
+          timestamp: new Date().toISOString(),
+          personaStage: 'confused' // Jamie starts at confused stage
+        };
+        
+        setMessages([jamieOpeningMessage]);
       }
     }
   }, [currentView, currentCharacter, messages.length, isLoading, isTyping, userInfo]);
@@ -1027,24 +1076,21 @@ const MainApp = () => {
       return 0;
     }
     
-    // For progress display, use average of top 5 dimensions (excluding lowest)
-    // This shows progress even when one dimension is lagging
     const dqObj = latestMessage.dqScore;
     
     // Only use the 6 core DQ dimensions, exclude 'overall' and 'rationale'
     const coreDimensions = ['framing', 'alternatives', 'information', 'values', 'reasoning', 'commitment'];
     const values = coreDimensions
       .map(dim => dqObj[dim])
-      .filter(v => typeof v === 'number' && !isNaN(v) && isFinite(v) && v >= 0 && v <= 1)
-      .sort((a, b) => b - a); // Sort descending
+      .filter(v => typeof v === 'number' && !isNaN(v) && isFinite(v) && v >= 0 && v <= 1);
     
     if (values.length === 0) return 0;
     
     // Use average of top 5 dimensions (or all if less than 5)
     // This gives a more encouraging progress view while still reflecting overall quality
-    const topValues = values.slice(0, Math.min(5, values.length));
+    const sortedValues = [...values].sort((a, b) => b - a); // Sort descending
+    const topValues = sortedValues.slice(0, Math.min(5, sortedValues.length));
     const avgScore = topValues.reduce((sum, val) => sum + val, 0) / topValues.length;
-    
     return Math.round(avgScore * 100);
   };
 
@@ -1232,8 +1278,8 @@ const MainApp = () => {
     }
     
     // Default avatars for other characters
-    if (character === 'jamie') return "/images/cu-JAMIE.png";
-    return "/images/cu-JAMIE.png"; // Default
+    if (character === 'jamie') return "/images/DC Images/Jamie/Jamie_LandingPage.png";
+    return "/images/DC Images/Jamie/Jamie_LandingPage.png"; // Default
   };
 
   // Get character's current state based on progress percentage
@@ -1403,7 +1449,7 @@ const MainApp = () => {
           <div className="text-center mb-6">
             <div className="w-16 h-16 rounded-full bg-[#2C73EB] flex items-end justify-center mx-auto mb-4 shadow-lg overflow-hidden">
               <img 
-                src="/images/cu-JAMIE.png" 
+                src="/images/DC Images/Jamie/Jamie_LandingPage.png" 
                 alt="Jamie" 
                 className="w-16 h-16 object-cover object-bottom"
               />
@@ -1708,13 +1754,9 @@ const MainApp = () => {
     const wasEmptyBeforeMessage = messages.length === 0;
     const shouldReset = isNewSession || wasEmptyBeforeMessage;
     
-    // Decrement attempts (but only if not a reset - reset will be handled by backend)
-    if (!shouldReset) {
-    setAttemptsRemaining(prev => {
-      const newAttempts = prev - 1;
-      return newAttempts;
-    });
-    }
+    // DON'T decrement optimistically - the backend will return the correct turnsRemaining value
+    // The backend is the source of truth for attempts remaining
+    // We'll update attemptsRemaining when we receive the backend response
     
     // Clear the new session flag after using it
     if (shouldReset) {
@@ -1947,7 +1989,10 @@ const MainApp = () => {
         character: currentCharacter,
         hasPersonaStage: 'persona_stage' in data,
         allKeys: Object.keys(data),
-        fullResponse: data // Log full response for debugging
+        fullResponse: data, // Log full response for debugging
+        turnsRemaining: data.turnsRemaining,
+        turnsUsed: data.turnsUsed,
+        effectiveTurnsRemaining: data.effectiveTurnsRemaining
       });
       
       // Warn if persona_stage is missing for Andres
@@ -1967,18 +2012,19 @@ const MainApp = () => {
       // Calculate progress from the new message's DQ score (matching getJamieProgress logic)
       let messagePersonaStage = data.persona_stage || null;
       if (currentCharacter === 'andres' || currentCharacter === 'kavya' || currentCharacter === 'daniel' || currentCharacter === 'sarah') {
-        // Calculate progress from DQ score (matching getJamieProgress logic - average of top 5 dimensions)
+        // Calculate progress from DQ score (matching getJamieProgress logic)
+        // Game mode personas use average of top 5 dimensions
         let progressDecimal = 0;
         if (data.dq_score && typeof data.dq_score === 'object') {
           const coreDimensions = ['framing', 'alternatives', 'information', 'values', 'reasoning', 'commitment'];
           const values = coreDimensions
             .map(dim => data.dq_score[dim])
-            .filter(v => typeof v === 'number' && !isNaN(v) && isFinite(v) && v >= 0 && v <= 1)
-            .sort((a, b) => b - a); // Sort descending
+            .filter(v => typeof v === 'number' && !isNaN(v) && isFinite(v) && v >= 0 && v <= 1);
           
           if (values.length > 0) {
-            // Use average of top 5 dimensions (matching getJamieProgress)
-            const topValues = values.slice(0, Math.min(5, values.length));
+            // Use average of top 5 dimensions for game mode personas
+            const sortedValues = [...values].sort((a, b) => b - a); // Sort descending
+            const topValues = sortedValues.slice(0, Math.min(5, sortedValues.length));
             progressDecimal = topValues.reduce((sum, val) => sum + val, 0) / topValues.length;
           }
         } else if (typeof data.dq_score_minimum === 'number') {
@@ -2016,14 +2062,18 @@ const MainApp = () => {
       
       console.log('[Message Created] personaStage:', jamieMessage.personaStage, 'message id:', jamieMessage.id, 'hasPersonaStage:', 'personaStage' in jamieMessage, 'progress:', getJamieProgress() + '%');
       
-      if ((currentCharacter === 'andres' || currentCharacter === 'kavya' || currentCharacter === 'daniel') && !jamieMessage.personaStage) {
+      if ((currentCharacter === 'andres' || currentCharacter === 'kavya' || currentCharacter === 'daniel' || currentCharacter === 'sarah') && !jamieMessage.personaStage) {
         console.error(`❌ [Message Created] CRITICAL: ${currentCharacter} message created WITHOUT personaStage! This will cause avatar issues.`);
       }
 
       // Update attempts remaining from backend response
+      console.log(`[Attempts Update] currentCharacter="${currentCharacter}", data.turnsRemaining=${data.turnsRemaining}, data.turnsUsed=${data.turnsUsed}`);
+      console.log(`[Attempts Update] CURRENT attemptsRemaining state BEFORE update:`, attemptsRemaining);
+      
       if (data.turnsRemaining !== undefined) {
         // If waiting for final response (closing message just sent), ensure user can still respond
         if (data.isWaitingForFinalResponse) {
+          console.log(`[Attempts Update] isWaitingForFinalResponse=true, setting to 1`);
           setAttemptsRemaining(1); // Allow one more response
         } else {
           // CRITICAL: Validate turnsRemaining doesn't exceed max for this character
@@ -2032,11 +2082,27 @@ const MainApp = () => {
           if (validatedTurnsRemaining !== data.turnsRemaining) {
             console.warn(`⚠️ Backend returned turnsRemaining=${data.turnsRemaining} for ${currentCharacter}, but max is ${maxForCharacter}. Using ${validatedTurnsRemaining}.`);
           }
-          setAttemptsRemaining(validatedTurnsRemaining);
+          console.log(`[Attempts Update] Setting attemptsRemaining to ${validatedTurnsRemaining} (max: ${maxForCharacter}, backend: ${data.turnsRemaining})`);
+          
+          // Use functional update to ensure we're using the latest state
+          setAttemptsRemaining(prev => {
+            console.log(`[Attempts Update] setAttemptsRemaining called - prev: ${prev}, new: ${validatedTurnsRemaining}`);
+            return validatedTurnsRemaining;
+          });
+          
+          // Verify the update
+          setTimeout(() => {
+            console.log(`[Attempts Update] After 100ms, checking if state updated correctly...`);
+          }, 100);
         }
       } else {
         // Fallback: decrement attempts remaining if not in response
-        setAttemptsRemaining(prev => Math.max(0, prev - 1));
+        console.log(`[Attempts Update] data.turnsRemaining is undefined, using fallback decrement`);
+        setAttemptsRemaining(prev => {
+          const newValue = Math.max(0, prev - 1);
+          console.log(`[Attempts Update] Fallback: ${prev} -> ${newValue}`);
+          return newValue;
+        });
       }
 
       // Add small delay before showing Jamie's response for smoother transition
@@ -2049,6 +2115,37 @@ const MainApp = () => {
         setMessages(prev => {
           const newMessages = [...prev, jamieMessage];
           console.log('[State Update] Total messages:', newMessages.length, 'Latest personaStage:', jamieMessage.personaStage);
+          
+          // CRITICAL: Save session AFTER messages are updated, with the correct attemptsRemaining
+          if (userInfo && data.turnsRemaining !== undefined) {
+            const maxForCharacter = getMaxAttempts(currentCharacter);
+            const validatedTurnsRemaining = Math.min(data.turnsRemaining, maxForCharacter);
+            
+            const cleanMessages = newMessages.map(msg => ({
+              id: msg.id,
+              message: msg.message,
+              isUser: msg.isUser,
+              timestamp: msg.timestamp,
+              isSessionEnd: msg.isSessionEnd,
+              showFinalScore: msg.showFinalScore,
+              dqScore: msg.dqScore,
+              avgDqScore: msg.avgDqScore,
+              sessionId: msg.sessionId,
+              userId: msg.userId,
+              personaStage: msg.personaStage || null
+            }));
+            
+            const sessionData = {
+              character: currentCharacter,
+              messages: cleanMessages,
+              attemptsRemaining: validatedTurnsRemaining,
+              timestamp: new Date().toISOString()
+            };
+            
+            localStorage.setItem(`session_${userInfo.id}_${currentCharacter}`, JSON.stringify(sessionData));
+            console.log('[State Update] Saved session after message added, attemptsRemaining:', validatedTurnsRemaining);
+          }
+          
           return newMessages;
         });
         setConnectionStatus('connected');
@@ -2146,7 +2243,6 @@ const MainApp = () => {
           }, 1000);
         }
       }, 200);
-
     } catch (error) {
       console.error('Detailed error sending message:', error);
       setConnectionStatus('failed');
@@ -3046,7 +3142,7 @@ const MainApp = () => {
           </div>
         </div>
       )}
-    </div>
+        </div>
       ) : (
         <div className="bg-white h-screen w-full flex items-center justify-center">
           <p className="text-gray-500">Unknown view: {finalCurrentView}</p>

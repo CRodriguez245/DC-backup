@@ -27,7 +27,11 @@ const MAX_TURNS = 20;
 // Persona-specific turn limits
 const getMaxTurns = (persona: string): number => {
   const normalizedPersona = (persona || '').toLowerCase();
-  return normalizedPersona === 'kavya' ? 10 : 20;
+  if (normalizedPersona === 'kavya') return 10;
+  if (normalizedPersona === 'daniel') return 10;
+  if (normalizedPersona === 'sarah') return 10;
+  if (normalizedPersona === 'jamie') return 10;
+  return 20; // Default for andres and others
 };
 
 router.post('/', async (req, res) => {
@@ -82,7 +86,15 @@ router.post('/', async (req, res) => {
     
     // Only catch exact minimal phrases - if message has substantive content, let LLM score it
     const trimmedMessage = userMessage.trim();
-    const isExactMinimalPhrase = minimalMessagePatterns.some(pattern => pattern.test(trimmedMessage));
+    console.log("🔍 Checking minimal message patterns. Trimmed message:", JSON.stringify(trimmedMessage));
+    const isExactMinimalPhrase = minimalMessagePatterns.some(pattern => {
+      const matches = pattern.test(trimmedMessage);
+      if (matches) {
+        console.log("✅ Pattern matched:", pattern.toString());
+      }
+      return matches;
+    });
+    console.log("🔍 isExactMinimalPhrase result:", isExactMinimalPhrase);
     
     let dqScoreComponents: any;
     if (isExactMinimalPhrase) {
@@ -380,7 +392,9 @@ router.post('/', async (req, res) => {
       promptPreview: systemPrompt.slice(0, 120)
     });
     
-    const jamieReply = await getJamieResponse(userMessage, systemPrompt, persona);
+    // Pass conversation history to getJamieResponse so it knows the conversation context
+    // This prevents repeating the opening message
+    const jamieReply = await getJamieResponse(userMessage, systemPrompt, persona, conversationHistory);
     console.log("Jamie reply:", jamieReply);
 
     // Update conversation history
@@ -396,10 +410,9 @@ router.post('/', async (req, res) => {
       }
     }
 
-    // turnsUsed is already declared above (line 151)
+    // turnsUsed is already declared above (line 155)
     const maxTurnsForPersona = getMaxTurns(persona);
     const turnsRemaining = maxTurnsForPersona - turnsUsed;
-    console.log(`📊 Turn tracking: persona="${persona}", turnsUsed=${turnsUsed}, maxTurns=${maxTurnsForPersona}, turnsRemaining=${turnsRemaining}`);
     const dqCoverage = sessionState[sessionId].dqCoverage;
 
     let conversationStatus = 'in-progress';

@@ -44,34 +44,51 @@ async function retryWithBackoff<T>(
   throw new Error('Max retries exceeded');
 }
 
-export async function getJamieResponse(userInput: string, systemPrompt: string, persona?: string): Promise<string> {
-  // Check if this is Andres persona (6 sentence limit)
+export async function getJamieResponse(userInput: string, systemPrompt: string, persona?: string, conversationHistory: string = ''): Promise<string> {
+  // Check if this is a persona with 6 sentence limit (Andres, Kavya, Daniel, Sarah, or Jamie)
   // Check both the persona parameter and the system prompt content
-  const isAndres = (persona?.toLowerCase() === 'andres') || 
-                   systemPrompt.includes('Andres') || 
-                   systemPrompt.includes('andres') ||
-                   systemPrompt.includes('RESPONSE LENGTH: You MUST respond with EXACTLY 6 sentences');
+  const has6SentenceLimit = (persona?.toLowerCase() === 'andres' || persona?.toLowerCase() === 'kavya' || 
+                              persona?.toLowerCase() === 'daniel' || persona?.toLowerCase() === 'sarah' ||
+                              persona?.toLowerCase() === 'jamie') || 
+                             systemPrompt.includes('RESPONSE LENGTH: You MUST respond with EXACTLY 6 sentences');
   
-  if (isAndres) {
-    console.log('🔒 Applying 200 token limit for Andres persona');
+  if (has6SentenceLimit) {
+    console.log(`🔒 Applying 200 token limit for ${persona || 'persona'} with 6 sentence limit`);
   }
+  
+  // Build messages array with conversation history if provided
+  const messages: any[] = [
+    { role: "system", content: systemPrompt }
+  ];
+  
+  // If conversation history is provided, parse and add it
+  if (conversationHistory && conversationHistory.trim()) {
+    const historyLines = conversationHistory.split('\n\n').filter(line => line.trim());
+    for (const line of historyLines) {
+      if (line.startsWith('Client:')) {
+        messages.push({ role: "user", content: line.replace(/^Client:\s*/, '') });
+      } else if (line.startsWith('Coach:')) {
+        messages.push({ role: "assistant", content: line.replace(/^Coach:\s*/, '') });
+      }
+    }
+  }
+  
+  // Add the current user input
+  messages.push({ role: "user", content: userInput });
   
   const chat = await retryWithBackoff(async () => {
     return await openai.chat.completions.create({
       model: "gpt-4o",
-      messages: [
-        { role: "system", content: systemPrompt },
-        { role: "user", content: userInput }
-      ],
-      // Limit tokens for Andres to encourage shorter responses (approximately 6 sentences = ~150 tokens)
-      max_tokens: isAndres ? 200 : undefined,
+      messages: messages,
+      // Limit tokens for personas with 6 sentence limit (approximately 6 sentences = ~150-200 tokens)
+      max_tokens: has6SentenceLimit ? 200 : undefined,
     });
   });
 
   const response = chat.choices[0]?.message?.content || '';
-  if (isAndres) {
+  if (has6SentenceLimit) {
     const sentenceCount = (response.match(/[.!?]+/g) || []).length;
-    console.log(`📊 Andres response: ${sentenceCount} sentences, ${chat.usage?.completion_tokens || 'unknown'} tokens`);
+    console.log(`📊 ${persona || 'Persona'} response: ${sentenceCount} sentences, ${chat.usage?.completion_tokens || 'unknown'} tokens`);
   }
   
   return response;

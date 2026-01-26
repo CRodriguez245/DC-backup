@@ -82,12 +82,6 @@ const ALLOWED_VIEWS = [
   'classroom-detail'
 ];
 
-const getSavedView = () => {
-  if (typeof window === 'undefined') return 'homepage';
-  const savedView = sessionStorage.getItem('currentView');
-  return savedView && ALLOWED_VIEWS.includes(savedView) ? savedView : 'homepage';
-};
-
 const getSavedCharacter = () => {
   if (typeof window === 'undefined') return 'jamie';
   return localStorage.getItem('currentCharacter') || 'jamie';

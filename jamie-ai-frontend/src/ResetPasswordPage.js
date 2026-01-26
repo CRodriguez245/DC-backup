@@ -2,16 +2,23 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { supabase } from './lib/supabase';
 import { supabaseAuthService } from './services/SupabaseAuthService';
 
-const parseHashParams = () => {
+const parseUrlParams = () => {
   if (typeof window === 'undefined') return {};
+  
+  // Check query parameters first (Supabase typically uses these)
+  const queryParams = new URLSearchParams(window.location.search);
+  
+  // Also check hash parameters (fallback)
   const hash = window.location.hash.startsWith('#')
     ? window.location.hash.slice(1)
     : window.location.hash;
-  const params = new URLSearchParams(hash);
+  const hashParams = new URLSearchParams(hash);
+  
+  // Return params from query string first, then hash as fallback
   return {
-    access_token: params.get('access_token'),
-    refresh_token: params.get('refresh_token'),
-    type: params.get('type'),
+    access_token: queryParams.get('access_token') || hashParams.get('access_token'),
+    refresh_token: queryParams.get('refresh_token') || hashParams.get('refresh_token'),
+    type: queryParams.get('type') || hashParams.get('type'),
   };
 };
 
@@ -23,33 +30,60 @@ const ResetPasswordPage = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
-  const hashParams = useMemo(parseHashParams, []);
+  const urlParams = useMemo(parseUrlParams, []);
 
   useEffect(() => {
     let isMounted = true;
     const ensureSession = async () => {
       try {
-        if (hashParams.access_token && hashParams.refresh_token) {
+        // First, try to set session from URL parameters if they exist
+        if (urlParams.access_token && urlParams.refresh_token) {
+          console.log('Setting session from URL parameters');
           const { error } = await supabase.auth.setSession({
-            access_token: hashParams.access_token,
-            refresh_token: hashParams.refresh_token,
+            access_token: urlParams.access_token,
+            refresh_token: urlParams.refresh_token,
           });
-          if (error) throw error;
+          if (error) {
+            console.error('Error setting session from URL params:', error);
+            throw error;
+          }
+          // Clean up URL after setting session
           const cleanUrl = `${window.location.origin}/reset-password`;
           window.history.replaceState({}, document.title, cleanUrl);
         }
-        const { data } = await supabase.auth.getSession();
+        
+        // Wait a moment for Supabase's automatic session detection to work
+        await new Promise(resolve => setTimeout(resolve, 100));
+        
+        // Check if session exists (either from manual setSession or automatic detection)
+        const { data, error: sessionError } = await supabase.auth.getSession();
+        
         if (!isMounted) return;
-        if (!data.session) {
+        
+        if (sessionError) {
+          console.error('Error getting session:', sessionError);
+          setStatus({
+            state: 'error',
+            message: 'Failed to validate reset link. ' + (sessionError.message || ''),
+          });
+          return;
+        }
+        
+        if (!data || !data.session) {
+          console.warn('No session found after setting from URL params');
           setStatus({
             state: 'error',
             message:
               'This reset link has expired. Request a new email from the login page.',
           });
+          return;
         }
+        
+        console.log('Session validated successfully');
         setSessionReady(true);
       } catch (error) {
         if (!isMounted) return;
+        console.error('Error in ensureSession:', error);
         setStatus({
           state: 'error',
           message: error.message || 'Failed to validate reset link.',
@@ -60,7 +94,7 @@ const ResetPasswordPage = () => {
     return () => {
       isMounted = false;
     };
-  }, [hashParams.access_token, hashParams.refresh_token]);
+  }, [urlParams.access_token, urlParams.refresh_token]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();

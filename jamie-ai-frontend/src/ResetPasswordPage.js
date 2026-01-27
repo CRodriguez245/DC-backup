@@ -53,7 +53,7 @@ const ResetPasswordPage = () => {
         // But we can also manually set it if we have the tokens
         if (urlParams.access_token && urlParams.refresh_token) {
           console.log('ResetPasswordPage: Manually setting session from URL parameters');
-          const { data: sessionData, error } = await supabase.auth.setSession({
+          const { error } = await supabase.auth.setSession({
             access_token: urlParams.access_token,
             refresh_token: urlParams.refresh_token,
           });
@@ -154,7 +154,7 @@ const ResetPasswordPage = () => {
         authStateSubscription.data?.subscription?.unsubscribe();
       }
     };
-  }, [urlParams.access_token, urlParams.refresh_token]);
+  }, [urlParams]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();

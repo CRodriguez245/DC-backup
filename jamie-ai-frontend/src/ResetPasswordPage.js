@@ -18,12 +18,21 @@ const parseUrlParams = () => {
   // 1. ?access_token=...&refresh_token=...&type=recovery
   // 2. ?token=...&type=recovery (older format)
   // 3. #access_token=...&refresh_token=... (hash format)
+  // 4. #error=...&error_code=... (error format - link expired/invalid)
+  
+  // Check for errors in hash
+  const error = hashParams.get('error');
+  const errorCode = hashParams.get('error_code');
+  const errorDescription = hashParams.get('error_description');
   
   return {
     access_token: queryParams.get('access_token') || hashParams.get('access_token'),
     refresh_token: queryParams.get('refresh_token') || hashParams.get('refresh_token'),
     token: queryParams.get('token') || hashParams.get('token'), // Alternative format
     type: queryParams.get('type') || hashParams.get('type'),
+    error: error,
+    error_code: errorCode,
+    error_description: errorDescription,
   };
 };
 
@@ -48,6 +57,29 @@ const ResetPasswordPage = () => {
         console.log('ResetPasswordPage: Query params:', window.location.search);
         console.log('ResetPasswordPage: Hash:', window.location.hash);
         console.log('ResetPasswordPage: Parsed URL params:', urlParams);
+        
+        // Check for errors in URL (link expired, invalid, etc.)
+        if (urlParams.error || urlParams.error_code) {
+          console.error('ResetPasswordPage: Error in URL:', {
+            error: urlParams.error,
+            error_code: urlParams.error_code,
+            error_description: urlParams.error_description
+          });
+          
+          let errorMessage = 'This reset link has expired. Request a new email from the login page.';
+          
+          if (urlParams.error_code === 'otp_expired') {
+            errorMessage = 'This reset link has expired. Password reset links are valid for 1 hour. Please request a new email from the login page.';
+          } else if (urlParams.error_code === 'access_denied') {
+            errorMessage = 'This reset link is invalid or has expired. Please request a new email from the login page.';
+          }
+          
+          setStatus({
+            state: 'error',
+            message: errorMessage,
+          });
+          return;
+        }
         
         // With detectSessionInUrl: true, Supabase should automatically detect session from URL
         // But we can also manually set it if we have the tokens

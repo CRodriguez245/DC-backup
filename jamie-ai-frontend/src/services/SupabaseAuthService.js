@@ -190,7 +190,9 @@ export class SupabaseAuthService {
     const progress = {
       jamie: buildBaseProgress('jamie'),
       andres: buildBaseProgress('andres'),
-      kavya: buildBaseProgress('kavya')
+      kavya: buildBaseProgress('kavya'),
+      daniel: buildBaseProgress('daniel'),
+      sarah: buildBaseProgress('sarah')
     };
 
     // Process each progress record
@@ -898,7 +900,16 @@ export class SupabaseAuthService {
         throw new Error('Email is required');
       }
 
-      const redirectTo = `${window.location.origin}/reset-password`;
+      // Use hardcoded production URL to ensure exact match with Supabase Redirect URLs
+      // This must match exactly what's in Supabase Dashboard → Authentication → URL Configuration → Redirect URLs
+      const isProduction = window.location.hostname === 'decisioncoach.io' || 
+                          window.location.hostname.includes('vercel.app');
+      const redirectTo = isProduction 
+        ? 'https://decisioncoach.io/reset-password'
+        : `${window.location.origin}/reset-password`;
+      
+      console.log('requestPasswordReset: Using redirectTo:', redirectTo);
+      
       const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo });
 
       if (error) {

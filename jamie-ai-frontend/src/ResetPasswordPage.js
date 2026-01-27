@@ -14,10 +14,15 @@ const parseUrlParams = () => {
     : window.location.hash;
   const hashParams = new URLSearchParams(hash);
   
-  // Return params from query string first, then hash as fallback
+  // Supabase password reset links can use different formats:
+  // 1. ?access_token=...&refresh_token=...&type=recovery
+  // 2. ?token=...&type=recovery (older format)
+  // 3. #access_token=...&refresh_token=... (hash format)
+  
   return {
     access_token: queryParams.get('access_token') || hashParams.get('access_token'),
     refresh_token: queryParams.get('refresh_token') || hashParams.get('refresh_token'),
+    token: queryParams.get('token') || hashParams.get('token'), // Alternative format
     type: queryParams.get('type') || hashParams.get('type'),
   };
 };
@@ -34,6 +39,8 @@ const ResetPasswordPage = () => {
 
   useEffect(() => {
     let isMounted = true;
+    let authStateSubscription = null;
+    
     const ensureSession = async () => {
       try {
         // Log URL for debugging
@@ -61,11 +68,26 @@ const ResetPasswordPage = () => {
           }
         }
         
-        // Wait for Supabase's automatic session detection to work (with detectSessionInUrl: true)
-        // Give it more time to process
-        await new Promise(resolve => setTimeout(resolve, 500));
+        // Listen for auth state changes (Supabase will trigger this when it detects session from URL)
+        authStateSubscription = supabase.auth.onAuthStateChange(async (event, session) => {
+          console.log('ResetPasswordPage: Auth state changed:', { event, hasSession: !!session });
+          
+          if (!isMounted) return;
+          
+          if (event === 'PASSWORD_RECOVERY' || event === 'SIGNED_IN') {
+            if (session) {
+              console.log('ResetPasswordPage: Session detected from auth state change');
+              setSessionReady(true);
+              // Clean up URL
+              const cleanUrl = `${window.location.origin}/reset-password`;
+              window.history.replaceState({}, document.title, cleanUrl);
+            }
+          }
+        });
         
-        // Check if session exists (either from manual setSession or automatic detection)
+        // Also check immediately (in case session was already set)
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        
         const { data, error: sessionError } = await supabase.auth.getSession();
         
         console.log('ResetPasswordPage: Session check result:', { 
@@ -76,35 +98,44 @@ const ResetPasswordPage = () => {
         
         if (!isMounted) return;
         
-        if (sessionError) {
-          console.error('ResetPasswordPage: Error getting session:', sessionError);
-          setStatus({
-            state: 'error',
-            message: 'Failed to validate reset link. ' + (sessionError.message || ''),
-          });
+        if (data?.session) {
+          console.log('ResetPasswordPage: Session found immediately');
+          setSessionReady(true);
+          // Clean up URL
+          const cleanUrl = `${window.location.origin}/reset-password`;
+          window.history.replaceState({}, document.title, cleanUrl);
           return;
         }
         
-        if (!data || !data.session) {
-          console.warn('ResetPasswordPage: No session found. URL params:', urlParams);
-          console.warn('ResetPasswordPage: Full URL:', window.location.href);
+        // If no session after 1 second, check again after a longer wait
+        setTimeout(async () => {
+          if (!isMounted) return;
           
-          // Check if there are any auth-related params in the URL that we might have missed
-          const allParams = new URLSearchParams(window.location.search);
-          const allHashParams = new URLSearchParams(window.location.hash.slice(1));
-          console.log('ResetPasswordPage: All query params:', Array.from(allParams.entries()));
-          console.log('ResetPasswordPage: All hash params:', Array.from(allHashParams.entries()));
+          const { data: retryData, error: retryError } = await supabase.auth.getSession();
           
-          setStatus({
-            state: 'error',
-            message:
-              'This reset link has expired. Request a new email from the login page.',
-          });
-          return;
-        }
+          if (retryData?.session) {
+            console.log('ResetPasswordPage: Session found on retry');
+            setSessionReady(true);
+            const cleanUrl = `${window.location.origin}/reset-password`;
+            window.history.replaceState({}, document.title, cleanUrl);
+          } else if (!retryData?.session && !retryError) {
+            console.warn('ResetPasswordPage: No session found after retry. URL params:', urlParams);
+            console.warn('ResetPasswordPage: Full URL:', window.location.href);
+            
+            // Check if there are any auth-related params in the URL that we might have missed
+            const allParams = new URLSearchParams(window.location.search);
+            const allHashParams = new URLSearchParams(window.location.hash.slice(1));
+            console.log('ResetPasswordPage: All query params:', Array.from(allParams.entries()));
+            console.log('ResetPasswordPage: All hash params:', Array.from(allHashParams.entries()));
+            
+            setStatus({
+              state: 'error',
+              message:
+                'This reset link has expired. Request a new email from the login page.',
+            });
+          }
+        }, 2000);
         
-        console.log('ResetPasswordPage: Session validated successfully');
-        setSessionReady(true);
       } catch (error) {
         if (!isMounted) return;
         console.error('ResetPasswordPage: Error in ensureSession:', error);
@@ -114,9 +145,14 @@ const ResetPasswordPage = () => {
         });
       }
     };
+    
     ensureSession();
+    
     return () => {
       isMounted = false;
+      if (authStateSubscription) {
+        authStateSubscription.data?.subscription?.unsubscribe();
+      }
     };
   }, [urlParams.access_token, urlParams.refresh_token]);
 

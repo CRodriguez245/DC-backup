@@ -36,32 +36,48 @@ const ResetPasswordPage = () => {
     let isMounted = true;
     const ensureSession = async () => {
       try {
-        // First, try to set session from URL parameters if they exist
+        // Log URL for debugging
+        console.log('ResetPasswordPage: Current URL:', window.location.href);
+        console.log('ResetPasswordPage: Query params:', window.location.search);
+        console.log('ResetPasswordPage: Hash:', window.location.hash);
+        console.log('ResetPasswordPage: Parsed URL params:', urlParams);
+        
+        // With detectSessionInUrl: true, Supabase should automatically detect session from URL
+        // But we can also manually set it if we have the tokens
         if (urlParams.access_token && urlParams.refresh_token) {
-          console.log('Setting session from URL parameters');
-          const { error } = await supabase.auth.setSession({
+          console.log('ResetPasswordPage: Manually setting session from URL parameters');
+          const { data: sessionData, error } = await supabase.auth.setSession({
             access_token: urlParams.access_token,
             refresh_token: urlParams.refresh_token,
           });
           if (error) {
-            console.error('Error setting session from URL params:', error);
-            throw error;
+            console.error('ResetPasswordPage: Error setting session from URL params:', error);
+            // Don't throw - let Supabase's automatic detection try
+          } else {
+            console.log('ResetPasswordPage: Successfully set session manually');
+            // Clean up URL after setting session
+            const cleanUrl = `${window.location.origin}/reset-password`;
+            window.history.replaceState({}, document.title, cleanUrl);
           }
-          // Clean up URL after setting session
-          const cleanUrl = `${window.location.origin}/reset-password`;
-          window.history.replaceState({}, document.title, cleanUrl);
         }
         
-        // Wait a moment for Supabase's automatic session detection to work
-        await new Promise(resolve => setTimeout(resolve, 100));
+        // Wait for Supabase's automatic session detection to work (with detectSessionInUrl: true)
+        // Give it more time to process
+        await new Promise(resolve => setTimeout(resolve, 500));
         
         // Check if session exists (either from manual setSession or automatic detection)
         const { data, error: sessionError } = await supabase.auth.getSession();
         
+        console.log('ResetPasswordPage: Session check result:', { 
+          hasSession: !!data?.session, 
+          sessionError,
+          sessionUserId: data?.session?.user?.id 
+        });
+        
         if (!isMounted) return;
         
         if (sessionError) {
-          console.error('Error getting session:', sessionError);
+          console.error('ResetPasswordPage: Error getting session:', sessionError);
           setStatus({
             state: 'error',
             message: 'Failed to validate reset link. ' + (sessionError.message || ''),
@@ -70,7 +86,15 @@ const ResetPasswordPage = () => {
         }
         
         if (!data || !data.session) {
-          console.warn('No session found after setting from URL params');
+          console.warn('ResetPasswordPage: No session found. URL params:', urlParams);
+          console.warn('ResetPasswordPage: Full URL:', window.location.href);
+          
+          // Check if there are any auth-related params in the URL that we might have missed
+          const allParams = new URLSearchParams(window.location.search);
+          const allHashParams = new URLSearchParams(window.location.hash.slice(1));
+          console.log('ResetPasswordPage: All query params:', Array.from(allParams.entries()));
+          console.log('ResetPasswordPage: All hash params:', Array.from(allHashParams.entries()));
+          
           setStatus({
             state: 'error',
             message:
@@ -79,11 +103,11 @@ const ResetPasswordPage = () => {
           return;
         }
         
-        console.log('Session validated successfully');
+        console.log('ResetPasswordPage: Session validated successfully');
         setSessionReady(true);
       } catch (error) {
         if (!isMounted) return;
-        console.error('Error in ensureSession:', error);
+        console.error('ResetPasswordPage: Error in ensureSession:', error);
         setStatus({
           state: 'error',
           message: error.message || 'Failed to validate reset link.',

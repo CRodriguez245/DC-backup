@@ -39,6 +39,13 @@ router.post('/', async (req, res) => {
   const sessionId: string = req.body.session_id || 'anon-session';
   const userId: string = req.body.user_id || 'anon-user';
   const persona: string = (req.body.character || 'jamie').toLowerCase();
+  const shouldReset: boolean = req.body.reset === true;
+
+  // Handle session reset - clear existing session state if reset flag is set
+  if (shouldReset && sessionState[sessionId]) {
+    console.log(`🔄 Resetting session ${sessionId} due to reset flag`);
+    delete sessionState[sessionId];
+  }
 
   if (!sessionState[sessionId]) {
     sessionState[sessionId] = {
@@ -54,6 +61,7 @@ router.post('/', async (req, res) => {
       personaStages: {},
       conversationHistory: []
     };
+    console.log(`🆕 Created new session state for ${sessionId}`);
   }
 
   sessionState[sessionId].turnsUsed += 1;

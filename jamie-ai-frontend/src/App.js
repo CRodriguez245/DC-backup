@@ -1339,35 +1339,56 @@ const MainApp = () => {
     const isDevelopment = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
     const backendUrl = isDevelopment ? localBackend : remoteBackend;
     
+    console.log('🔍 Testing backend connection to:', backendUrl);
+    
     try {
-      const response = await fetch(backendUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-        },
-        body: JSON.stringify({ message: "test connection" }),
-      });
+      let response;
+      try {
+        response = await fetch(backendUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+          },
+          body: JSON.stringify({ message: "test connection" }),
+        });
+      } catch (fetchError) {
+        // Handle network errors (CORS, connection refused, 503, etc.)
+        console.error('❌ Network error testing backend connection:', fetchError);
+        if (fetchError.message.includes('503') || fetchError.message.includes('Failed to fetch') || fetchError.message.includes('Load failed')) {
+          console.warn('⚠️ Backend service is unavailable (503). This may be because:');
+          console.warn('   - Render.com service is sleeping (free tier)');
+          console.warn('   - Service is restarting or down');
+          console.warn('   - Network connectivity issue');
+        }
+        throw fetchError;
+      }
       
       if (response.ok) {
         const data = await response.json();
         if (data.jamie_reply) {
           setConnectionStatus('connected');
+          console.log('✅ Backend connection successful!');
           debugLog('✅ Backend connection successful');
           return;
         }
       }
+      
+      // Handle 503 specifically
+      if (response.status === 503) {
+        console.warn('⚠️ Backend returned 503 (Service Unavailable)');
+        throw new Error('Backend service is temporarily unavailable (503)');
+      }
+      
       throw new Error(`HTTP ${response.status}`);
     } catch (error) {
       console.error('❌ Backend connection failed:', error);
+      console.log('⚠️ Backend is unavailable. Status will be checked again when you send a message.');
       
-      // If remote backend failed, automatically switch to demo mode
-      debugLog('❌ Backend unavailable, switching to demo mode');
+      // Backend is unavailable - don't switch to demo mode, just mark as failed
+      debugLog('❌ Backend unavailable');
       setConnectionStatus('failed');
-      // Use setTimeout to ensure state updates properly
-      setTimeout(() => {
-        setDemoMode(true);
-      }, 100);
+      // Don't automatically switch to demo mode - let user wait for backend to come back
     }
   };
 
@@ -1957,20 +1978,36 @@ const MainApp = () => {
       console.log('[API Call] Sending request to:', backendUrl, 'Body:', requestBody);
       const apiCallStartTime = Date.now();
       
-      const response = await fetch(backendUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-        },
-        body: JSON.stringify(requestBody),
-      });
+      let response;
+      try {
+        response = await fetch(backendUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+          },
+          body: JSON.stringify(requestBody),
+        });
+      } catch (fetchError) {
+        // Handle network errors (CORS, connection refused, 503, etc.)
+        console.error('❌ Network error connecting to backend:', fetchError);
+        if (fetchError.message.includes('503') || fetchError.message.includes('Failed to fetch') || fetchError.message.includes('Load failed')) {
+          throw new Error('Backend service is unavailable (503). The backend may be sleeping or down. Please try again in a moment.');
+        }
+        throw fetchError;
+      }
 
       const apiCallDuration = Date.now() - apiCallStartTime;
       debugLog('Response status:', response.status);
       console.log('[API Call] Response received, status:', response.status, 'Duration:', apiCallDuration + 'ms');
 
       if (!response.ok) {
+        // Handle 503 specifically
+        if (response.status === 503) {
+          const errorText = await response.text().catch(() => 'Service Unavailable');
+          console.error('❌ Backend returned 503 (Service Unavailable):', errorText);
+          throw new Error('Backend service is temporarily unavailable (503). The service may be sleeping or restarting. Please try again in a moment.');
+        }
         const errorText = await response.text();
         console.error('API Error Response:', errorText);
         throw new Error(`API Error: ${response.status} - ${errorText}`);
@@ -2176,7 +2213,12 @@ const MainApp = () => {
         // Check if session should end after Jamie's response
         // Don't end if we're waiting for a final response to the closing message
         const isWaitingForFinalResponse = data.isWaitingForFinalResponse || false;
-        if (!isWaitingForFinalResponse && attemptsRemaining - 1 <= 0) {
+        // Use the backend's turnsRemaining directly (not the state variable which might be stale)
+        const turnsRemainingFromBackend = data.turnsRemaining !== undefined 
+          ? Math.min(data.turnsRemaining, getMaxAttempts(currentCharacter))
+          : attemptsRemaining;
+        console.log(`[Session End Check] isWaitingForFinalResponse=${isWaitingForFinalResponse}, turnsRemainingFromBackend=${turnsRemainingFromBackend}, attemptsRemaining state=${attemptsRemaining}`);
+        if (!isWaitingForFinalResponse && turnsRemainingFromBackend <= 0) {
           setTimeout(() => {
             // Get the latest DQ scores
             const allMessages = [...messages, jamieMessage];
@@ -2241,19 +2283,20 @@ const MainApp = () => {
       console.error('Detailed error sending message:', error);
       setConnectionStatus('failed');
       
-      // Automatically switch to demo mode when backend fails
-      debugLog('❌ Backend failed, switching to demo mode');
-      setDemoMode(true);
+      // Backend failed - show error message instead of switching to demo mode
+      debugLog('❌ Backend failed');
       
-      // Use demo response instead of showing error
-      const demoResponse = getDemoResponse(messageText);
+      // Show error message to user
       const errorMessage = {
         id: Date.now() + 1,
-        message: demoResponse,
+        message: error.message && error.message.includes('503') 
+          ? "The backend service is temporarily unavailable. Please wait a moment and try again. The service should be back online shortly."
+          : "Unable to connect to the backend service. Please check your connection and try again.",
         isUser: false,
         timestamp: new Date().toISOString(),
-        isDemo: true
+        isError: true
       };
+      
       // Add small delay before showing error message for smoother transition
       setTimeout(() => {
         setMessages(prev => [...prev, errorMessage]);

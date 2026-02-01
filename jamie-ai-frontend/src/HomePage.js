@@ -113,41 +113,16 @@ const HomePage = ({ userInfo, gameMode, onStartCoaching, onLogout, onSettings, o
       };
       console.log(`🔍 ${characterId}: Latest session data:`, debugInfo);
       
-      // Try multiple sources in order: score, rawScore, bestScore, then dqScores minimum
-      const scoreCandidates = [
-        latestSession.score,
-        latestSession.rawScore,
-        charProgress.bestScore
-      ].filter(v => v !== null && v !== undefined);
-      
-      // Try each candidate
-      for (const scoreValue of scoreCandidates) {
-        if (score !== null) break; // Already found a valid score
-        
-        const numScore = typeof scoreValue === 'number' ? scoreValue : parseFloat(scoreValue);
-        
-        // Only use if it's a valid number (not NaN, not Infinity)
-        if (!isNaN(numScore) && isFinite(numScore) && numScore >= 0) {
-          // Clamp scores > 1 to 1.0 (handle old data format)
-          score = Math.min(numScore, 1.0);
-          console.log(`🔍 ${characterId}: Using score from candidate:`, score, 'source:', scoreValue === latestSession.score ? 'score' : scoreValue === latestSession.rawScore ? 'rawScore' : 'bestScore');
-          break;
-        }
-      }
-      
-      // Fallback: try to get minimum from dqScores if score is still null or 0
-      // Check dqScores even if score is 0, because the actual score might be in dqScores
-      if ((score === null || score === 0) && latestSession.dqScores && typeof latestSession.dqScores === 'object') {
-        console.log(`🔍 ${characterId}: Checking dqScores:`, latestSession.dqScores);
+      // PRIORITY: Check dqScores FIRST - the actual score is often stored here even if score/rawScore are 0
+      if (latestSession.dqScores && typeof latestSession.dqScores === 'object') {
+        console.log(`🔍 ${characterId}: Checking dqScores FIRST (priority):`, latestSession.dqScores);
         const dqValues = Object.values(latestSession.dqScores)
           .filter(v => typeof v === 'number' && !isNaN(v) && isFinite(v) && v >= 0);
         if (dqValues.length > 0) {
           const dqMin = Math.min(...dqValues.map(v => Math.min(v, 1.0))); // Clamp to 1.0
-          // Only use dqScores if it's > 0 (to avoid replacing a valid 0 with another 0)
-          // OR if the current score is 0/null and dqScores has a non-zero value
-          if (dqMin > 0 || (score === null || score === 0)) {
+          if (dqMin > 0) {
             score = dqMin;
-            console.log(`🔍 ${characterId}: Using dqScores minimum:`, score, 'from values:', dqValues);
+            console.log(`🔍 ${characterId}: Using dqScores minimum (priority):`, score, 'from values:', dqValues);
           }
         }
       }
@@ -159,9 +134,33 @@ const HomePage = ({ userInfo, gameMode, onStartCoaching, onLogout, onSettings, o
           .filter(v => typeof v === 'number' && !isNaN(v) && isFinite(v) && v >= 0);
         if (dqValues.length > 0) {
           const dqMin = Math.min(...dqValues.map(v => Math.min(v, 1.0)));
-          if (dqMin > 0 || (score === null || score === 0)) {
+          if (dqMin > 0) {
             score = dqMin;
             console.log(`🔍 ${characterId}: Using lastSession.dqScores minimum:`, score, 'from values:', dqValues);
+          }
+        }
+      }
+      
+      // Fallback: try score, rawScore, bestScore if dqScores didn't give us a valid score
+      if (score === null || score === 0) {
+        const scoreCandidates = [
+          latestSession.score,
+          latestSession.rawScore,
+          charProgress.bestScore
+        ].filter(v => v !== null && v !== undefined && v > 0); // Filter out 0 and null values
+        
+        // Try each candidate
+        for (const scoreValue of scoreCandidates) {
+          if (score !== null && score > 0) break; // Already found a valid non-zero score
+          
+          const numScore = typeof scoreValue === 'number' ? scoreValue : parseFloat(scoreValue);
+          
+          // Only use if it's a valid number (not NaN, not Infinity) and > 0
+          if (!isNaN(numScore) && isFinite(numScore) && numScore > 0) {
+            // Clamp scores > 1 to 1.0 (handle old data format)
+            score = Math.min(numScore, 1.0);
+            console.log(`🔍 ${characterId}: Using score from candidate:`, score, 'source:', scoreValue === latestSession.score ? 'score' : scoreValue === latestSession.rawScore ? 'rawScore' : 'bestScore');
+            break;
           }
         }
       }

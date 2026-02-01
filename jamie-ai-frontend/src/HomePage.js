@@ -28,6 +28,21 @@ const HomePage = ({ userInfo, gameMode, onStartCoaching, onLogout, onSettings, o
     // Get the latest session
     const latestSession = charProgress.lastSession || charProgress.sessions[charProgress.sessions.length - 1];
     
+    // Debug logging for Jamie specifically
+    if (characterId === 'jamie') {
+      console.log('🏠 HomePage getCharacterStatus for Jamie:', {
+        hasSessions,
+        sessionsCount: charProgress.sessions?.length,
+        hasLastSession: !!charProgress.lastSession,
+        lastSessionScore: charProgress.lastSession?.score,
+        lastSessionRawScore: charProgress.lastSession?.rawScore,
+        latestSessionScore: latestSession?.score,
+        latestSessionRawScore: latestSession?.rawScore,
+        completed: charProgress.completed,
+        allSessions: charProgress.sessions?.map(s => ({ score: s.score, rawScore: s.rawScore, date: s.date }))
+      });
+    }
+    
     if (charProgress.completed) {
       return { 
         status: 'Completed', 
@@ -89,58 +104,54 @@ const HomePage = ({ userInfo, gameMode, onStartCoaching, onLogout, onSettings, o
     }
   };
 
+  // Build coaching levels dynamically based on unlock status and user progress
   const coachingLevels = [
     {
       id: 'jamie',
       name: 'Jamie',
-      status: 'Completed',
-      dqScore: 0.8,
       avatar: '/images/DC Images/Jamie/Jamie_LandingPage.png',
       description: 'Sophomore Mechanical Engineering student considering switching to Art/Design',
-      position: { x: 700, y: 120 },
-      completed: true
+      position: { x: 700, y: 120 }
     },
     {
       id: 'andres',
       name: 'Andres',
-      status: 'Completed',
-      dqScore: 0.6,
       avatar: '/images/DC Images/Andres/Andres_LandingPage.png',
       description: 'Software engineer considering a career pivot',
-      position: { x: 1100, y: 320 },
-      completed: true
+      position: { x: 1100, y: 320 }
     },
     {
       id: 'kavya',
       name: 'Kavya',
-      status: 'In Progress',
-      dqScore: 0.8,
       avatar: '/images/DC Images/Kavya/Kavya_LandingPage.png',
       description: 'Recent graduate exploring career options',
-      position: { x: 700, y: 520 },
-      completed: true
+      position: { x: 700, y: 520 }
     },
     {
       id: 'daniel',
       name: 'Daniel',
-      status: 'Available',
-      dqScore: null,
       avatar: '/images/DC Images/Persona4/Persona4_LandingPage.png',
       description: 'Mid-career professional facing a relocation decision',
-      position: { x: 1100, y: 720 },
-      completed: false
+      position: { x: 1100, y: 720 }
     },
     {
       id: 'sarah',
       name: 'Sarah',
-      status: 'Available',
-      dqScore: null,
       avatar: '/images/DC Images/Persona5/Persona5_LandingPage.png',
       description: 'Professional returning to work after a career break',
-      position: { x: 700, y: 920 },
-      completed: false
+      position: { x: 700, y: 920 }
     }
-  ];
+  ].map(level => {
+    const status = getCharacterStatus(level.id);
+    const charProgress = userProgress?.[level.id];
+    
+    return {
+      ...level,
+      status: status.status,
+      dqScore: status.score,
+      completed: charProgress?.completed || false
+    };
+  });
 
   return (
     <div className="h-screen bg-white relative flex flex-col" style={{ animation: 'pageFadeIn 0.6s ease-out' }}>
@@ -291,19 +302,17 @@ const HomePage = ({ userInfo, gameMode, onStartCoaching, onLogout, onSettings, o
                     } ${
                       level.completed 
                         ? (level.id === 'jamie' || level.id === 'andres' || level.id === 'kavya' || level.id === 'daniel' || level.id === 'sarah') ? 'hover:opacity-90' : 'border-2 border-blue-300 hover:opacity-90'
-                        : level.status === 'Available' && level.avatar.startsWith('/')
+                        : (level.status === 'Available' || level.status === 'Not Started')
                         ? 'hover:opacity-90'
-                        : level.status === 'Available'
-                        ? 'bg-gray-300 hover:bg-gray-400'
-                        : 'bg-gray-300'
+                        : level.status === 'In Progress'
+                        ? 'hover:opacity-90'
+                        : 'bg-gray-300 hover:bg-gray-400'
                     }`}
-                    style={(level.id === 'jamie' || level.id === 'andres' || level.id === 'kavya' || level.id === 'daniel' || level.id === 'sarah') && (level.completed || (level.status === 'Available' && level.avatar.startsWith('/'))) ? { backgroundColor: '#2C73EB', opacity: 1 } : {}}
+                    style={(level.id === 'jamie' || level.id === 'andres' || level.id === 'kavya' || level.id === 'daniel' || level.id === 'sarah') && (level.completed || level.status === 'Available' || level.status === 'Not Started' || level.status === 'In Progress') ? { backgroundColor: '#2C73EB', opacity: 1 } : {}}
                     onClick={() => handleCharacterClick(level)}
                   >
                     {isLoadingProgress ? (
                       <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-white"></div>
-                    ) : level.status === 'Locked' ? (
-                      ''
                     ) : level.avatar.startsWith('/') ? (
                       <img 
                         src={level.avatar} 
@@ -331,7 +340,9 @@ const HomePage = ({ userInfo, gameMode, onStartCoaching, onLogout, onSettings, o
                     </div>
                   ) : (
                     <>
-                      <p className="text-xs text-gray-600 mb-2">{getCharacterStatus(level.id).status}</p>
+                      <p className="text-xs mb-2 text-gray-600">
+                        {getCharacterStatus(level.id).status}
+                      </p>
                       {typeof getCharacterStatus(level.id).score === 'number' && (
                         <p className="text-xs font-medium text-blue-600">
                           DQ Score: {getCharacterStatus(level.id).score.toFixed(2)}
@@ -408,22 +419,20 @@ const HomePage = ({ userInfo, gameMode, onStartCoaching, onLogout, onSettings, o
                   onMouseLeave={() => setHoveredCharacter(null)}
                 >
                   <div 
-                    className={`w-28 h-28 rounded-full flex items-center justify-center text-2xl cursor-pointer overflow-hidden transition-all duration-300 ease-in-out hover:scale-110 hover:shadow-xl ${
+                    className={`w-28 h-28 rounded-full flex items-center justify-center text-2xl overflow-hidden transition-all duration-300 ease-in-out ${
                       level.completed 
-                        ? (level.id === 'jamie' || level.id === 'andres' || level.id === 'kavya' || level.id === 'daniel' || level.id === 'sarah') ? 'hover:opacity-90' : 'border-2 border-blue-300 hover:opacity-90'
-                        : level.status === 'Available' && level.avatar.startsWith('/')
-                        ? 'hover:opacity-90'
-                        : level.status === 'Available'
-                        ? 'bg-gray-300 hover:bg-gray-400'
-                        : 'bg-gray-300'
+                        ? (level.id === 'jamie' || level.id === 'andres' || level.id === 'kavya' || level.id === 'daniel' || level.id === 'sarah') ? 'hover:opacity-90 hover:scale-110 hover:shadow-xl cursor-pointer' : 'border-2 border-blue-300 hover:opacity-90 cursor-pointer'
+                        : level.status === 'Available' || level.status === 'Not Started'
+                        ? 'hover:opacity-90 hover:scale-110 hover:shadow-xl cursor-pointer'
+                        : level.status === 'In Progress'
+                        ? 'hover:opacity-90 hover:scale-110 hover:shadow-xl cursor-pointer'
+                        : 'bg-gray-300 hover:bg-gray-400 cursor-pointer'
                     }`}
-                    style={(level.id === 'jamie' || level.id === 'andres' || level.id === 'kavya' || level.id === 'daniel' || level.id === 'sarah') && (level.completed || (level.status === 'Available' && level.avatar.startsWith('/'))) ? { backgroundColor: '#2C73EB', opacity: 1 } : {}}
+                    style={(level.id === 'jamie' || level.id === 'andres' || level.id === 'kavya' || level.id === 'daniel' || level.id === 'sarah') && (level.completed || level.status === 'Available' || level.status === 'Not Started' || level.status === 'In Progress') ? { backgroundColor: '#2C73EB', opacity: 1 } : {}}
                     onClick={() => handleCharacterClick(level)}
                   >
                     {isLoadingProgress ? (
                       <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-white"></div>
-                    ) : level.status === 'Locked' ? (
-                      ''
                     ) : level.avatar.startsWith('/') ? (
                       <img 
                         src={level.avatar} 
@@ -463,7 +472,9 @@ const HomePage = ({ userInfo, gameMode, onStartCoaching, onLogout, onSettings, o
                     
                     <h3 className="font-semibold text-gray-900 mb-2">{level.name}</h3>
                     <div className="flex justify-between items-center">
-                      <span className="text-sm text-gray-600">{getCharacterStatus(level.id).status}</span>
+                      <span className="text-sm text-gray-600">
+                        {getCharacterStatus(level.id).status}
+                      </span>
                       {typeof getCharacterStatus(level.id).score === 'number' && (
                         <span className="text-sm font-medium text-blue-600">
                           DQ Score: {getCharacterStatus(level.id).score.toFixed(2)}

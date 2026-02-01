@@ -236,9 +236,7 @@ router.post('/', async (req, res) => {
         const avgTop5Score = top5Scores.length > 0
             ? top5Scores.reduce((sum, val) => sum + val, 0) / top5Scores.length
             : finalDqScore;
-        // Use weighted average for stage progression (more contextual)
-        const avgTop5ScoreForStage = weightedAvgScore;
-        console.log("DQ Score (weighted avg):", weightedAvgScore, "DQ Score (avg top 5):", avgTop5Score, "from top 5:", top5Scores);
+        console.log("DQ Score (weighted avg):", weightedAvgScore, "DQ Score (avg top 5):", avgTop5Score, "DQ Score (minimum/final):", finalDqScore, "from top 5:", top5Scores);
         // Determine persona stage and get appropriate system prompt
         let personaConfig = prompts_1.personaStageConfigs[persona];
         if (!personaConfig) {
@@ -250,16 +248,17 @@ router.post('/', async (req, res) => {
         // CRITICAL: Force correct default stage for this persona (never use wrong persona's default)
         let stageKey = personaConfig.defaultStage || personaConfig.stages[0].key;
         console.log('🔍 Initial stageKey before determination:', stageKey);
-        // Apply light smoothing: use exponential moving average to prevent rapid jumps
-        // Store previous average in session state for smoothing
-        const smoothingKey = `${persona}_avgScore`;
-        const previousAvg = sessionState[sessionId][smoothingKey] || avgTop5ScoreForStage;
+        // CRITICAL: Use final minimum DQ score for stage progression to align with user's final score
+        // This ensures Jamie's persona evolution matches what the user sees as their coaching quality
+        // Apply light smoothing to prevent rapid jumps, but base it on the minimum score
+        const smoothingKey = `${persona}_minScore`;
+        const previousMin = sessionState[sessionId][smoothingKey] || finalDqScore;
         const smoothingFactor = 0.7; // 70% new score, 30% previous (more responsive, less smoothing)
-        const smoothedScore = (smoothingFactor * avgTop5ScoreForStage) + ((1 - smoothingFactor) * previousAvg);
-        sessionState[sessionId][smoothingKey] = smoothedScore;
-        // Use smoothed score for stage determination to prevent rapid jumps
-        const stageScore = smoothedScore;
-        console.log("Stage score (smoothed):", stageScore, "from weighted avg:", avgTop5ScoreForStage, "previous:", previousAvg);
+        const smoothedMinScore = (smoothingFactor * finalDqScore) + ((1 - smoothingFactor) * previousMin);
+        sessionState[sessionId][smoothingKey] = smoothedMinScore;
+        // Use smoothed minimum score for stage determination to align with final score display
+        const stageScore = smoothedMinScore;
+        console.log("Stage score (smoothed minimum):", stageScore, "from final DQ score:", finalDqScore, "previous smoothed:", previousMin);
         // Detect coaching style for persona response patterns
         const isDirective = /(?:you should|you need to|you must|do this|try this|start by|pursue|ask them to)/i.test(userMessage);
         const isExplorative = /(?:what|how|why|tell me|explore|consider|think about|what if|help me think)/i.test(userMessage);

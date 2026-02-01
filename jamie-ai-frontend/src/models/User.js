@@ -142,9 +142,15 @@ export class User {
     const characterProgress = this.progress[character];
 
     // Determine raw score before stage adjustments
-    const rawScore = typeof sessionData.rawScore === 'number'
+    let rawScore = typeof sessionData.rawScore === 'number'
       ? sessionData.rawScore
       : (typeof sessionData.finalScore === 'number' ? sessionData.finalScore : 0);
+    
+    // Validate and sanitize rawScore
+    if (isNaN(rawScore) || !isFinite(rawScore) || rawScore < 0 || rawScore > 1) {
+      console.warn(`Invalid rawScore for ${character}:`, rawScore, 'Defaulting to 0');
+      rawScore = 0;
+    }
 
     // Stage handling
     const stageMap = STAGE_THRESHOLDS[character] || {};
@@ -175,7 +181,15 @@ export class User {
     characterProgress.attempts += 1;
 
     // Determine effective score with floor applied
-    const effectiveScore = Math.max(rawScore, stageFloor);
+    let effectiveScore = Math.max(rawScore, stageFloor);
+    
+    // Final validation of effectiveScore - use fallback if invalid
+    if (isNaN(effectiveScore) || !isFinite(effectiveScore)) {
+      console.error(`Invalid effectiveScore for ${character}:`, effectiveScore, 'rawScore:', rawScore, 'stageFloor:', stageFloor);
+      // Fallback: use rawScore if valid, otherwise 0
+      effectiveScore = (!isNaN(rawScore) && isFinite(rawScore) && rawScore >= 0 && rawScore <= 1) ? rawScore : 0;
+      console.log(`Using fallback score:`, effectiveScore);
+    }
 
     // Update best score if current score is higher
     if (effectiveScore > characterProgress.bestScore) {

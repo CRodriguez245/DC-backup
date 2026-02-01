@@ -260,17 +260,22 @@ export class SupabaseAuthService {
       };
     };
 
-    // Transform Supabase progress data to match local format
+    // Start with existing progress from localStorage (if available) to preserve completed sessions
+    // Only create new base progress if character doesn't exist in current progress
+    const existingProgress = this.currentUser?.progress || {};
     const progress = {
-      jamie: buildBaseProgress('jamie'),
-      andres: buildBaseProgress('andres'),
-      kavya: buildBaseProgress('kavya'),
-      daniel: buildBaseProgress('daniel'),
-      sarah: buildBaseProgress('sarah')
+      jamie: existingProgress.jamie || buildBaseProgress('jamie'),
+      andres: existingProgress.andres || buildBaseProgress('andres'),
+      kavya: existingProgress.kavya || buildBaseProgress('kavya'),
+      daniel: existingProgress.daniel || buildBaseProgress('daniel'),
+      sarah: existingProgress.sarah || buildBaseProgress('sarah')
     };
+    
+    console.log('Starting with existing progress from localStorage:', existingProgress);
 
-    // Process each progress record
-    console.log('Processing progress records:', progressData);
+    // Process each progress record from Supabase
+    // Merge with existing localStorage progress instead of replacing it
+    console.log('Processing progress records from Supabase:', progressData);
     (progressData || []).forEach(record => {
       console.log('Processing record:', record);
       const character = record.character_name.toLowerCase();
@@ -280,7 +285,7 @@ export class SupabaseAuthService {
         const sessionAttempts = record.turns_used || 20;
         const { stage, floor } = resolveStageForScore(character, sessionRawScore);
 
-        const session = {
+        const supabaseSession = {
           id: 'session_' + Date.now(),
           date: record.completed_at || new Date().toISOString(),
           score: Math.max(sessionRawScore, floor),
@@ -294,21 +299,59 @@ export class SupabaseAuthService {
           messages: [] // Empty messages array for Supabase-loaded sessions
         };
 
-        progress[character].completed = true;
-        progress[character].bestScore = Math.max(progress[character].bestScore, session.score);
-        progress[character].attempts += 1;
-        progress[character].stage = stage;
-        progress[character].stageMinScore = floor;
-        progress[character].lastRawScore = sessionRawScore;
-        progress[character].sessions = [session];
-        progress[character].lastSession = session; // Set lastSession for getCharacterStatus
-        progress[character].analytics = {
-          averageScore: session.score,
-          totalSessions: 1
-        };
-        console.log('Updated progress for character:', character, progress[character]);
+        // Preserve existing sessions from localStorage if they exist
+        const existingSessions = progress[character].sessions || [];
+        const existingLastSession = progress[character].lastSession;
+        
+        // Only add Supabase session if it's different/newer than existing
+        // Or if we don't have existing sessions
+        if (existingSessions.length === 0 || !existingLastSession) {
+          // No existing sessions, use Supabase data
+          progress[character].sessions = [supabaseSession];
+          progress[character].lastSession = supabaseSession;
+        } else {
+          // We have existing sessions - keep them, but update metadata from Supabase if newer
+          const supabaseDate = new Date(record.completed_at || 0);
+          const existingDate = new Date(existingLastSession.date || 0);
+          
+          // If Supabase has newer data, update the lastSession reference
+          if (supabaseDate > existingDate) {
+            // Add Supabase session to the list
+            progress[character].sessions.push(supabaseSession);
+            progress[character].lastSession = supabaseSession;
+          }
+          // Otherwise keep existing lastSession
+        }
+
+        // Update metadata (use best of both)
+        progress[character].completed = progress[character].completed || true; // Keep true if already true
+        progress[character].bestScore = Math.max(progress[character].bestScore || 0, sessionRawScore);
+        progress[character].stage = stage; // Update stage from Supabase
+        progress[character].stageMinScore = Math.max(progress[character].stageMinScore || 0, floor);
+        progress[character].lastRawScore = Math.max(progress[character].lastRawScore || 0, sessionRawScore);
+        
+        // Update analytics
+        const allScores = progress[character].sessions.map(s => s.score || s.rawScore || 0).filter(s => s > 0);
+        if (allScores.length > 0) {
+          progress[character].analytics = {
+            averageScore: Math.min(...allScores), // Use minimum (weakest link)
+            totalSessions: progress[character].sessions.length
+          };
+        }
+        
+        console.log('Merged progress for character:', character, {
+          sessionsCount: progress[character].sessions.length,
+          lastSession: progress[character].lastSession,
+          completed: progress[character].completed
+        });
       }
     });
+    
+    // If no Supabase data but we have localStorage progress, preserve it
+    if ((!progressData || progressData.length === 0) && existingProgress) {
+      console.log('No Supabase progress data, preserving localStorage progress:', existingProgress);
+      // Progress already initialized from existingProgress above, so it's preserved
+    }
 
     // Update the user's progress by creating a new User instance
     const updatedUser = new User({

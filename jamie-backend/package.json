@@ -3,7 +3,10 @@
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
-    "start": "node index.js"
+    "start": "node index.js",
+    "load-test": "node load-test.js",
+    "load-test:local": "node load-test.js http://localhost:3001/chat 60 10",
+    "load-test:prod": "node load-test.js https://jamie-backend.onrender.com/chat 60 10"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.89.0",

@@ -218,6 +218,36 @@ export class User {
       // Exclude userInfo to avoid circular reference
     }));
 
+    // Validate and preserve dqScores - use the actual dqScores from sessionData
+    // Try to extract dqScores from messages if not provided in sessionData
+    let dqScoresToStore = sessionData.dqScores;
+    
+    // If dqScores is missing or empty, try to extract from messages
+    if (!dqScoresToStore || typeof dqScoresToStore !== 'object' || Object.keys(dqScoresToStore).length === 0) {
+      console.log(`⚠️ ${character}: dqScores missing or empty, trying to extract from messages`);
+      
+      // Try to find dqScores in the messages (look for the last message with dqScore)
+      const messagesWithDqScore = (sessionData.messages || [])
+        .filter(msg => msg.dqScore && typeof msg.dqScore === 'object' && Object.keys(msg.dqScore).length > 0)
+        .map(msg => msg.dqScore);
+      
+      if (messagesWithDqScore.length > 0) {
+        // Use the last message's dqScore
+        dqScoresToStore = messagesWithDqScore[messagesWithDqScore.length - 1];
+        console.log(`✅ ${character}: Extracted dqScores from messages:`, dqScoresToStore);
+      } else if (rawScore > 0) {
+        // Fallback: if we have a valid rawScore, create a minimal dqScores object
+        // This ensures we can extract the score later
+        dqScoresToStore = { overall: rawScore };
+        console.log(`⚠️ ${character}: dqScores was empty, creating from rawScore:`, dqScoresToStore);
+      } else {
+        dqScoresToStore = {};
+        console.warn(`⚠️ ${character}: No dqScores found and rawScore is 0, storing empty object`);
+      }
+    } else {
+      console.log(`✅ ${character}: Storing dqScores from sessionData:`, dqScoresToStore);
+    }
+
     const session = {
       id: 'session_' + Date.now(),
       date: new Date().toISOString(),
@@ -225,12 +255,14 @@ export class User {
       rawScore: rawScore,
       attempts: sessionData.attemptsUsed,
       mode: sessionData.mode || 'assessment',
-      dqScores: sessionData.dqScores || {},
+      dqScores: dqScoresToStore,
       completed: sessionData.completed || (sessionData.mode === 'assessment' ? true : rawScore >= 0.7),
       stage: characterProgress.stage,
       stageMinScore: characterProgress.stageMinScore,
       messages: cleanMessages // Store the cleaned chat transcript
     };
+    
+    console.log(`💾 ${character}: Saving session with dqScores:`, session.dqScores, 'rawScore:', rawScore, 'effectiveScore:', effectiveScore);
 
     characterProgress.sessions.push(session);
     characterProgress.lastSession = session;

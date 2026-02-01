@@ -605,7 +605,15 @@ const AdminDashboard = ({ onBackToHome, onLogout, onSettings, currentView, userI
 
                   {/* Chat Messages */}
                   <div className="space-y-4">
-                    {selectedSession.messages.map((msg, index) => (
+                    {selectedSession.messages
+                      .slice() // Create a copy to avoid mutating the original array
+                      .sort((a, b) => {
+                        // Sort by timestamp (oldest first)
+                        const timeA = a.timestamp ? new Date(a.timestamp).getTime() : 0;
+                        const timeB = b.timestamp ? new Date(b.timestamp).getTime() : 0;
+                        return timeA - timeB;
+                      })
+                      .map((msg, index) => (
                       <div key={index} className={`flex ${msg.isUser ? 'justify-end' : 'gap-4'}`}>
                         {!msg.isUser && !msg.isSessionEnd && (
                           <div className="w-[50px] h-[50px] rounded-full bg-[#2C73EB] flex items-end justify-center flex-shrink-0 overflow-hidden">

@@ -2263,7 +2263,30 @@ const MainApp = () => {
             const allMessages = [...messages, jamieMessage];
             const characterMessages = allMessages.filter(msg => !msg.isUser && msg.dqScore);
             const latestMessage = characterMessages.length > 0 ? characterMessages[characterMessages.length - 1] : null;
-            const finalDqScore = latestMessage?.dqScore || data.dq_score;
+            
+            // Try multiple sources for final DQ score
+            let finalDqScore = latestMessage?.dqScore || data.dq_score;
+            
+            // If still undefined, try to get from jamieMessage directly
+            if (!finalDqScore && jamieMessage.dqScore) {
+              finalDqScore = jamieMessage.dqScore;
+            }
+            
+            // If still undefined, try to get from any recent message with dqScore
+            if (!finalDqScore) {
+              const recentMessages = allMessages.filter(msg => !msg.isUser && msg.dqScore).slice(-3);
+              if (recentMessages.length > 0) {
+                finalDqScore = recentMessages[recentMessages.length - 1].dqScore;
+              }
+            }
+            
+            console.log('🔍 Session End - DQ Score Sources:', {
+              latestMessageDqScore: latestMessage?.dqScore,
+              dataDqScore: data.dq_score,
+              jamieMessageDqScore: jamieMessage.dqScore,
+              finalDqScore,
+              characterMessagesCount: characterMessages.length
+            });
             
             // Check if user achieved 0.7 or higher score
             const currentProgress = getJamieProgress();
@@ -2291,14 +2314,42 @@ const MainApp = () => {
             
             // Update user progress
             if (userInfo) {
-              const rawFinalScore = finalDqScore ? Math.min(...Object.values(finalDqScore)) : 0; // Minimum DQ score (coach sees)
+              // Calculate rawFinalScore from finalDqScore
+              let rawFinalScore = 0;
+              if (finalDqScore && typeof finalDqScore === 'object') {
+                const dqValues = Object.values(finalDqScore)
+                  .filter(v => typeof v === 'number' && !isNaN(v) && isFinite(v) && v >= 0 && v <= 1);
+                if (dqValues.length > 0) {
+                  rawFinalScore = Math.min(...dqValues); // Minimum DQ score (weakest link)
+                }
+              } else if (typeof finalDqScore === 'number' && !isNaN(finalDqScore) && isFinite(finalDqScore)) {
+                rawFinalScore = finalDqScore;
+              }
+              
               console.log('💾 Saving session progress:', {
                 character: currentCharacter,
                 rawFinalScore,
                 finalDqScore,
                 hasFinalDqScore: !!finalDqScore,
-                dqScoreValues: finalDqScore ? Object.values(finalDqScore) : []
+                finalDqScoreType: typeof finalDqScore,
+                dqScoreValues: finalDqScore && typeof finalDqScore === 'object' ? Object.values(finalDqScore) : [finalDqScore],
+                allMessagesWithDqScore: allMessages.filter(msg => !msg.isUser && msg.dqScore).map(msg => ({
+                  id: msg.id,
+                  hasDqScore: !!msg.dqScore,
+                  dqScore: msg.dqScore
+                }))
               });
+              
+              // If rawFinalScore is still 0, try to get from the last message's avgDqScore
+              if (rawFinalScore === 0 && latestMessage?.avgDqScore) {
+                console.log('⚠️ rawFinalScore is 0, trying avgDqScore from latestMessage:', latestMessage.avgDqScore);
+                rawFinalScore = latestMessage.avgDqScore;
+              }
+              
+              // Final fallback: if still 0, warn but don't save 0
+              if (rawFinalScore === 0) {
+                console.warn('⚠️ WARNING: rawFinalScore is 0! This will result in 0.00 score. finalDqScore:', finalDqScore);
+              }
               const personaStage = characterData[currentCharacter].gameMode === 'assessment' ? null : (data?.persona_stage ?? null);
               const progressData = {
                 finalScore: rawFinalScore,

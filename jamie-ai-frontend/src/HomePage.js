@@ -28,6 +28,29 @@ const HomePage = ({ userInfo, gameMode, onStartCoaching, onLogout, onSettings, o
     // Get the latest session
     const latestSession = charProgress.lastSession || charProgress.sessions[charProgress.sessions.length - 1];
     
+    // Safely extract and validate score
+    let score = null;
+    if (latestSession) {
+      // Try score first, then rawScore, then dqScores minimum
+      const scoreValue = latestSession.score ?? latestSession.rawScore;
+      if (scoreValue !== null && scoreValue !== undefined) {
+        const numScore = typeof scoreValue === 'number' ? scoreValue : parseFloat(scoreValue);
+        // Only use if it's a valid number (not NaN, not Infinity)
+        if (!isNaN(numScore) && isFinite(numScore) && numScore >= 0 && numScore <= 1) {
+          score = numScore;
+        }
+      }
+      
+      // Fallback: try to get minimum from dqScores if score is invalid
+      if (score === null && latestSession.dqScores && typeof latestSession.dqScores === 'object') {
+        const dqValues = Object.values(latestSession.dqScores)
+          .filter(v => typeof v === 'number' && !isNaN(v) && isFinite(v) && v >= 0 && v <= 1);
+        if (dqValues.length > 0) {
+          score = Math.min(...dqValues);
+        }
+      }
+    }
+    
     // Debug logging for Jamie specifically
     if (characterId === 'jamie') {
       console.log('🏠 HomePage getCharacterStatus for Jamie:', {
@@ -38,20 +61,26 @@ const HomePage = ({ userInfo, gameMode, onStartCoaching, onLogout, onSettings, o
         lastSessionRawScore: charProgress.lastSession?.rawScore,
         latestSessionScore: latestSession?.score,
         latestSessionRawScore: latestSession?.rawScore,
+        extractedScore: score,
         completed: charProgress.completed,
-        allSessions: charProgress.sessions?.map(s => ({ score: s.score, rawScore: s.rawScore, date: s.date }))
+        allSessions: charProgress.sessions?.map(s => ({ 
+          score: s.score, 
+          rawScore: s.rawScore, 
+          scoreType: typeof s.score,
+          date: s.date 
+        }))
       });
     }
     
     if (charProgress.completed) {
       return { 
         status: 'Completed', 
-        score: latestSession ? latestSession.score : null 
+        score: score
       };
     } else if (hasSessions) {
       return { 
         status: 'In Progress', 
-        score: latestSession ? latestSession.score : null 
+        score: score
       };
     }
 
@@ -343,11 +372,18 @@ const HomePage = ({ userInfo, gameMode, onStartCoaching, onLogout, onSettings, o
                       <p className="text-xs mb-2 text-gray-600">
                         {getCharacterStatus(level.id).status}
                       </p>
-                      {typeof getCharacterStatus(level.id).score === 'number' && (
-                        <p className="text-xs font-medium text-blue-600">
-                          DQ Score: {getCharacterStatus(level.id).score.toFixed(2)}
-                        </p>
-                      )}
+                      {(() => {
+                        const status = getCharacterStatus(level.id);
+                        const score = status.score;
+                        if (typeof score === 'number' && !isNaN(score) && isFinite(score)) {
+                          return (
+                            <p className="text-xs font-medium text-blue-600">
+                              DQ Score: {score.toFixed(2)}
+                            </p>
+                          );
+                        }
+                        return null;
+                      })()}
                     </>
                   )}
                 </div>
@@ -475,11 +511,18 @@ const HomePage = ({ userInfo, gameMode, onStartCoaching, onLogout, onSettings, o
                       <span className="text-sm text-gray-600">
                         {getCharacterStatus(level.id).status}
                       </span>
-                      {typeof getCharacterStatus(level.id).score === 'number' && (
-                        <span className="text-sm font-medium text-blue-600">
-                          DQ Score: {getCharacterStatus(level.id).score.toFixed(2)}
-                        </span>
-                      )}
+                      {(() => {
+                        const status = getCharacterStatus(level.id);
+                        const score = status.score;
+                        if (typeof score === 'number' && !isNaN(score) && isFinite(score)) {
+                          return (
+                            <span className="text-sm font-medium text-blue-600">
+                              DQ Score: {score.toFixed(2)}
+                            </span>
+                          );
+                        }
+                        return null;
+                      })()}
                     </div>
                   </div>
                 )}

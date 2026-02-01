@@ -44,23 +44,40 @@ const HomePage = ({ userInfo, gameMode, onStartCoaching, onLogout, onSettings, o
       hasUserProgress: !!userProgress,
       hasCharacterProgress: !!userProgress?.[characterId],
       characterProgress: userProgress?.[characterId],
-      userInfoId: userInfo?.id
+      userInfoId: userInfo?.id,
+      userProgressKeys: userProgress ? Object.keys(userProgress) : []
     });
     
-    // If userProgress is empty, try to load directly from localStorage
+    // If userProgress is empty or doesn't have this character, try to load directly from localStorage
     let progressToUse = userProgress;
-    if ((!userProgress || !userProgress[characterId]) && userInfo?.id) {
-      console.log(`🔍 ${characterId}: userProgress empty, trying to load from localStorage`);
+    if (!userProgress || !userProgress[characterId]) {
+      console.log(`🔍 ${characterId}: userProgress empty or missing character, trying to load from localStorage`);
       try {
         // Try to load user from localStorage directly
         const userDataKey = 'decision_coach_user';
         const savedUserData = localStorage.getItem(userDataKey);
         if (savedUserData) {
           const parsedUser = JSON.parse(savedUserData);
+          console.log(`🔍 ${characterId}: Parsed localStorage user:`, {
+            hasProgress: !!parsedUser?.progress,
+            progressKeys: parsedUser?.progress ? Object.keys(parsedUser.progress) : [],
+            hasCharacterProgress: !!parsedUser?.progress?.[characterId],
+            characterProgress: parsedUser?.progress?.[characterId]
+          });
+          
           if (parsedUser && parsedUser.progress && parsedUser.progress[characterId]) {
-            console.log(`🔍 ${characterId}: Found progress in localStorage:`, parsedUser.progress[characterId]);
+            console.log(`🔍 ${characterId}: Found progress in localStorage:`, {
+              completed: parsedUser.progress[characterId].completed,
+              sessionsCount: parsedUser.progress[characterId].sessions?.length,
+              lastSession: parsedUser.progress[characterId].lastSession,
+              bestScore: parsedUser.progress[characterId].bestScore
+            });
             progressToUse = parsedUser.progress;
+          } else {
+            console.log(`🔍 ${characterId}: No progress found in localStorage for this character`);
           }
+        } else {
+          console.log(`🔍 ${characterId}: No user data found in localStorage`);
         }
       } catch (error) {
         console.error(`🔍 Error loading from localStorage for ${characterId}:`, error);
@@ -85,22 +102,48 @@ const HomePage = ({ userInfo, gameMode, onStartCoaching, onLogout, onSettings, o
     // Safely extract and validate score
     let score = null;
     if (latestSession) {
-      // Try score first, then rawScore, then dqScores minimum
-      const scoreValue = latestSession.score ?? latestSession.rawScore;
+      console.log(`🔍 ${characterId}: Latest session data:`, {
+        score: latestSession.score,
+        rawScore: latestSession.rawScore,
+        dqScores: latestSession.dqScores,
+        scoreType: typeof latestSession.score,
+        rawScoreType: typeof latestSession.rawScore,
+        bestScore: charProgress.bestScore
+      });
+      
+      // Try score first, then rawScore, then bestScore, then dqScores minimum
+      const scoreValue = latestSession.score ?? latestSession.rawScore ?? charProgress.bestScore;
       if (scoreValue !== null && scoreValue !== undefined) {
         const numScore = typeof scoreValue === 'number' ? scoreValue : parseFloat(scoreValue);
+        console.log(`🔍 ${characterId}: Parsed score value:`, numScore, 'isNaN:', isNaN(numScore), 'isFinite:', isFinite(numScore), 'inRange:', numScore >= 0 && numScore <= 1);
+        
         // Only use if it's a valid number (not NaN, not Infinity)
-        if (!isNaN(numScore) && isFinite(numScore) && numScore >= 0 && numScore <= 1) {
-          score = numScore;
+        // Note: Scores > 1 might be from old data, clamp them to 1.0
+        if (!isNaN(numScore) && isFinite(numScore) && numScore >= 0) {
+          // Clamp scores > 1 to 1.0 (handle old data format)
+          score = Math.min(numScore, 1.0);
+          console.log(`🔍 ${characterId}: Using score:`, score);
+        } else {
+          console.log(`🔍 ${characterId}: Score value invalid, trying fallbacks`);
         }
       }
       
       // Fallback: try to get minimum from dqScores if score is invalid
       if (score === null && latestSession.dqScores && typeof latestSession.dqScores === 'object') {
         const dqValues = Object.values(latestSession.dqScores)
-          .filter(v => typeof v === 'number' && !isNaN(v) && isFinite(v) && v >= 0 && v <= 1);
+          .filter(v => typeof v === 'number' && !isNaN(v) && isFinite(v) && v >= 0);
         if (dqValues.length > 0) {
-          score = Math.min(...dqValues);
+          score = Math.min(...dqValues.map(v => Math.min(v, 1.0))); // Clamp to 1.0
+          console.log(`🔍 ${characterId}: Using dqScores minimum:`, score);
+        }
+      }
+      
+      // Final fallback: if score is > 1, it might be a percentage (30 = 0.30)
+      if (score === null && latestSession.score !== null && latestSession.score !== undefined) {
+        const rawValue = typeof latestSession.score === 'number' ? latestSession.score : parseFloat(latestSession.score);
+        if (!isNaN(rawValue) && isFinite(rawValue) && rawValue > 1 && rawValue <= 100) {
+          score = rawValue / 100; // Convert percentage to decimal
+          console.log(`🔍 ${characterId}: Converting percentage to decimal:`, rawValue, '->', score);
         }
       }
     }

@@ -2471,7 +2471,15 @@ const MainApp = () => {
             onCharacterClick={handleCharacterClick}
             onAdminClick={() => setCurrentView('admin')}
             currentView={currentView}
-            userProgress={userInfo?.progress}
+            userProgress={(() => {
+              const progress = userInfo?.progress;
+              if (!progress) {
+                console.warn('⚠️ WARNING: userInfo?.progress is undefined! userInfo:', userInfo);
+              } else {
+                console.log('✅ Passing userProgress to HomePage:', progress);
+              }
+              return progress;
+            })()}
             isLoadingProgress={isLoadingProgress}
             onResetLoading={resetLoadingState}
           />

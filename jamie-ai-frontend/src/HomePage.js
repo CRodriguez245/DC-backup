@@ -7,7 +7,7 @@ const HomePage = ({ userInfo, gameMode, onStartCoaching, onLogout, onSettings, o
   const [isTyping, setIsTyping] = useState(true);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
-  // Debug logging for userProgress prop
+  // Debug logging for userProgress prop and attempt to refresh if missing
   useEffect(() => {
     console.log('🏠 HomePage rendered with userProgress:', userProgress);
     console.log('🏠 HomePage userInfo?.progress:', userInfo?.progress);
@@ -16,7 +16,25 @@ const HomePage = ({ userInfo, gameMode, onStartCoaching, onLogout, onSettings, o
     console.log('🏠 HomePage Jamie completed:', userProgress?.jamie?.completed);
     console.log('🏠 HomePage Jamie sessions:', userProgress?.jamie?.sessions);
     console.log('🏠 HomePage Jamie lastSession:', userProgress?.jamie?.lastSession);
-  }, [userProgress, userInfo?.progress]);
+    
+    // If userProgress is empty but userInfo exists, try to refresh from localStorage
+    if (userInfo && (!userProgress || Object.keys(userProgress || {}).length === 0)) {
+      console.log('🏠 HomePage: userProgress is empty, attempting to refresh from localStorage');
+      try {
+        const userDataKey = 'decision_coach_user';
+        const savedUserData = localStorage.getItem(userDataKey);
+        if (savedUserData) {
+          const parsedUser = JSON.parse(savedUserData);
+          if (parsedUser && parsedUser.progress && Object.keys(parsedUser.progress).length > 0) {
+            console.log('🏠 HomePage: Found progress in localStorage, user should be refreshed by auth service');
+            console.log('🏠 HomePage: localStorage progress:', parsedUser.progress);
+          }
+        }
+      } catch (error) {
+        console.error('🏠 HomePage: Error checking localStorage:', error);
+      }
+    }
+  }, [userProgress, userInfo?.progress, userInfo]);
 
   const fullText = "Welcome to Decision Coach! Start with Jamie's assessment to evaluate your coaching skills. Complete Jamie's session to unlock the game mode with other characters.";
 
@@ -25,15 +43,36 @@ const HomePage = ({ userInfo, gameMode, onStartCoaching, onLogout, onSettings, o
     console.log(`🔍 getCharacterStatus called for ${characterId}:`, {
       hasUserProgress: !!userProgress,
       hasCharacterProgress: !!userProgress?.[characterId],
-      characterProgress: userProgress?.[characterId]
+      characterProgress: userProgress?.[characterId],
+      userInfoId: userInfo?.id
     });
     
-    if (!userProgress || !userProgress[characterId]) {
-      console.log(`🔍 ${characterId}: No progress found, returning Not Started`);
+    // If userProgress is empty, try to load directly from localStorage
+    let progressToUse = userProgress;
+    if ((!userProgress || !userProgress[characterId]) && userInfo?.id) {
+      console.log(`🔍 ${characterId}: userProgress empty, trying to load from localStorage`);
+      try {
+        // Try to load user from localStorage directly
+        const userDataKey = 'decision_coach_user';
+        const savedUserData = localStorage.getItem(userDataKey);
+        if (savedUserData) {
+          const parsedUser = JSON.parse(savedUserData);
+          if (parsedUser && parsedUser.progress && parsedUser.progress[characterId]) {
+            console.log(`🔍 ${characterId}: Found progress in localStorage:`, parsedUser.progress[characterId]);
+            progressToUse = parsedUser.progress;
+          }
+        }
+      } catch (error) {
+        console.error(`🔍 Error loading from localStorage for ${characterId}:`, error);
+      }
+    }
+    
+    if (!progressToUse || !progressToUse[characterId]) {
+      console.log(`🔍 ${characterId}: No progress found after localStorage check, returning Not Started`);
       return { status: 'Not Started', score: null };
     }
 
-    const charProgress = userProgress[characterId];
+    const charProgress = progressToUse[characterId];
     const hasSessions = charProgress.sessions && charProgress.sessions.length > 0;
     
     if (!hasSessions) {

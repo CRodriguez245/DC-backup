@@ -1922,6 +1922,13 @@ const MainApp = () => {
             // Update user progress
             if (userInfo) {
               const rawFinalScore = finalDqScore ? Math.min(...Object.values(finalDqScore)) : 0; // Minimum DQ score (coach sees)
+              console.log('💾 Saving session progress (demo path):', {
+                character: currentCharacter,
+                rawFinalScore,
+                finalDqScore,
+                hasFinalDqScore: !!finalDqScore,
+                dqScoreValues: finalDqScore ? Object.values(finalDqScore) : []
+              });
               const personaStage = null;
               const progressData = {
                 finalScore: rawFinalScore,
@@ -1936,20 +1943,33 @@ const MainApp = () => {
               // Use the correct auth service based on USE_SUPABASE_AUTH flag
               // Await progress update and refresh userInfo to update tooltip with latest score
               (async () => {
-                if (USE_SUPABASE_AUTH) {
-                  await supabaseAuthService.updateProgress(currentCharacter, progressData);
-                  // Refresh userInfo after progress is saved
-                  const updatedUser = supabaseAuthService.getCurrentUser();
-                  if (updatedUser) {
-                    setUserInfo(updatedUser);
+                try {
+                  if (USE_SUPABASE_AUTH) {
+                    const result = await supabaseAuthService.updateProgress(currentCharacter, progressData);
+                    console.log('💾 Progress update result (demo):', result);
+                    // Refresh userInfo after progress is saved
+                    const updatedUser = supabaseAuthService.getCurrentUser();
+                    if (updatedUser) {
+                      const jamieProgress = updatedUser.progress?.jamie;
+                      const lastSession = jamieProgress?.lastSession;
+                      console.log('💾 Updated user progress (demo):', {
+                        hasJamieProgress: !!jamieProgress,
+                        lastSessionScore: lastSession?.score,
+                        lastSessionRawScore: lastSession?.rawScore,
+                        sessionsCount: jamieProgress?.sessions?.length
+                      });
+                      setUserInfo(updatedUser);
+                    }
+                  } else {
+                    authService.updateProgress(currentCharacter, progressData);
+                    // Refresh userInfo after progress is saved (AuthService is synchronous)
+                    const updatedUser = authService.getCurrentUser();
+                    if (updatedUser) {
+                      setUserInfo(updatedUser);
+                    }
                   }
-                } else {
-                  authService.updateProgress(currentCharacter, progressData);
-                  // Refresh userInfo after progress is saved (AuthService is synchronous)
-                  const updatedUser = authService.getCurrentUser();
-                  if (updatedUser) {
-                    setUserInfo(updatedUser);
-                  }
+                } catch (error) {
+                  console.error('💾 Error updating progress (demo):', error);
                 }
               })();
               
@@ -2266,6 +2286,13 @@ const MainApp = () => {
             // Update user progress
             if (userInfo) {
               const rawFinalScore = finalDqScore ? Math.min(...Object.values(finalDqScore)) : 0; // Minimum DQ score (coach sees)
+              console.log('💾 Saving session progress:', {
+                character: currentCharacter,
+                rawFinalScore,
+                finalDqScore,
+                hasFinalDqScore: !!finalDqScore,
+                dqScoreValues: finalDqScore ? Object.values(finalDqScore) : []
+              });
               const personaStage = characterData[currentCharacter].gameMode === 'assessment' ? null : (data?.persona_stage ?? null);
               const progressData = {
                 finalScore: rawFinalScore,
@@ -2280,20 +2307,33 @@ const MainApp = () => {
               // Use the correct auth service based on USE_SUPABASE_AUTH flag
               // Await progress update and refresh userInfo to update tooltip with latest score
               (async () => {
-                if (USE_SUPABASE_AUTH) {
-                  await supabaseAuthService.updateProgress(currentCharacter, progressData);
-                  // Refresh userInfo after progress is saved
-                  const updatedUser = supabaseAuthService.getCurrentUser();
-                  if (updatedUser) {
-                    setUserInfo(updatedUser);
+                try {
+                  if (USE_SUPABASE_AUTH) {
+                    const result = await supabaseAuthService.updateProgress(currentCharacter, progressData);
+                    console.log('💾 Progress update result:', result);
+                    // Refresh userInfo after progress is saved
+                    const updatedUser = supabaseAuthService.getCurrentUser();
+                    if (updatedUser) {
+                      const jamieProgress = updatedUser.progress?.jamie;
+                      const lastSession = jamieProgress?.lastSession;
+                      console.log('💾 Updated user progress:', {
+                        hasJamieProgress: !!jamieProgress,
+                        lastSessionScore: lastSession?.score,
+                        lastSessionRawScore: lastSession?.rawScore,
+                        sessionsCount: jamieProgress?.sessions?.length
+                      });
+                      setUserInfo(updatedUser);
+                    }
+                  } else {
+                    await authService.updateProgress(currentCharacter, progressData);
+                    // Refresh userInfo after progress is saved
+                    const updatedUser = authService.getCurrentUser();
+                    if (updatedUser) {
+                      setUserInfo(updatedUser);
+                    }
                   }
-                } else {
-                  await authService.updateProgress(currentCharacter, progressData);
-                  // Refresh userInfo after progress is saved
-                  const updatedUser = authService.getCurrentUser();
-                  if (updatedUser) {
-                    setUserInfo(updatedUser);
-                  }
+                } catch (error) {
+                  console.error('💾 Error updating progress:', error);
                 }
               })();
               

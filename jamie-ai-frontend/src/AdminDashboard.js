@@ -187,17 +187,30 @@ const AdminDashboard = ({ onBackToHome, onLogout, onSettings, currentView, userI
     console.log('AdminDashboard: Student progress:', student.progress);
     
     setSelectedStudent(student);
-    // IRB COMPLIANCE: Jamie sessions are research data and not available for teacher viewing
-    // Only show Andres and Kavya sessions (non-research personas)
+    // Get the most recent session from all personas (including Jamie)
+    const jamieSession = student.progress?.jamie?.sessions?.[student.progress.jamie.sessions.length - 1];
     const andresSession = student.progress?.andres?.sessions?.[student.progress.andres.sessions.length - 1];
     const kavyaSession = student.progress?.kavya?.sessions?.[student.progress.kavya.sessions.length - 1];
+    const danielSession = student.progress?.daniel?.sessions?.[student.progress.daniel.sessions.length - 1];
+    const sarahSession = student.progress?.sarah?.sessions?.[student.progress.sarah.sessions.length - 1];
     
+    console.log('AdminDashboard: jamieSession:', jamieSession);
     console.log('AdminDashboard: andresSession:', andresSession);
     console.log('AdminDashboard: kavyaSession:', kavyaSession);
-    console.log('AdminDashboard: Jamie sessions excluded (IRB compliance - research data only)');
+    console.log('AdminDashboard: danielSession:', danielSession);
+    console.log('AdminDashboard: sarahSession:', sarahSession);
     
-    // Use the most recent non-research session (exclude Jamie)
-    const recentSession = andresSession || kavyaSession;
+    // Use the most recent session from any persona (prioritize by date if available)
+    const allSessions = [jamieSession, andresSession, kavyaSession, danielSession, sarahSession].filter(Boolean);
+    
+    // Sort by date (most recent first) if dates are available
+    const recentSession = allSessions.length > 0 
+      ? allSessions.sort((a, b) => {
+          const dateA = a.date ? new Date(a.date) : new Date(0);
+          const dateB = b.date ? new Date(b.date) : new Date(0);
+          return dateB - dateA; // Most recent first
+        })[0]
+      : null;
     
     console.log('AdminDashboard: recentSession selected:', recentSession);
     console.log('AdminDashboard: recentSession messages:', recentSession?.messages);
@@ -463,11 +476,11 @@ const AdminDashboard = ({ onBackToHome, onLogout, onSettings, currentView, userI
             ) : filteredStudents.length > 0 ? (
               filteredStudents.map((student, index) => {
                 // Get the latest assessment session score (minimum DQ component, same as student sees)
-                // IRB COMPLIANCE: Exclude Jamie sessions (research data) from teacher view
+                // Include all personas (Jamie, Andres, Kavya, Daniel, Sarah)
                 let assessmentScore = 0;
                 
-                // Check only non-research characters for assessment mode sessions
-                ['andres', 'kavya'].forEach(character => {
+                // Check all characters for assessment mode sessions
+                ['jamie', 'andres', 'kavya', 'daniel', 'sarah'].forEach(character => {
                   const charProgress = student.progress?.[character];
                   if (charProgress?.sessions) {
                     // Find the most recent assessment session
@@ -549,13 +562,8 @@ const AdminDashboard = ({ onBackToHome, onLogout, onSettings, currentView, userI
           <div className="text-center py-12">
             <p className="text-gray-500 text-lg mb-2">No session available</p>
             <p className="text-gray-400 text-sm">
-              This student hasn't completed any coaching sessions available for teacher viewing.
+              This student hasn't completed any coaching sessions yet.
             </p>
-            <div className="mt-4 p-4 bg-blue-50 rounded-lg border border-blue-200 max-w-md mx-auto">
-              <p className="text-sm text-blue-800">
-                <strong>Note:</strong> Jamie sessions are used for research purposes and are not available for teacher viewing to maintain IRB compliance.
-              </p>
-            </div>
           </div>
         ) : selectedSession && selectedSession.messages && selectedSession.messages.length > 0 ? (
                 <>
@@ -586,7 +594,7 @@ const AdminDashboard = ({ onBackToHome, onLogout, onSettings, currentView, userI
                         {!msg.isUser && !msg.isSessionEnd && (
                           <div className="w-[50px] h-[50px] rounded-full bg-[#2C73EB] flex items-end justify-center flex-shrink-0 overflow-hidden">
                             <img 
-                              src="/images/cu-JAMIE.png" 
+                              src="/images/DC Images/Jamie/Jamie_LandingPage.png" 
                               alt="Character" 
                               className="w-[50px] h-[50px] object-cover object-bottom"
                             />
@@ -644,12 +652,7 @@ const AdminDashboard = ({ onBackToHome, onLogout, onSettings, currentView, userI
               ) : (
             <div className="text-center py-12">
               <p className="text-gray-500 text-lg">No session data available</p>
-              <p className="text-gray-400 text-sm mt-2">This student hasn't completed any coaching sessions available for teacher viewing.</p>
-              <div className="mt-4 p-4 bg-blue-50 rounded-lg border border-blue-200 max-w-md mx-auto">
-                <p className="text-sm text-blue-800">
-                  <strong>Note:</strong> Jamie sessions are used for research purposes and are not available for teacher viewing to maintain IRB compliance.
-                </p>
-              </div>
+              <p className="text-gray-400 text-sm mt-2">This student hasn't completed any coaching sessions yet.</p>
             </div>
           )}
         </div>

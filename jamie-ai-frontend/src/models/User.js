@@ -283,14 +283,53 @@ export class User {
     
     if (allSessions.length > 0) {
       this.analytics.totalSessions = allSessions.length;
-      this.analytics.averageScore = allSessions.reduce((sum, session) => sum + session.score, 0) / allSessions.length;
+      
+      // Calculate average score using actual DQ scores (minimum from dqScores) instead of effectiveScore
+      // This gives a more accurate representation of coaching performance
+      const scores = allSessions.map(session => {
+        // Try to get the actual DQ score from dqScores first
+        if (session.dqScores && typeof session.dqScores === 'object' && Object.keys(session.dqScores).length > 0) {
+          const dqValues = Object.values(session.dqScores)
+            .filter(v => typeof v === 'number' && !isNaN(v) && isFinite(v) && v >= 0 && v <= 1);
+          if (dqValues.length > 0) {
+            return Math.min(...dqValues); // Use minimum DQ score (weakest link)
+          }
+        }
+        // Fallback to rawScore if dqScores is not available
+        if (session.rawScore !== null && session.rawScore !== undefined && session.rawScore > 0) {
+          return session.rawScore;
+        }
+        // Last fallback to score (effectiveScore)
+        return session.score || 0;
+      });
+      
+      this.analytics.averageScore = scores.reduce((sum, score) => sum + score, 0) / scores.length;
       
       // Calculate improvement (compare last 3 sessions vs first 3)
       if (allSessions.length >= 6) {
         const recent = allSessions.slice(-3);
         const early = allSessions.slice(0, 3);
-        const recentAvg = recent.reduce((sum, session) => sum + session.score, 0) / 3;
-        const earlyAvg = early.reduce((sum, session) => sum + session.score, 0) / 3;
+        
+        // Use same logic for improvement calculation
+        const recentScores = recent.map(session => {
+          if (session.dqScores && typeof session.dqScores === 'object' && Object.keys(session.dqScores).length > 0) {
+            const dqValues = Object.values(session.dqScores)
+              .filter(v => typeof v === 'number' && !isNaN(v) && isFinite(v) && v >= 0 && v <= 1);
+            if (dqValues.length > 0) return Math.min(...dqValues);
+          }
+          return session.rawScore || session.score || 0;
+        });
+        const earlyScores = early.map(session => {
+          if (session.dqScores && typeof session.dqScores === 'object' && Object.keys(session.dqScores).length > 0) {
+            const dqValues = Object.values(session.dqScores)
+              .filter(v => typeof v === 'number' && !isNaN(v) && isFinite(v) && v >= 0 && v <= 1);
+            if (dqValues.length > 0) return Math.min(...dqValues);
+          }
+          return session.rawScore || session.score || 0;
+        });
+        
+        const recentAvg = recentScores.reduce((sum, score) => sum + score, 0) / recentScores.length;
+        const earlyAvg = earlyScores.reduce((sum, score) => sum + score, 0) / earlyScores.length;
         this.analytics.improvement = recentAvg - earlyAvg;
       }
     }

@@ -10,6 +10,15 @@ const safeMinDqScore = (dqScoreObj) => {
   return values.length > 0 ? Math.min(...values) : 0;
 };
 
+// Helper function to get max attempts based on character
+const getMaxAttempts = (character) => {
+  if (character === 'kavya') return 10;
+  if (character === 'daniel') return 10;
+  if (character === 'sarah') return 10;
+  if (character === 'jamie') return 10;
+  return 20; // Default for andres and others
+};
+
 const AdminDashboard = ({ onBackToHome, onLogout, onSettings, currentView, userInfo }) => {
   console.log('AdminDashboard component rendering, userInfo:', userInfo);
   
@@ -187,12 +196,19 @@ const AdminDashboard = ({ onBackToHome, onLogout, onSettings, currentView, userI
     console.log('AdminDashboard: Student progress:', student.progress);
     
     setSelectedStudent(student);
-    // Get the most recent session from all personas (including Jamie)
+    // Get the most recent session from all personas (including Jamie) with character name
     const jamieSession = student.progress?.jamie?.sessions?.[student.progress.jamie.sessions.length - 1];
     const andresSession = student.progress?.andres?.sessions?.[student.progress.andres.sessions.length - 1];
     const kavyaSession = student.progress?.kavya?.sessions?.[student.progress.kavya.sessions.length - 1];
     const danielSession = student.progress?.daniel?.sessions?.[student.progress.daniel.sessions.length - 1];
     const sarahSession = student.progress?.sarah?.sessions?.[student.progress.sarah.sessions.length - 1];
+    
+    // Add character name to each session
+    if (jamieSession) jamieSession.character_name = 'jamie';
+    if (andresSession) andresSession.character_name = 'andres';
+    if (kavyaSession) kavyaSession.character_name = 'kavya';
+    if (danielSession) danielSession.character_name = 'daniel';
+    if (sarahSession) sarahSession.character_name = 'sarah';
     
     console.log('AdminDashboard: jamieSession:', jamieSession);
     console.log('AdminDashboard: andresSession:', andresSession);
@@ -582,7 +598,7 @@ const AdminDashboard = ({ onBackToHome, onLogout, onSettings, currentView, userI
                       </div>
                       <div className="text-right">
                         <p className="text-sm text-gray-600">Attempts Used</p>
-                        <p className="font-semibold text-gray-900">{selectedSession.attempts}/20</p>
+                        <p className="font-semibold text-gray-900">{selectedSession.attempts}/{getMaxAttempts(selectedSession.character_name || 'jamie')}</p>
                       </div>
                     </div>
                   </div>

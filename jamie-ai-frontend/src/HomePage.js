@@ -7,14 +7,29 @@ const HomePage = ({ userInfo, gameMode, onStartCoaching, onLogout, onSettings, o
   const [isTyping, setIsTyping] = useState(true);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
-  // Debug logging for userProgress prop (reduced to prevent infinite loop)
-  // console.log('HomePage rendered with userProgress:', userProgress, 'isLoadingProgress:', isLoadingProgress);
+  // Debug logging for userProgress prop
+  useEffect(() => {
+    console.log('🏠 HomePage rendered with userProgress:', userProgress);
+    console.log('🏠 HomePage userInfo?.progress:', userInfo?.progress);
+    console.log('🏠 HomePage userProgress === userInfo?.progress:', userProgress === userInfo?.progress);
+    console.log('🏠 HomePage Jamie progress:', userProgress?.jamie);
+    console.log('🏠 HomePage Jamie completed:', userProgress?.jamie?.completed);
+    console.log('🏠 HomePage Jamie sessions:', userProgress?.jamie?.sessions);
+    console.log('🏠 HomePage Jamie lastSession:', userProgress?.jamie?.lastSession);
+  }, [userProgress, userInfo?.progress]);
 
   const fullText = "Welcome to Decision Coach! Start with Jamie's assessment to evaluate your coaching skills. Complete Jamie's session to unlock the game mode with other characters.";
 
   // Get character status and score from user progress
   const getCharacterStatus = useCallback((characterId) => {
+    console.log(`🔍 getCharacterStatus called for ${characterId}:`, {
+      hasUserProgress: !!userProgress,
+      hasCharacterProgress: !!userProgress?.[characterId],
+      characterProgress: userProgress?.[characterId]
+    });
+    
     if (!userProgress || !userProgress[characterId]) {
+      console.log(`🔍 ${characterId}: No progress found, returning Not Started`);
       return { status: 'Not Started', score: null };
     }
 

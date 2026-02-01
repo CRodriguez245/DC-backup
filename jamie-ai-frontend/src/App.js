@@ -262,6 +262,11 @@ const MainApp = () => {
         const existingUser = supabaseAuthService.getCurrentUser();
         if (existingUser) {
           debugLog('Hydrating user from existing Supabase session:', existingUser);
+          console.log('🔍 DEBUG: Existing user progress:', existingUser.progress);
+          console.log('🔍 DEBUG: Jamie progress:', existingUser.progress?.jamie);
+          console.log('🔍 DEBUG: Jamie sessions:', existingUser.progress?.jamie?.sessions);
+          console.log('🔍 DEBUG: Jamie lastSession:', existingUser.progress?.jamie?.lastSession);
+          console.log('🔍 DEBUG: Jamie completed:', existingUser.progress?.jamie?.completed);
           // Restore view from sessionStorage FIRST
           const savedView = sessionStorage.getItem('currentView');
           const viewToSet = (savedView && ALLOWED_VIEWS.includes(savedView)) ? savedView : 'homepage';
@@ -271,6 +276,7 @@ const MainApp = () => {
           // Then clear isAuthChecking - React will batch these updates
           setUserInfo(existingUser);
           setCurrentView(viewToSet);
+          console.log('🔍 DEBUG: Set userInfo with progress:', existingUser.progress);
         } else {
           // No user found, ensure we're on landing page
           setCurrentView(null);

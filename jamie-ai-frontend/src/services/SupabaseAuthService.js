@@ -1715,10 +1715,46 @@ export class SupabaseAuthService {
           }
         });
 
-        // Calculate overall analytics
-        const allScores = progressData ? progressData.map(p => p.average_dq_score || 0) : [];
-        const averageScore = allScores.length > 0 ? allScores.reduce((sum, score) => sum + score, 0) / allScores.length : 0;
-        const totalSessions = progressData ? progressData.length : 0;
+        // Calculate overall analytics from actual sessions (not database average_dq_score)
+        // This ensures accuracy and uses the same logic as User.updateAnalytics()
+        const allSessions = [];
+        Object.values(progress).forEach(charProgress => {
+          if (charProgress.sessions && Array.isArray(charProgress.sessions)) {
+            allSessions.push(...charProgress.sessions);
+          }
+        });
+        
+        let averageScore = 0;
+        let totalSessions = 0;
+        
+        if (allSessions.length > 0) {
+          totalSessions = allSessions.length;
+          
+          // Calculate average using actual DQ scores (minimum from dqScores) - same logic as User.updateAnalytics()
+          const scores = allSessions.map(session => {
+            // Try to get the actual DQ score from dqScores first
+            if (session.dqScores && typeof session.dqScores === 'object' && Object.keys(session.dqScores).length > 0) {
+              const dqValues = Object.values(session.dqScores)
+                .filter(v => typeof v === 'number' && !isNaN(v) && isFinite(v) && v >= 0 && v <= 1);
+              if (dqValues.length > 0) {
+                return Math.min(...dqValues); // Use minimum DQ score (weakest link)
+              }
+            }
+            // Fallback to rawScore if dqScores is not available
+            if (session.rawScore !== null && session.rawScore !== undefined && session.rawScore > 0) {
+              return session.rawScore;
+            }
+            // Last fallback to score (effectiveScore)
+            return session.score || 0;
+          });
+          
+          averageScore = scores.reduce((sum, score) => sum + score, 0) / scores.length;
+        } else {
+          // Fallback to database values if no sessions loaded
+          const allScores = progressData ? progressData.map(p => p.average_dq_score || 0) : [];
+          averageScore = allScores.length > 0 ? allScores.reduce((sum, score) => sum + score, 0) / allScores.length : 0;
+          totalSessions = progressData ? progressData.length : 0;
+        }
 
         return {
           id: user.id,

@@ -141,6 +141,28 @@ const HomePage = ({ userInfo, gameMode, onStartCoaching, onLogout, onSettings, o
         }
       }
       
+      // Final fallback: Try to extract score from messages if dqScores only has {overall: 0}
+      if ((score === null || score === 0) && latestSession.messages && Array.isArray(latestSession.messages)) {
+        console.log(`🔍 ${characterId}: Checking messages for dqScore (fallback)`);
+        const messagesWithDqScore = latestSession.messages
+          .filter(msg => msg.dqScore && typeof msg.dqScore === 'object' && Object.keys(msg.dqScore).length > 0)
+          .map(msg => msg.dqScore);
+        
+        if (messagesWithDqScore.length > 0) {
+          // Use the last message's dqScore
+          const lastDqScore = messagesWithDqScore[messagesWithDqScore.length - 1];
+          const dqValues = Object.values(lastDqScore)
+            .filter(v => typeof v === 'number' && !isNaN(v) && isFinite(v) && v >= 0);
+          if (dqValues.length > 0) {
+            const dqMin = Math.min(...dqValues.map(v => Math.min(v, 1.0)));
+            if (dqMin > 0) {
+              score = dqMin;
+              console.log(`🔍 ${characterId}: Using dqScore from messages:`, score, 'from values:', dqValues);
+            }
+          }
+        }
+      }
+      
       // Fallback: try score, rawScore, bestScore if dqScores didn't give us a valid score
       if (score === null || score === 0) {
         const scoreCandidates = [

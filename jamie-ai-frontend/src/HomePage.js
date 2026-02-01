@@ -102,33 +102,40 @@ const HomePage = ({ userInfo, gameMode, onStartCoaching, onLogout, onSettings, o
     // Safely extract and validate score
     let score = null;
     if (latestSession) {
-      console.log(`🔍 ${characterId}: Latest session data:`, {
+      // ALWAYS log for debugging - use window.alert as fallback if console is filtered
+      const debugInfo = {
         score: latestSession.score,
         rawScore: latestSession.rawScore,
+        bestScore: charProgress.bestScore,
         dqScores: latestSession.dqScores,
         scoreType: typeof latestSession.score,
-        rawScoreType: typeof latestSession.rawScore,
-        bestScore: charProgress.bestScore
-      });
+        rawScoreType: typeof latestSession.rawScore
+      };
+      console.log(`🔍 ${characterId}: Latest session data:`, debugInfo);
       
-      // Try score first, then rawScore, then bestScore, then dqScores minimum
-      const scoreValue = latestSession.score ?? latestSession.rawScore ?? charProgress.bestScore;
-      if (scoreValue !== null && scoreValue !== undefined) {
+      // Try multiple sources in order: score, rawScore, bestScore, then dqScores minimum
+      const scoreCandidates = [
+        latestSession.score,
+        latestSession.rawScore,
+        charProgress.bestScore
+      ].filter(v => v !== null && v !== undefined);
+      
+      // Try each candidate
+      for (const scoreValue of scoreCandidates) {
+        if (score !== null) break; // Already found a valid score
+        
         const numScore = typeof scoreValue === 'number' ? scoreValue : parseFloat(scoreValue);
-        console.log(`🔍 ${characterId}: Parsed score value:`, numScore, 'isNaN:', isNaN(numScore), 'isFinite:', isFinite(numScore), 'inRange:', numScore >= 0 && numScore <= 1);
         
         // Only use if it's a valid number (not NaN, not Infinity)
-        // Note: Scores > 1 might be from old data, clamp them to 1.0
         if (!isNaN(numScore) && isFinite(numScore) && numScore >= 0) {
           // Clamp scores > 1 to 1.0 (handle old data format)
           score = Math.min(numScore, 1.0);
-          console.log(`🔍 ${characterId}: Using score:`, score);
-        } else {
-          console.log(`🔍 ${characterId}: Score value invalid, trying fallbacks`);
+          console.log(`🔍 ${characterId}: Using score from candidate:`, score, 'source:', scoreValue === latestSession.score ? 'score' : scoreValue === latestSession.rawScore ? 'rawScore' : 'bestScore');
+          break;
         }
       }
       
-      // Fallback: try to get minimum from dqScores if score is invalid
+      // Fallback: try to get minimum from dqScores if score is still null
       if (score === null && latestSession.dqScores && typeof latestSession.dqScores === 'object') {
         const dqValues = Object.values(latestSession.dqScores)
           .filter(v => typeof v === 'number' && !isNaN(v) && isFinite(v) && v >= 0);
@@ -146,11 +153,19 @@ const HomePage = ({ userInfo, gameMode, onStartCoaching, onLogout, onSettings, o
           console.log(`🔍 ${characterId}: Converting percentage to decimal:`, rawValue, '->', score);
         }
       }
+      
+      // If still null, log warning but keep it as null (don't default to 0)
+      if (score === null) {
+        console.warn(`⚠️ ${characterId}: Could not extract valid score from session. Latest session:`, latestSession);
+        // Don't set score to 0 - keep it as null so it won't display
+      }
+    } else {
+      console.warn(`⚠️ ${characterId}: No latest session found. charProgress:`, charProgress);
     }
     
-    // Debug logging for Jamie specifically
+    // Debug logging for Jamie specifically - ALWAYS log this
     if (characterId === 'jamie') {
-      console.log('🏠 HomePage getCharacterStatus for Jamie:', {
+      const jamieDebug = {
         hasSessions,
         sessionsCount: charProgress.sessions?.length,
         hasLastSession: !!charProgress.lastSession,
@@ -158,6 +173,7 @@ const HomePage = ({ userInfo, gameMode, onStartCoaching, onLogout, onSettings, o
         lastSessionRawScore: charProgress.lastSession?.rawScore,
         latestSessionScore: latestSession?.score,
         latestSessionRawScore: latestSession?.rawScore,
+        bestScore: charProgress.bestScore,
         extractedScore: score,
         completed: charProgress.completed,
         allSessions: charProgress.sessions?.map(s => ({ 
@@ -166,7 +182,12 @@ const HomePage = ({ userInfo, gameMode, onStartCoaching, onLogout, onSettings, o
           scoreType: typeof s.score,
           date: s.date 
         }))
-      });
+      };
+      console.log('🏠 HomePage getCharacterStatus for Jamie:', jamieDebug);
+      // Also log to window for visibility
+      if (typeof window !== 'undefined') {
+        window.jamieDebug = jamieDebug;
+      }
     }
     
     if (charProgress.completed) {

@@ -1377,29 +1377,48 @@ export class SupabaseAuthService {
 
         // Load session data with messages for this student
         console.log(`Loading sessions for student ${user.id}`);
-        const { data: sessionsData, error: sessionsError } = await supabase
-          .from('sessions')
-          .select(`
-            id,
-            character_name,
-            completed_at,
-            turns_used,
-            messages (
+        let sessionsData = null;
+        let sessionsError = null;
+        
+        try {
+          const result = await supabase
+            .from('sessions')
+            .select(`
               id,
-              message_type,
-              content,
-              timestamp,
-              dq_scores,
-              dq_score_minimum,
-              turn_number
-            )
-          `)
-          .eq('student_id', user.id)
-          .eq('session_status', 'completed')
-          .order('completed_at', { ascending: false });
+              character_name,
+              completed_at,
+              turns_used,
+              messages (
+                id,
+                message_type,
+                content,
+                timestamp,
+                dq_scores,
+                dq_score_minimum,
+                turn_number
+              )
+            `)
+            .eq('student_id', user.id)
+            .eq('session_status', 'completed')
+            .order('completed_at', { ascending: false });
+          
+          sessionsData = result.data;
+          sessionsError = result.error;
+        } catch (error) {
+          console.error(`Exception loading sessions for student ${user.id}:`, error);
+          sessionsError = error;
+        }
 
         if (sessionsError) {
           console.error(`Error loading sessions for student ${user.id}:`, sessionsError);
+          console.error(`Error details:`, {
+            message: sessionsError.message,
+            code: sessionsError.code,
+            details: sessionsError.details,
+            hint: sessionsError.hint
+          });
+          // Continue with empty sessions array instead of failing completely
+          sessionsData = [];
         } else {
           console.log(`Loaded ${sessionsData?.length || 0} sessions for student ${user.id}:`, sessionsData);
         }

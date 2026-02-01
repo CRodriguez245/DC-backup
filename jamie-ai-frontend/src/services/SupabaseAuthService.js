@@ -1408,7 +1408,9 @@ export class SupabaseAuthService {
         const progress = {
           jamie: { completed: false, sessions: [], analytics: { averageScore: 0, totalSessions: 0 } },
           andres: { completed: false, sessions: [], analytics: { averageScore: 0, totalSessions: 0 } },
-          kavya: { completed: false, sessions: [], analytics: { averageScore: 0, totalSessions: 0 } }
+          kavya: { completed: false, sessions: [], analytics: { averageScore: 0, totalSessions: 0 } },
+          daniel: { completed: false, sessions: [], analytics: { averageScore: 0, totalSessions: 0 } },
+          sarah: { completed: false, sessions: [], analytics: { averageScore: 0, totalSessions: 0 } }
         };
 
         // Process each progress record
@@ -1473,6 +1475,56 @@ export class SupabaseAuthService {
             
             progress[character].sessions = [session];
             progress[character].lastSession = session; // Set lastSession for getCharacterStatus
+          }
+        });
+
+        // Also process sessions that don't have matching progress records
+        // This ensures all completed sessions are included, even if progress record is missing
+        (sessionsData || []).forEach(session => {
+          const character = session.character_name?.toLowerCase();
+          if (character && progress[character] && !progress[character].sessions.length) {
+            // Only add if we don't already have a session for this character
+            console.log(`Adding session without progress record for character ${character}:`, session.id);
+            
+            // Transform messages to match frontend format
+            let messages = [];
+            if (session.messages) {
+              messages = session.messages.map(msg => ({
+                message: msg.content,
+                isUser: msg.message_type === 'user',
+                isSessionEnd: msg.message_type === 'system',
+                timestamp: msg.timestamp,
+                dqScore: msg.dq_scores ? (typeof msg.dq_scores === 'string' ? JSON.parse(msg.dq_scores) : msg.dq_scores) : null,
+                turnNumber: msg.turn_number
+              }));
+            }
+            
+            // Calculate average DQ score from messages if available
+            let avgScore = 0;
+            if (messages.length > 0) {
+              const scores = messages
+                .map(m => m.dqScore?.overall || m.dqScore)
+                .filter(s => typeof s === 'number' && !isNaN(s));
+              if (scores.length > 0) {
+                avgScore = scores.reduce((sum, s) => sum + s, 0) / scores.length;
+              }
+            }
+            
+            const sessionObj = {
+              id: session.id,
+              date: session.completed_at || new Date().toISOString(),
+              score: avgScore,
+              rawScore: avgScore,
+              attempts: session.turns_used || 20,
+              mode: 'assessment',
+              dqScores: { overall: avgScore },
+              completed: true,
+              messages: messages
+            };
+            
+            progress[character].sessions = [sessionObj];
+            progress[character].lastSession = sessionObj;
+            progress[character].completed = true;
           }
         });
 

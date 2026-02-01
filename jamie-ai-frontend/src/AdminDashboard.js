@@ -554,7 +554,7 @@ const AdminDashboard = ({ onBackToHome, onLogout, onSettings, currentView, userI
                   {selectedStudent.name}'s Progress
                 </h2>
                 <p className="text-sm text-gray-600">
-                  {selectedStudent.email} | Avg DQ Score: {(selectedStudent.analytics?.averageScore || 0).toFixed(2)}
+                  {selectedStudent.email}
                 </p>
               </div>
               <button

@@ -931,7 +931,7 @@ function getPersonaSystemPrompt(persona, stage, coachingStyle) {
     }
 }
 const dqScoringPrompt = (userMessage, conversationHistory, coachResponse) => `
-Evaluate this coaching interaction using Decision Quality dimensions.
+Evaluate this coaching interaction using Decision Quality dimensions. BE STRICT AND CRITICAL in your evaluation.
 
 CONVERSATION CONTEXT:
 ${conversationHistory}
@@ -941,48 +941,67 @@ CLIENT MESSAGE:
 
 ${coachResponse ? `COACH RESPONSE:\n"${coachResponse}"` : ''}
 
-Score each dimension from 0.0-1.0 based on these rubrics:
+CRITICAL SCORING RULES:
+1. Score the CLIENT's response quality, not just engagement. If the client is just parroting the coach's suggestions without independent thinking, score LOW.
+2. Leading questions (e.g., "Have you considered X?") that give answers should result in LOWER scores because they don't help the client think independently.
+3. Minimal responses (e.g., "why don't you just try X") should score 0.1-0.3 maximum.
+4. Require SUBSTANTIVE depth for scores above 0.5. Generic or surface-level responses should score 0.2-0.4.
+5. Scores of 0.7+ require sophisticated, independent thinking with clear evidence of deep reflection.
+6. If the client is just agreeing or repeating what the coach said, penalize heavily (0.1-0.3 range).
+
+Score each dimension from 0.0-1.0 based on these STRICT rubrics:
 
 FRAMING (0.0-1.0):
-- 0.0-0.2: No clear problem definition, mixing multiple issues
-- 0.3-0.5: Problem stated but conflated with symptoms or solutions
-- 0.6-0.8: Clear problem boundaries, distinguishing root causes from symptoms
-- 0.9-1.0: Sophisticated framing, multiple perspectives considered, metacognition present
+- 0.0-0.2: No clear problem definition, mixing multiple issues, or just repeating coach's framing
+- 0.3-0.4: Problem stated but conflated with symptoms or solutions, minimal independent thought
+- 0.5-0.6: Basic problem boundaries identified, some independent thinking
+- 0.7-0.8: Clear problem boundaries with independent analysis, distinguishing root causes from symptoms
+- 0.9-1.0: Sophisticated framing with multiple perspectives, metacognition, and deep independent insight
 
 ALTERNATIVES (0.0-1.0):
-- 0.0-0.2: Binary thinking (stay/leave), no creative options
-- 0.3-0.5: 2-3 options mentioned but not developed
-- 0.6-0.8: Multiple creative options, including hybrids and experiments
-- 0.9-1.0: Rich option set with clear differentiation, includes "create new options"
+- 0.0-0.2: Binary thinking, no creative options, or just repeating coach's suggestions
+- 0.3-0.4: 2-3 options mentioned but not developed, mostly parroting coach's ideas
+- 0.5-0.6: Some independent option generation, but limited depth or creativity
+- 0.7-0.8: Multiple creative options with independent thinking, including hybrids and experiments
+- 0.9-1.0: Rich option set with clear differentiation, includes "create new options" thinking independently
 
 INFORMATION (0.0-1.0):
-- 0.0-0.2: Operating on assumptions, no data gathering mentioned
-- 0.3-0.5: Some information seeking but unsystematic
-- 0.6-0.8: Deliberate information gathering, identifying knowledge gaps
-- 0.9-1.0: Systematic data collection, distinguishing signal from noise
+- 0.0-0.2: Operating on assumptions, no data gathering mentioned, or just agreeing to gather info
+- 0.3-0.4: Vague mention of information seeking, no specific plan, minimal independent thought
+- 0.5-0.6: Some information seeking mentioned with basic specificity
+- 0.7-0.8: Deliberate information gathering with specific plan, identifying knowledge gaps independently
+- 0.9-1.0: Systematic data collection plan with clear methodology, distinguishing signal from noise
 
 VALUES (0.0-1.0):
-- 0.0-0.2: No mention of what matters or only surface concerns (money, title)
-- 0.3-0.5: Some values mentioned but not prioritized
-- 0.6-0.8: Clear articulation of core values and tradeoffs
-- 0.9-1.0: Deep values clarity, including meta-values and long-term vision
+- 0.0-0.2: No mention of what matters or only surface concerns (money, title), or just repeating coach's value questions
+- 0.3-0.4: Some values mentioned but not prioritized, minimal depth or independent reflection
+- 0.5-0.6: Basic values articulation with some independent thought
+- 0.7-0.8: Clear articulation of core values and tradeoffs with independent reflection
+- 0.9-1.0: Deep values clarity with independent insight, including meta-values and long-term vision
 
 REASONING (0.0-1.0):
-- 0.0-0.2: Emotional reasoning, cognitive distortions present
-- 0.3-0.5: Some logical thinking but incomplete
-- 0.6-0.8: Sound reasoning, recognizing biases and assumptions
-- 0.9-1.0: Sophisticated analysis, probabilistic thinking, acknowledging uncertainty
+- 0.0-0.2: Emotional reasoning, cognitive distortions present, or just agreeing without analysis
+- 0.3-0.4: Some logical thinking but incomplete, mostly surface-level reasoning
+- 0.5-0.6: Basic logical thinking with some independent analysis
+- 0.7-0.8: Sound reasoning with independent thinking, recognizing biases and assumptions
+- 0.9-1.0: Sophisticated independent analysis, probabilistic thinking, acknowledging uncertainty
 
 COMMITMENT (0.0-1.0):
-- 0.0-0.2: Stuck in analysis, no actions planned
-- 0.3-0.5: Vague intentions without specifics
-- 0.6-0.8: Specific next steps with timelines
-- 0.9-1.0: Clear action plan with accountability and contingencies
+- 0.0-0.2: Stuck in analysis, no actions planned, or vague agreement without specifics
+- 0.3-0.4: Vague intentions without specifics, minimal independent planning
+- 0.5-0.6: Some specific next steps mentioned but lacking detail or independent thought
+- 0.7-0.8: Specific next steps with timelines and independent planning
+- 0.9-1.0: Clear action plan with accountability, contingencies, and deep independent commitment
 
-COACHING QUALITY BONUS (if coach response provided):
-Add 0.1 to relevant dimensions if coach:
-- Asks powerful questions rather than giving advice
-- Reflects patterns back to client
+COACHING QUALITY PENALTIES (if coach response provided):
+REDUCE scores by 0.2-0.3 if coach:
+- Gives leading questions that provide answers (e.g., "Have you considered X?")
+- Provides solutions instead of helping client think
+- Uses minimal responses that don't facilitate deep thinking
+
+ONLY add 0.1 to relevant dimensions if coach:
+- Asks powerful open-ended questions that facilitate independent thinking
+- Reflects patterns back to client without giving answers
 - Challenges assumptions constructively
 - Creates psychological safety while maintaining productive tension
 
@@ -995,7 +1014,7 @@ Return JSON:
   "reasoning": 0.0,
   "commitment": 0.0,
   "overall": 0.0,
-  "rationale": "Brief explanation of scores"
+  "rationale": "Brief explanation of scores, noting if client is parroting vs. thinking independently"
 }
 `;
 exports.dqScoringPrompt = dqScoringPrompt;

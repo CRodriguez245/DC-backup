@@ -50,7 +50,7 @@ router.post('/', async (req, res) => {
         const conversationHistory = sessionState[sessionId].conversationHistory
             .map(msg => `${msg.role === 'user' ? 'Client' : 'Coach'}: ${msg.content}`)
             .join('\n\n');
-        // PRE-CHECK: Catch truly minimal messages (exact phrases only, not substantive content)
+        // PRE-CHECK: Catch truly minimal messages and leading questions (exact phrases only, not substantive content)
         const minimalMessagePatterns = [
             /^tell me more\s*$/i,
             /^tell me more about\s*$/i,
@@ -67,6 +67,23 @@ router.post('/', async (req, res) => {
             /^i understand\s*$/i,
             /^that makes sense\s*$/i
         ];
+        // Detect leading questions that give answers (should be penalized)
+        const leadingQuestionPatterns = [
+            /^have you considered\s+/i,
+            /^why don't you\s+/i,
+            /^why don't\s+/i,
+            /^you could\s+/i,
+            /^you should\s+/i,
+            /^maybe you could\s+/i,
+            /^what if you\s+/i,
+            /^how about\s+/i
+        ];
+        // Detect minimal coaching responses (should be penalized)
+        const minimalCoachingPatterns = [
+            /^why don't you just\s+/i,
+            /^just try\s+/i,
+            /^just\s+[a-z]+\s+/i
+        ];
         // Only catch exact minimal phrases - if message has substantive content, let LLM score it
         const trimmedMessage = userMessage.trim();
         console.log("🔍 Checking minimal message patterns. Trimmed message:", JSON.stringify(trimmedMessage));
@@ -77,7 +94,23 @@ router.post('/', async (req, res) => {
             }
             return matches;
         });
+        const isLeadingQuestion = leadingQuestionPatterns.some(pattern => {
+            const matches = pattern.test(trimmedMessage);
+            if (matches) {
+                console.log("⚠️ LEADING QUESTION DETECTED:", pattern.toString());
+            }
+            return matches;
+        });
+        const isMinimalCoaching = minimalCoachingPatterns.some(pattern => {
+            const matches = pattern.test(trimmedMessage);
+            if (matches) {
+                console.log("⚠️ MINIMAL COACHING DETECTED:", pattern.toString());
+            }
+            return matches;
+        });
         console.log("🔍 isExactMinimalPhrase result:", isExactMinimalPhrase);
+        console.log("🔍 isLeadingQuestion result:", isLeadingQuestion);
+        console.log("🔍 isMinimalCoaching result:", isMinimalCoaching);
         let dqScoreComponents;
         if (isExactMinimalPhrase) {
             // Force minimal scores only for exact minimal phrases
@@ -91,6 +124,20 @@ router.post('/', async (req, res) => {
                 commitment: 0.1,
                 overall: 0.1,
                 rationale: "The coach's message is minimal and does not contain substantive coaching content. Per scoring rules, all dimensions must be scored 0.0-0.2."
+            };
+        }
+        else if (isLeadingQuestion || isMinimalCoaching) {
+            // Leading questions and minimal coaching should be penalized (0.2-0.3 range)
+            console.log("⚠️ LEADING QUESTION OR MINIMAL COACHING DETECTED - Penalizing scores for:", userMessage);
+            dqScoreComponents = {
+                framing: 0.2,
+                alternatives: 0.2,
+                information: 0.2,
+                values: 0.2,
+                reasoning: 0.2,
+                commitment: 0.2,
+                overall: 0.2,
+                rationale: "The coach's message contains leading questions or minimal coaching that provides answers rather than facilitating independent thinking. Per scoring rules, this should be penalized."
             };
         }
         else {

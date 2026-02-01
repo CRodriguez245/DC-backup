@@ -2854,7 +2854,7 @@ const MainApp = () => {
                                     {(msg.avgDqScore !== undefined ? msg.avgDqScore : safeMinDqScore(msg.dqScore)).toFixed(2)}/1.0
                                   </p>
                                   <p className="text-xs sm:text-[14px] text-[#797979] mt-2">
-                                    This score reflects your coaching effectiveness across all six dimensions of decision quality.
+                                    You're only as strong as your weakest link. This score reflects your lowest performance across all six dimensions of decision quality.
                                   </p>
                                 </div>
                                 

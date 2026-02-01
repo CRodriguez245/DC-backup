@@ -522,7 +522,9 @@ export const db = {
           return values.length > 0 ? Math.min(...values) : null;
         })(),
         completed_at: new Date().toISOString()
-      })
+      }, {
+        onConflict: 'student_id,character_name,level'
+      });
     
     console.log('db.updateProgress result:', { data, error });
     return { data, error }

@@ -139,7 +139,7 @@ const HomePage = ({ userInfo, gameMode, onStartCoaching, onLogout, onSettings, o
     }
 
     return { status: 'Not Started', score: null };
-  }, [userProgress]);
+  }, [userProgress, userInfo?.id]);
 
   useEffect(() => {
     // Check if mobile (screen width < 640px, which is Tailwind's 'sm' breakpoint)

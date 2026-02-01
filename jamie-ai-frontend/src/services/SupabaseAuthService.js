@@ -101,6 +101,13 @@ export class SupabaseAuthService {
       return;
     }
 
+    // Check if we have an active Supabase session before syncing
+    const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+    if (sessionError || !session) {
+      console.log('No active Supabase session, skipping progress sync (progress is safe in localStorage)');
+      return;
+    }
+
     console.log('Syncing local progress to database for user:', this.currentUser.id);
     
     try {
@@ -122,7 +129,12 @@ export class SupabaseAuthService {
             );
             
             if (error) {
-              console.error(`Error syncing ${character} progress:`, error);
+              // Handle RLS errors gracefully - progress is already in localStorage, so it's not lost
+              if (error.code === '42501' || error.message?.includes('row-level security')) {
+                console.log(`RLS policy blocked sync for ${character} (progress is safe in localStorage):`, error.message);
+              } else {
+                console.error(`Error syncing ${character} progress:`, error);
+              }
             } else {
               console.log(`Successfully synced ${character} progress:`, data);
             }
@@ -132,7 +144,12 @@ export class SupabaseAuthService {
       
       console.log('Local progress sync completed');
     } catch (error) {
-      console.error('Error syncing local progress to database:', error);
+      // Handle RLS errors gracefully
+      if (error.code === '42501' || error.message?.includes('row-level security')) {
+        console.log('RLS policy blocked progress sync (progress is safe in localStorage):', error.message);
+      } else {
+        console.error('Error syncing local progress to database:', error);
+      }
     }
   }
 
@@ -168,6 +185,13 @@ export class SupabaseAuthService {
       return;
     }
 
+    // Check if we have an active Supabase session before syncing
+    const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+    if (sessionError || !session) {
+      console.log('No active Supabase session, skipping local storage progress sync (progress is safe in localStorage)');
+      return;
+    }
+
     console.log('Syncing local storage progress to database for user:', this.currentUser.id);
     
     try {
@@ -192,7 +216,12 @@ export class SupabaseAuthService {
               );
               
               if (error) {
-                console.error(`Error syncing ${character} progress from local storage:`, error);
+                // Handle RLS errors gracefully - progress is already in localStorage, so it's not lost
+                if (error.code === '42501' || error.message?.includes('row-level security')) {
+                  console.log(`RLS policy blocked sync for ${character} from local storage (progress is safe):`, error.message);
+                } else {
+                  console.error(`Error syncing ${character} progress from local storage:`, error);
+                }
               } else {
                 console.log(`Successfully synced ${character} progress from local storage:`, data);
               }
@@ -205,7 +234,12 @@ export class SupabaseAuthService {
       
       console.log('Local storage progress sync completed');
     } catch (error) {
-      console.error('Error syncing local storage progress to database:', error);
+      // Handle RLS errors gracefully
+      if (error.code === '42501' || error.message?.includes('row-level security')) {
+        console.log('RLS policy blocked local storage progress sync (progress is safe in localStorage):', error.message);
+      } else {
+        console.error('Error syncing local storage progress to database:', error);
+      }
     }
   }
 

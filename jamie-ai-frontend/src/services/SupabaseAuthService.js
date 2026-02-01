@@ -23,21 +23,39 @@ export class SupabaseAuthService {
       const { user, error } = await auth.getCurrentUser();
       
       if (user && !error) {
-        // Load user profile from database
-        const { data: profile, error: profileError } = await db.getUserProfile(user.id);
-        
-        if (profile && !profileError) {
-          this.currentUser = User.fromJSON({
-            id: profile.id,
-            email: profile.email,
-            name: profile.name,
-            role: profile.role,
-            createdAt: profile.created_at,
-            lastLogin: new Date().toISOString()
-          });
-          
+        // First, try to restore from localStorage (faster, preserves progress)
+        const localUser = UserManager.loadUser();
+        if (localUser && localUser.id === user.id) {
+          console.log('Restoring user from localStorage on init:', localUser.id);
+          this.currentUser = localUser;
           // Migrate any existing local data
           this.migrateCompletionStatus();
+        } else {
+          // Load user profile from database
+          const { data: profile, error: profileError } = await db.getUserProfile(user.id);
+          
+          if (profile && !profileError) {
+            this.currentUser = User.fromJSON({
+              id: profile.id,
+              email: profile.email,
+              name: profile.name,
+              role: profile.role,
+              createdAt: profile.created_at,
+              lastLogin: new Date().toISOString()
+            });
+            
+            // Try to restore progress from localStorage if available
+            if (localUser && localUser.progress) {
+              console.log('Restoring progress from localStorage for user:', user.id);
+              this.currentUser.progress = localUser.progress;
+            }
+            
+            // Migrate any existing local data
+            this.migrateCompletionStatus();
+            
+            // Save to localStorage for next refresh
+            UserManager.saveUser(this.currentUser);
+          }
         }
       }
 

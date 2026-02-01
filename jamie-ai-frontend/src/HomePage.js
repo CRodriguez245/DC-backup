@@ -135,13 +135,34 @@ const HomePage = ({ userInfo, gameMode, onStartCoaching, onLogout, onSettings, o
         }
       }
       
-      // Fallback: try to get minimum from dqScores if score is still null
-      if (score === null && latestSession.dqScores && typeof latestSession.dqScores === 'object') {
+      // Fallback: try to get minimum from dqScores if score is still null or 0
+      // Check dqScores even if score is 0, because the actual score might be in dqScores
+      if ((score === null || score === 0) && latestSession.dqScores && typeof latestSession.dqScores === 'object') {
+        console.log(`🔍 ${characterId}: Checking dqScores:`, latestSession.dqScores);
         const dqValues = Object.values(latestSession.dqScores)
           .filter(v => typeof v === 'number' && !isNaN(v) && isFinite(v) && v >= 0);
         if (dqValues.length > 0) {
-          score = Math.min(...dqValues.map(v => Math.min(v, 1.0))); // Clamp to 1.0
-          console.log(`🔍 ${characterId}: Using dqScores minimum:`, score);
+          const dqMin = Math.min(...dqValues.map(v => Math.min(v, 1.0))); // Clamp to 1.0
+          // Only use dqScores if it's > 0 (to avoid replacing a valid 0 with another 0)
+          // OR if the current score is 0/null and dqScores has a non-zero value
+          if (dqMin > 0 || (score === null || score === 0)) {
+            score = dqMin;
+            console.log(`🔍 ${characterId}: Using dqScores minimum:`, score, 'from values:', dqValues);
+          }
+        }
+      }
+      
+      // Also check charProgress.lastSession.dqScores as another fallback
+      if ((score === null || score === 0) && charProgress.lastSession?.dqScores && typeof charProgress.lastSession.dqScores === 'object') {
+        console.log(`🔍 ${characterId}: Checking lastSession.dqScores:`, charProgress.lastSession.dqScores);
+        const dqValues = Object.values(charProgress.lastSession.dqScores)
+          .filter(v => typeof v === 'number' && !isNaN(v) && isFinite(v) && v >= 0);
+        if (dqValues.length > 0) {
+          const dqMin = Math.min(...dqValues.map(v => Math.min(v, 1.0)));
+          if (dqMin > 0 || (score === null || score === 0)) {
+            score = dqMin;
+            console.log(`🔍 ${characterId}: Using lastSession.dqScores minimum:`, score, 'from values:', dqValues);
+          }
         }
       }
       
@@ -171,22 +192,30 @@ const HomePage = ({ userInfo, gameMode, onStartCoaching, onLogout, onSettings, o
         hasLastSession: !!charProgress.lastSession,
         lastSessionScore: charProgress.lastSession?.score,
         lastSessionRawScore: charProgress.lastSession?.rawScore,
+        lastSessionDqScores: charProgress.lastSession?.dqScores,
         latestSessionScore: latestSession?.score,
         latestSessionRawScore: latestSession?.rawScore,
+        latestSessionDqScores: latestSession?.dqScores,
         bestScore: charProgress.bestScore,
         extractedScore: score,
         completed: charProgress.completed,
         allSessions: charProgress.sessions?.map(s => ({ 
           score: s.score, 
-          rawScore: s.rawScore, 
+          rawScore: s.rawScore,
+          dqScores: s.dqScores,
           scoreType: typeof s.score,
           date: s.date 
         }))
       };
       console.log('🏠 HomePage getCharacterStatus for Jamie:', jamieDebug);
+      console.log('🏠 Full latestSession object:', latestSession);
+      console.log('🏠 Full charProgress.lastSession:', charProgress.lastSession);
       // Also log to window for visibility
       if (typeof window !== 'undefined') {
         window.jamieDebug = jamieDebug;
+        window.jamieLatestSession = latestSession;
+        window.jamieLastSession = charProgress.lastSession;
+        window.jamieCharProgress = charProgress;
       }
     }
     

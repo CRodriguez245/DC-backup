@@ -19,20 +19,32 @@ export class SupabaseAuthService {
     if (this.isInitialized) return this.currentUser !== null;
 
     try {
-      // Check for existing session
-      const { user, error } = await auth.getCurrentUser();
+      // First, try to restore from localStorage immediately (synchronous, no network call)
+      // This ensures user stays logged in even if network is slow or Supabase is down
+      const localUser = UserManager.loadUser();
+      if (localUser && localUser.id) {
+        console.log('Restoring user from localStorage on init (immediate):', localUser.id);
+        this.currentUser = localUser;
+        // Migrate any existing local data
+        this.migrateCompletionStatus();
+        // Set initialized flag so getCurrentUser() works immediately
+        this.isInitialized = true;
+      }
       
-      if (user && !error) {
-        // First, try to restore from localStorage (faster, preserves progress)
-        const localUser = UserManager.loadUser();
-        if (localUser && localUser.id === user.id) {
-          console.log('Restoring user from localStorage on init:', localUser.id);
-          this.currentUser = localUser;
-          // Migrate any existing local data
-          this.migrateCompletionStatus();
+      // Then verify with Supabase session (async, but doesn't block)
+      // Check for existing session using getSession (reads from localStorage first)
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      
+      if (session?.user && !sessionError) {
+        const userId = session.user.id;
+        
+        // If we already have a user from localStorage, verify it matches
+        if (this.currentUser && this.currentUser.id === userId) {
+          console.log('localStorage user matches Supabase session, keeping local user');
+          // User is already set from localStorage, we're good
         } else {
           // Load user profile from database
-          const { data: profile, error: profileError } = await db.getUserProfile(user.id);
+          const { data: profile, error: profileError } = await db.getUserProfile(userId);
           
           if (profile && !profileError) {
             this.currentUser = User.fromJSON({
@@ -46,7 +58,7 @@ export class SupabaseAuthService {
             
             // Try to restore progress from localStorage if available
             if (localUser && localUser.progress) {
-              console.log('Restoring progress from localStorage for user:', user.id);
+              console.log('Restoring progress from localStorage for user:', userId);
               this.currentUser.progress = localUser.progress;
             }
             
@@ -57,6 +69,10 @@ export class SupabaseAuthService {
             UserManager.saveUser(this.currentUser);
           }
         }
+      } else if (!this.currentUser) {
+        // No Supabase session and no localStorage user - user is logged out
+        console.log('No Supabase session found and no localStorage user');
+        this.currentUser = null;
       }
 
       // Set up auth state listener
@@ -68,6 +84,12 @@ export class SupabaseAuthService {
       return this.currentUser !== null;
     } catch (error) {
       console.error('Supabase auth initialization error:', error);
+      // Even if Supabase fails, if we have localStorage user, keep them logged in
+      if (this.currentUser) {
+        console.log('Supabase init failed but localStorage user exists, keeping user logged in');
+        this.isInitialized = true;
+        return true;
+      }
       return false;
     }
   }

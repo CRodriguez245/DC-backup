@@ -1934,11 +1934,24 @@ const MainApp = () => {
                 messages: [...messages, sessionEndMessage] // Include the full chat transcript with end message
               };
               // Use the correct auth service based on USE_SUPABASE_AUTH flag
-              if (USE_SUPABASE_AUTH) {
-                supabaseAuthService.updateProgress(currentCharacter, progressData);
-              } else {
-                authService.updateProgress(currentCharacter, progressData);
-              }
+              // Await progress update and refresh userInfo to update tooltip with latest score
+              (async () => {
+                if (USE_SUPABASE_AUTH) {
+                  await supabaseAuthService.updateProgress(currentCharacter, progressData);
+                  // Refresh userInfo after progress is saved
+                  const updatedUser = supabaseAuthService.getCurrentUser();
+                  if (updatedUser) {
+                    setUserInfo(updatedUser);
+                  }
+                } else {
+                  authService.updateProgress(currentCharacter, progressData);
+                  // Refresh userInfo after progress is saved (AuthService is synchronous)
+                  const updatedUser = authService.getCurrentUser();
+                  if (updatedUser) {
+                    setUserInfo(updatedUser);
+                  }
+                }
+              })();
               
               // Clear in-progress session since it's complete
               clearInProgressSession(currentCharacter);
@@ -2265,11 +2278,24 @@ const MainApp = () => {
                 messages: [...messages, sessionEndMessage] // Include the full chat transcript with end message
               };
               // Use the correct auth service based on USE_SUPABASE_AUTH flag
-              if (USE_SUPABASE_AUTH) {
-                supabaseAuthService.updateProgress(currentCharacter, progressData);
-              } else {
-                authService.updateProgress(currentCharacter, progressData);
-              }
+              // Await progress update and refresh userInfo to update tooltip with latest score
+              (async () => {
+                if (USE_SUPABASE_AUTH) {
+                  await supabaseAuthService.updateProgress(currentCharacter, progressData);
+                  // Refresh userInfo after progress is saved
+                  const updatedUser = supabaseAuthService.getCurrentUser();
+                  if (updatedUser) {
+                    setUserInfo(updatedUser);
+                  }
+                } else {
+                  await authService.updateProgress(currentCharacter, progressData);
+                  // Refresh userInfo after progress is saved
+                  const updatedUser = authService.getCurrentUser();
+                  if (updatedUser) {
+                    setUserInfo(updatedUser);
+                  }
+                }
+              })();
               
               // Clear in-progress session since it's complete
               clearInProgressSession(currentCharacter);

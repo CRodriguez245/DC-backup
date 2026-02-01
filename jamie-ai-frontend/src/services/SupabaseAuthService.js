@@ -24,11 +24,13 @@ export class SupabaseAuthService {
       const localUser = UserManager.loadUser();
       if (localUser && localUser.id) {
         console.log('Restoring user from localStorage on init (immediate):', localUser.id);
+        console.log('localStorage user progress:', localUser.progress);
         this.currentUser = localUser;
         // Migrate any existing local data
         this.migrateCompletionStatus();
         // Set initialized flag so getCurrentUser() works immediately
         this.isInitialized = true;
+        console.log('After restore, currentUser progress:', this.currentUser.progress);
       }
       
       // Then verify with Supabase session (async, but doesn't block)
@@ -351,6 +353,11 @@ export class SupabaseAuthService {
     if ((!progressData || progressData.length === 0) && existingProgress) {
       console.log('No Supabase progress data, preserving localStorage progress:', existingProgress);
       // Progress already initialized from existingProgress above, so it's preserved
+      // Make sure we don't overwrite it - just keep the existing progress
+      console.log('Final progress after preserving localStorage:', progress);
+    } else if (progressData && progressData.length > 0) {
+      // We have Supabase data - it was merged above, so progress should have both
+      console.log('Merged Supabase data with localStorage progress');
     }
 
     // Update the user's progress by creating a new User instance
@@ -380,23 +387,47 @@ export class SupabaseAuthService {
     if (!this.currentUser) {
       console.log('loadProgressFromSupabase: No current user, attempting to get from auth session');
       
-      // Try to get current user from auth session
-      const { data: { user }, error } = await supabase.auth.getUser();
-      if (error || !user) {
-        console.log('loadProgressFromSupabase: No auth session found, skipping');
-        return;
+      // First try to restore from localStorage (preserves progress)
+      const localUser = UserManager.loadUser();
+      if (localUser && localUser.id) {
+        console.log('loadProgressFromSupabase: Restoring user from localStorage:', localUser.id);
+        this.currentUser = localUser;
+      } else {
+        // Try to get current user from auth session
+        const { data: { user }, error } = await supabase.auth.getUser();
+        if (error || !user) {
+          console.log('loadProgressFromSupabase: No auth session found, skipping');
+          return;
+        }
+        
+        // Get user profile and set as current user
+        const { data: profile, error: profileError } = await db.getUserProfile(user.id);
+        if (profileError || !profile) {
+          console.log('loadProgressFromSupabase: No user profile found, skipping');
+          return;
+        }
+        
+        this.currentUser = User.fromJSON({
+          id: profile.id,
+          email: profile.email,
+          name: profile.name,
+          role: profile.role,
+          createdAt: profile.created_at,
+          lastLogin: new Date().toISOString()
+        });
+        
+        // Try to restore progress from localStorage if available
+        if (localUser && localUser.progress) {
+          console.log('loadProgressFromSupabase: Restoring progress from localStorage');
+          this.currentUser.progress = localUser.progress;
+        }
+        
+        console.log('loadProgressFromSupabase: Set currentUser from auth session:', this.currentUser);
       }
-      
-      // Get user profile and set as current user
-      const { data: profile, error: profileError } = await db.getUserProfile(user.id);
-      if (profileError || !profile) {
-        console.log('loadProgressFromSupabase: No user profile found, skipping');
-        return;
-      }
-      
-      this.currentUser = new User(profile);
-      console.log('loadProgressFromSupabase: Set currentUser from auth session:', this.currentUser);
     }
+    
+    // Log current progress before loading from Supabase
+    console.log('loadProgressFromSupabase: Current user progress before Supabase load:', this.currentUser.progress);
 
     // Prevent duplicate loading
     if (this.isLoadingProgress) {
@@ -426,6 +457,17 @@ export class SupabaseAuthService {
       
       if (!progressData || progressData.length === 0) {
         console.log('No progress data found for user:', this.currentUser.id, 'role:', this.currentUser.role);
+        console.log('Current user progress before handling empty Supabase data:', this.currentUser.progress);
+        
+        // If we have progress in localStorage, preserve it
+        if (this.currentUser.progress) {
+          console.log('No Supabase data but localStorage progress exists, preserving it');
+          // Save to localStorage to ensure it's preserved
+          UserManager.saveUser(this.currentUser);
+          // Notify listeners with the existing progress
+          this.notifyListeners('progress_loaded', this.currentUser);
+          return;
+        }
         
         // Check if user has local storage data that needs to be synced
         const hasLocalProgress = this.checkForLocalStorageProgress();
@@ -440,12 +482,21 @@ export class SupabaseAuthService {
           
           if (!updatedError && updatedProgressData && updatedProgressData.length > 0) {
             console.log('Successfully loaded progress after sync:', updatedProgressData);
-            // Process the updated progress data
+            // Process the updated progress data (will merge with localStorage)
             await this.processProgressData(updatedProgressData);
+          } else {
+            // Sync failed or no data, but we should still have localStorage progress
+            // Restore from localStorage if available
+            const localUser = UserManager.loadUser();
+            if (localUser && localUser.progress) {
+              console.log('Restoring progress from localStorage after failed sync');
+              this.currentUser.progress = localUser.progress;
+              UserManager.saveUser(this.currentUser);
+            }
           }
         }
         
-        // Still notify listeners that progress was loaded (even if empty)
+        // Notify listeners that progress was loaded (with localStorage progress if available)
         this.notifyListeners('progress_loaded', this.currentUser);
         return;
       }
